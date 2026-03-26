@@ -60,8 +60,23 @@ export default function Uygulama() {
   const [zoomHedef,    setZoomHedef]  = useState(null)
   const [secilenId,    setSecilenId]  = useState(null)
   const [bildirimler,  setBildirim]   = useState([])
+  const [dbGenel,      setDbGenel]    = useState(null)  // DB'den toplam teslimat
 
   const merkez = [41.0082, 28.9784]
+
+  // DB'den genel istatistik çek (sayfa yenilenince sıfırlanmaz)
+  useEffect(() => {
+    const cek = async () => {
+      try {
+        const res = await fetch('https://lojistikweb-backend.onrender.com/api/istatistik/genel')
+        const veri = await res.json()
+        setDbGenel(veri)
+      } catch { /* DB yoksa sessizce geç */ }
+    }
+    cek()
+    const t = setInterval(cek, 30000)
+    return () => clearInterval(t)
+  }, [])
 
   // ── Bildirim sistemi ──
   const bildirimEkle = useCallback((mesaj, tip = 'bilgi') => {
@@ -118,10 +133,12 @@ export default function Uygulama() {
   }
 
   // ── Özet istatistikler ──
-  const toplam    = kuryeListesi.length
-  const teslim    = kuryeListesi.filter(k => k.durum === 'teslim edildi').length
-  const yolda     = kuryeListesi.filter(k => k.durum !== 'teslim edildi' && k.online).length
-  const offline   = kuryeListesi.filter(k => !k.online).length
+  // toplam/yolda/offline → canlı socket verisi (gerçek zamanlı)
+  // teslim → DB'den (sayfa yenilenince sıfırlanmaz)
+  const toplam  = kuryeListesi.length
+  const yolda   = kuryeListesi.filter(k => k.durum !== 'teslim edildi' && k.online).length
+  const offline = kuryeListesi.filter(k => !k.online).length
+  const teslim  = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => k.durum === 'teslim edildi').length
 
   return (
     <div className={`ana-kutu${karanlikMod ? ' karanlik' : ''}`}>
@@ -156,7 +173,7 @@ export default function Uygulama() {
           </div>
           <div className="stat-kart teslim">
             <span className="stat-deger">{teslim}</span>
-            <span className="stat-etiket">Teslim</span>
+            <span className="stat-etiket">Toplam Teslim</span>
           </div>
           <div className="stat-kart offline">
             <span className="stat-deger">{offline}</span>
@@ -280,10 +297,14 @@ export default function Uygulama() {
           <TileLayer
             url={
               karanlikMod
-                ? 'https://{s}.basemaps.cartocdn.com/dark_matter_lite/{z}/{x}/{y}{r}.png'
+                ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             }
-            attribution="© OpenStreetMap contributors"
+            attribution={
+              karanlikMod
+                ? '© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://openmaptiles.org/">OpenMapTiles</a>'
+                : '© OpenStreetMap contributors'
+            }
           />
 
           <HaritaKontrol hedef={zoomHedef} />

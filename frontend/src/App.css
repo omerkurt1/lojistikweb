@@ -14,15 +14,15 @@
 }
 
 .karanlik {
-  --bg:          #1a1f2e;
-  --panel-bg:    #222736;
-  --kart-bg:     #2a3045;
-  --metin:       #dce3f0;
-  --metin-2:     #8d97b0;
-  --sinir:       #353d56;
+  --bg:          #14192b;
+  --panel-bg:    #1c2236;
+  --kart-bg:     #242c42;
+  --metin:       #d8e0f0;
+  --metin-2:     #7a87a8;
+  --sinir:       #2e3a58;
   --vurgu:       #5b9cf6;
-  --vurgu-hafif: #1e2d4a;
-  --golge:       rgba(0, 0, 0, 0.35);
+  --vurgu-hafif: #1a2540;
+  --golge:       rgba(0, 0, 0, 0.4);
 }
 
 /* ──────────────────────────────────────────────
@@ -373,15 +373,15 @@ body {
   position: relative;
 }
 
-/* Gece modunda haritayı biraz aydınlat, mavi-gri tona çek */
+/* Gece modunda tile katmanını aydınlat — marker ve rotalar etkilenmez */
 .karanlik .harita-alan .leaflet-tile-pane {
-  filter: brightness(0.82) saturate(0.75) hue-rotate(185deg);
+  filter: brightness(1.15) saturate(0.85) contrast(0.92);
 }
 
-/* Sol panel ile harita arası belirgin bir ayraç */
+/* Sol panel ile harita arası gölge ayracı */
 .karanlik .sol-panel {
-  border-right: 1px solid #3a4460;
-  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.45);
+  border-right: 1px solid #2e3a58;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
 }
 
 .leaflet-container {
