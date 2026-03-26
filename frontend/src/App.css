@@ -704,3 +704,12 @@ body {
 @media (max-width: 480px) {
   .ist-ozet-grid { grid-template-columns: repeat(2, 1fr); }
 }
+.sekme-baslik {
+  flex-shrink: 0 !important;
+}
+
+.liste {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
