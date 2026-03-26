@@ -4,7 +4,7 @@ import L from 'leaflet'
 import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
-import IstatistikPaneli from './istatistik'
+import IstatistikPaneli from './IstatistikPaneli'
 
 // ─── İkonlar ────────────────────────────────────────────────────────────────
 const motorIkonu = new L.DivIcon({
@@ -40,7 +40,7 @@ function HaritaKontrol({ hedef }) {
 }
 
 // ─── Socket (component dışında bir kez oluştur) ──────────────────────────────
-const soket = io('https://lojistikweb-backend.onrender.com')
+const soket = io('http://localhost:5000')
 
 // ─── Renk paleti (kurye id'ye göre) ─────────────────────────────────────────
 const ROTA_RENKLERI = ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c']
@@ -280,7 +280,7 @@ export default function Uygulama() {
           <TileLayer
             url={
               karanlikMod
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                ? 'https://{s}.basemaps.cartocdn.com/dark_matter_lite/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             }
             attribution="© OpenStreetMap contributors"

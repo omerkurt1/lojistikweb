@@ -14,15 +14,15 @@
 }
 
 .karanlik {
-  --bg:          #0d1117;
-  --panel-bg:    #161b22;
-  --kart-bg:     #21262d;
-  --metin:       #e6edf3;
-  --metin-2:     #8b949e;
-  --sinir:       #30363d;
-  --vurgu:       #58a6ff;
-  --vurgu-hafif: #1c2c3e;
-  --golge:       rgba(0, 0, 0, 0.3);
+  --bg:          #1a1f2e;
+  --panel-bg:    #222736;
+  --kart-bg:     #2a3045;
+  --metin:       #dce3f0;
+  --metin-2:     #8d97b0;
+  --sinir:       #353d56;
+  --vurgu:       #5b9cf6;
+  --vurgu-hafif: #1e2d4a;
+  --golge:       rgba(0, 0, 0, 0.35);
 }
 
 /* ──────────────────────────────────────────────
@@ -370,6 +370,18 @@ body {
 .harita-alan {
   flex: 1;
   overflow: hidden;
+  position: relative;
+}
+
+/* Gece modunda haritayı biraz aydınlat, mavi-gri tona çek */
+.karanlik .harita-alan .leaflet-tile-pane {
+  filter: brightness(0.82) saturate(0.75) hue-rotate(185deg);
+}
+
+/* Sol panel ile harita arası belirgin bir ayraç */
+.karanlik .sol-panel {
+  border-right: 1px solid #3a4460;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.45);
 }
 
 .leaflet-container {
@@ -703,13 +715,4 @@ body {
 
 @media (max-width: 480px) {
   .ist-ozet-grid { grid-template-columns: repeat(2, 1fr); }
-}
-.sekme-baslik {
-  flex-shrink: 0 !important;
-}
-
-.liste {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
 }
