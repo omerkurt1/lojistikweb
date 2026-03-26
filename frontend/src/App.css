@@ -15,7 +15,7 @@
 
 .karanlik {
   --bg:          #14192b;
-  --panel-bg:    #2d4289;
+  --panel-bg:    #1c2236;
   --kart-bg:     #242c42;
   --metin:       #d8e0f0;
   --metin-2:     #7a87a8;
@@ -375,7 +375,7 @@ body {
 
 /* Gece modunda tile katmanını aydınlat — marker ve rotalar etkilenmez */
 .karanlik .harita-alan .leaflet-tile-pane {
-  filter: brightness(1.15) saturate(0.85) contrast(0.92);
+  filter: brightness(2.15) saturate(0.85) contrast(0.92);
 }
 
 /* Sol panel ile harita arası gölge ayracı */
