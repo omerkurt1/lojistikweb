@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API = 'http://localhost:5000/api'
+const API = 'https://lojistikweb-backend.onrender.com/api'
 
 // ─── SVG Bar Chart ────────────────────────────────────────────
 function BarChart({ veriler, renk = '#3498db', etiketAnahtari = '_id', degerAnahtari = 'sayi', yukseklik = 120 }) {
