@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-//  Kurye Takip — Backend
-//  Bağımlılıklar: express, socket.io, cors, axios, mongoose
-//  .env dosyası gerekli → bkz. .env.example
+//  Kurye Takip — Backend (Final)
+//  npm install express socket.io cors axios mongoose dotenv
+//  .env → ORS_API_KEY, MONGO_URI, PORT
 // ─────────────────────────────────────────────────────────────
 require('dotenv').config()
 
@@ -19,52 +19,66 @@ app.use(express.json())
 const server = http.createServer(app)
 const io     = new Server(server, { cors: { origin: '*' } })
 
-// ─── Ortam değişkenleri ──────────────────────────────────────
-const ORS_KEY   = process.env.ORS_API_KEY   // OpenRouteService key
-const MONGO_URI = process.env.MONGO_URI     // mongodb+srv://...
+const ORS_KEY   = process.env.ORS_API_KEY
+const MONGO_URI = process.env.MONGO_URI
 const PORT      = process.env.PORT || 5000
 
 // ════════════════════════════════════════════════════════════
-//  MONGOOSE ŞEMALARI
+//  MONGOOSE MODELLERİ
 // ════════════════════════════════════════════════════════════
 
-// 1) Kurye Profili + Kümülatif İstatistikler
-const kuryeSchema = new mongoose.Schema({
+// 1) Kurye profili + kümülatif istatistik
+const KuryeSchema = new mongoose.Schema({
   kuryeId           : { type: Number, required: true, unique: true },
-  isim              : { type: String, required: true },
-  toplamTeslimat    : { type: Number, default: 0 },
-  toplamSure        : { type: Number, default: 0 },   // dakika
-  ortalamaSure      : { type: Number, default: 0 },   // dakika
-  optimizasyonSayisi: { type: Number, default: 0 },
-  sonGuncelleme     : { type: Date,   default: Date.now }
+  isim              : { type: String,  required: true },
+  toplamTeslimat    : { type: Number,  default: 0 },
+  toplamSure        : { type: Number,  default: 0 },   // dakika
+  ortalamaSure      : { type: Number,  default: 0 },   // dakika
+  optimizasyonSayisi: { type: Number,  default: 0 },
+  sonGuncelleme     : { type: Date,    default: Date.now }
 }, { collection: 'kuryeler' })
 
-// 2) Teslimat Kaydı — her teslim için bir doküman
-const teslimatSchema = new mongoose.Schema({
-  kuryeId         : { type: Number, required: true, index: true },
-  kuryeIsim       : { type: String, required: true },
+// 2) Teslimat kaydı — her teslim için bir doküman
+const TeslimatSchema = new mongoose.Schema({
+  kuryeId         : { type: Number,  required: true, index: true },
+  kuryeIsim       : { type: String,  required: true },
   baslangicEnlem  : Number,
   baslangicBoylam : Number,
   hedefEnlem      : Number,
   hedefBoylam     : Number,
   baslangicZamani : { type: Date, required: true },
   bitisZamani     : { type: Date, default: Date.now },
-  sureDakika      : { type: Number, default: 0 },
+  sureDakika      : { type: Number,  default: 0 },
   rotaOptimize    : { type: Boolean, default: false }
 }, { collection: 'teslimatlar' })
 
-// 3) Günlük Özet — upsert ile güncellenir
-const gunlukOzetSchema = new mongoose.Schema({
-  tarih              : { type: String, required: true, unique: true }, // 'YYYY-MM-DD'
+// 3) Günlük özet — upsert ile güncellenir
+const GunlukOzetSchema = new mongoose.Schema({
+  tarih              : { type: String, required: true, unique: true }, // YYYY-MM-DD
   toplamTeslimat     : { type: Number, default: 0 },
   saatlikDagilim     : { type: [Number], default: () => Array(24).fill(0) },
   enCokTeslimatKurye : { type: String, default: '' },
   guncellemeZamani   : { type: Date, default: Date.now }
 }, { collection: 'gunluk_ozet' })
 
-const KuryeModel   = mongoose.model('Kurye',      kuryeSchema)
-const TeslimatModel= mongoose.model('Teslimat',   teslimatSchema)
-const GunlukOzet   = mongoose.model('GunlukOzet', gunlukOzetSchema)
+// 4) Konum geçmişi — ~15sn'de bir snapshot
+const KonumSchema = new mongoose.Schema({
+  kuryeId   : { type: Number, required: true, index: true },
+  kuryeIsim : String,
+  enlem     : Number,
+  boylam    : Number,
+  hiz       : Number,
+  zaman     : { type: Date, default: Date.now }
+}, { collection: 'konum_gecmis' })
+KonumSchema.index({ kuryeId: 1, zaman: -1 })
+
+const KuryeModel   = mongoose.model('Kurye',      KuryeSchema)
+const TeslimatModel= mongoose.model('Teslimat',   TeslimatSchema)
+const GunlukOzet   = mongoose.model('GunlukOzet', GunlukOzetSchema)
+const KonumModel   = mongoose.model('Konum',      KonumSchema)
+
+// DB bağlı mı? — DB yoksa kayıtlar sessizce atlanır
+let dbBagli = false
 
 // ════════════════════════════════════════════════════════════
 //  BELLEK İÇİ DURUM
@@ -88,19 +102,38 @@ let kuryeler = BASLANGIC_KURYELER.map(k => ({
 // ════════════════════════════════════════════════════════════
 //  YARDIMCI FONKSİYONLAR
 // ════════════════════════════════════════════════════════════
-
-function etaHesapla(kurye) {
-  if (!kurye.rota || kurye.hedefSira >= kurye.rota.length) return 0
-  const kalanAdim = kurye.rota.length - kurye.hedefSira
-  return Math.max(1, Math.ceil((kalanAdim * 1.5) / 60))
+function etaHesapla(k) {
+  if (!k.rota || k.hedefSira >= k.rota.length) return 0
+  return Math.max(1, Math.ceil(((k.rota.length - k.hedefSira) * 1.5) / 60))
 }
 
 function bugunTarih() {
   return new Date().toISOString().split('T')[0]
 }
 
-// Teslimatı MongoDB'ye yaz + profil + günlük özet güncelle
+async function gercekRotaCiz(basEnlem, basBoylam, bitisEnlem, bitisBoylam, optimizasyonModu) {
+  try {
+    let duraklar = [[basBoylam, basEnlem], [bitisBoylam, bitisEnlem]]
+    if (optimizasyonModu) {
+      const araEnlem  = (basEnlem  + bitisEnlem)  / 2 + (Math.random() - 0.5) * 0.01
+      const araBoylam = (basBoylam + bitisBoylam) / 2 + (Math.random() - 0.5) * 0.01
+      duraklar.splice(1, 0, [araBoylam, araEnlem])
+    }
+    const cevap = await axios.post(
+      'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+      { coordinates: duraklar },
+      { headers: { Authorization: ORS_KEY, 'Content-Type': 'application/json' } }
+    )
+    return cevap.data.features[0].geometry.coordinates.map(c => [c[1], c[0]])
+  } catch (e) {
+    console.error('Rota Hatası:', e.response?.data ?? e.message)
+    return [[basEnlem, basBoylam], [bitisEnlem, bitisBoylam]]
+  }
+}
+
+// Teslimatı DB'ye yaz + kurye profili + günlük özet güncelle
 async function teslimatKaydet(kurye) {
+  if (!dbBagli) return
   const simdi      = new Date()
   const sureDakika = Math.round((simdi - new Date(kurye.baslangicZamani)) / 60000)
 
@@ -119,248 +152,219 @@ async function teslimatKaydet(kurye) {
       rotaOptimize   : kurye.optimizasyonSayisi > 0
     })
 
-    // 2) Kurye profilini güncelle
-    const guncellenmis = await KuryeModel.findOneAndUpdate(
+    // 2) Kurye profili güncelle (upsert)
+    const doc = await KuryeModel.findOneAndUpdate(
       { kuryeId: kurye.id },
       {
         $set: { isim: kurye.isim, sonGuncelleme: simdi },
-        $inc: {
-          toplamTeslimat    : 1,
-          toplamSure        : sureDakika,
-          optimizasyonSayisi: kurye.optimizasyonSayisi
-        }
+        $inc: { toplamTeslimat: 1, toplamSure: sureDakika, optimizasyonSayisi: kurye.optimizasyonSayisi }
       },
       { upsert: true, new: true }
     )
-    if (guncellenmis) {
-      guncellenmis.ortalamaSure = guncellenmis.toplamTeslimat > 0
-        ? Math.round(guncellenmis.toplamSure / guncellenmis.toplamTeslimat)
-        : 0
-      await guncellenmis.save()
+    if (doc) {
+      doc.ortalamaSure = doc.toplamTeslimat > 0
+        ? Math.round(doc.toplamSure / doc.toplamTeslimat) : 0
+      await doc.save()
     }
 
     // 3) Günlük özet
     const saat = simdi.getHours()
     await GunlukOzet.findOneAndUpdate(
       { tarih: bugunTarih() },
-      {
-        $inc: { toplamTeslimat: 1, [`saatlikDagilim.${saat}`]: 1 },
-        $set: { guncellemeZamani: simdi }
-      },
+      { $inc: { toplamTeslimat: 1, [`saatlikDagilim.${saat}`]: 1 }, $set: { guncellemeZamani: simdi } },
       { upsert: true }
     )
 
-    // 4) Günün en çok teslimat yapan kuryesi
-    const gunBaslangic = new Date(); gunBaslangic.setHours(0,0,0,0)
-    const sonuc = await TeslimatModel.aggregate([
-      { $match: { bitisZamani: { $gte: gunBaslangic } } },
+    // 4) Günlük en çok teslimat yapan kurye
+    const gunBas = new Date(); gunBas.setHours(0,0,0,0)
+    const lider = await TeslimatModel.aggregate([
+      { $match: { bitisZamani: { $gte: gunBas } } },
       { $group: { _id: '$kuryeIsim', sayi: { $sum: 1 } } },
-      { $sort: { sayi: -1 } },
-      { $limit: 1 }
+      { $sort: { sayi: -1 } }, { $limit: 1 }
     ])
-    const enCok = sonuc[0]?._id || ''
-    await GunlukOzet.updateOne(
-      { tarih: bugunTarih() },
-      { $set: { enCokTeslimatKurye: enCok } }
-    )
+    if (lider[0]) {
+      await GunlukOzet.updateOne(
+        { tarih: bugunTarih() },
+        { $set: { enCokTeslimatKurye: lider[0]._id } }
+      )
+    }
 
-    console.log(`[DB] ${kurye.isim} → kayıt OK (${sureDakika} dk)`)
+    console.log(`[DB] ${kurye.isim} → teslimat OK (${sureDakika} dk)`)
   } catch (err) {
     console.error('[DB] Kayıt hatası:', err.message)
   }
 }
 
-// Rota çiz
-async function gercekRotaCiz(basEnlem, basBoylam, bitisEnlem, bitisBoylam, optimizasyonModu) {
-  try {
-    let duraklar = [[basBoylam, basEnlem], [bitisBoylam, bitisEnlem]]
-
-    if (optimizasyonModu) {
-      const araEnlem  = (basEnlem  + bitisEnlem)  / 2 + (Math.random() - 0.5) * 0.01
-      const araBoylam = (basBoylam + bitisBoylam) / 2 + (Math.random() - 0.5) * 0.01
-      duraklar.splice(1, 0, [araBoylam, araEnlem])
-    }
-
-    const cevap = await axios.post(
-      'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
-      { coordinates: duraklar },
-      { headers: { 'Authorization': ORS_KEY, 'Content-Type': 'application/json' } }
-    )
-
-    return cevap.data.features[0].geometry.coordinates.map(c => [c[1], c[0]])
-  } catch (hata) {
-    console.log('Rota Hatası:', hata.response ? hata.response.data : hata.message)
-    return [[basEnlem, basBoylam], [bitisEnlem, bitisBoylam]]
-  }
-}
-
-// İlk yükleme
-async function ilkYukleme() {
-  for (const k of kuryeler) {
-    k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, false)
-  }
-  for (const k of kuryeler) {
-    await KuryeModel.findOneAndUpdate(
-      { kuryeId: k.id },
-      { $setOnInsert: { kuryeId: k.id, isim: k.isim } },
-      { upsert: true }
-    )
-  }
-  console.log('Rotalar yüklendi, kurye profilleri hazır.')
-}
-
 // ════════════════════════════════════════════════════════════
-//  REST API — İSTATİSTİK ENDPOINT'LERİ
+//  REST API — FRONTEND'İN BEKLEDİĞİ TÜM ENDPOINT'LER
 // ════════════════════════════════════════════════════════════
 
-// Genel özet
+// GET /api/istatistik/genel
 app.get('/api/istatistik/genel', async (_req, res) => {
   try {
-    const gunBaslangic = new Date(); gunBaslangic.setHours(0,0,0,0)
-
-    const [toplamTeslimat, bugunTeslimat, kuryeProfilleri] = await Promise.all([
+    if (!dbBagli) {
+      return res.json({
+        toplamTeslimat   : 0,
+        bugunTeslimat    : 0,
+        aktifKurye       : kuryeler.filter(k => k.online).length,
+        yoldakiSiparis   : kuryeler.filter(k => k.durum !== 'teslim edildi' && k.online).length,
+        genelOrtalamaSure: 0,
+        dbDurumu         : 'bağlı değil'
+      })
+    }
+    const gunBas = new Date(); gunBas.setHours(0,0,0,0)
+    const [toplam, bugun, profiller] = await Promise.all([
       TeslimatModel.countDocuments(),
-      TeslimatModel.countDocuments({ bitisZamani: { $gte: gunBaslangic } }),
+      TeslimatModel.countDocuments({ bitisZamani: { $gte: gunBas } }),
       KuryeModel.find()
     ])
-
-    const genelOrt = kuryeProfilleri.length > 0
-      ? Math.round(
-          kuryeProfilleri.reduce((t, k) => t + k.ortalamaSure, 0) / kuryeProfilleri.length
-        )
-      : 0
-
+    const genelOrt = profiller.length > 0
+      ? Math.round(profiller.reduce((t, k) => t + k.ortalamaSure, 0) / profiller.length) : 0
     res.json({
-      toplamTeslimat,
-      bugunTeslimat,
+      toplamTeslimat   : toplam,
+      bugunTeslimat    : bugun,
       aktifKurye       : kuryeler.filter(k => k.online).length,
       yoldakiSiparis   : kuryeler.filter(k => k.durum !== 'teslim edildi' && k.online).length,
-      genelOrtalamaSure: genelOrt
+      genelOrtalamaSure: genelOrt,
+      dbDurumu         : 'bağlı'
     })
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
-// Tüm kuryelerin istatistiği
+// GET /api/istatistik/kuryeler
 app.get('/api/istatistik/kuryeler', async (_req, res) => {
   try {
+    if (!dbBagli) return res.json([])
     const profiller = await KuryeModel.find().sort({ toplamTeslimat: -1 })
     res.json(profiller)
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
-// Tek kurye: profil + son 50 teslimat
+// GET /api/istatistik/kurye/:id  →  profil + son 50 teslimat
 app.get('/api/istatistik/kurye/:id', async (req, res) => {
   try {
+    if (!dbBagli) return res.json({ profil: null, gecmis: [] })
     const kuryeId = Number(req.params.id)
     const [profil, gecmis] = await Promise.all([
       KuryeModel.findOne({ kuryeId }),
       TeslimatModel.find({ kuryeId }).sort({ bitisZamani: -1 }).limit(50)
     ])
     res.json({ profil, gecmis })
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
-// Bugünün saatlik dağılımı
+// GET /api/istatistik/gunluk  →  bugünün saatlik dağılımı
 app.get('/api/istatistik/gunluk', async (_req, res) => {
   try {
+    if (!dbBagli) return res.json({ tarih: bugunTarih(), toplamTeslimat: 0, saatlikDagilim: Array(24).fill(0) })
     const ozet = await GunlukOzet.findOne({ tarih: bugunTarih() })
     res.json(ozet || { tarih: bugunTarih(), toplamTeslimat: 0, saatlikDagilim: Array(24).fill(0) })
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
-// Belirli bir günün özeti (YYYY-MM-DD)
+// GET /api/istatistik/gunluk/:tarih  →  belirli gün (YYYY-MM-DD)
 app.get('/api/istatistik/gunluk/:tarih', async (req, res) => {
   try {
+    if (!dbBagli) return res.json({ tarih: req.params.tarih, toplamTeslimat: 0, saatlikDagilim: Array(24).fill(0) })
     const ozet = await GunlukOzet.findOne({ tarih: req.params.tarih })
     res.json(ozet || { tarih: req.params.tarih, toplamTeslimat: 0, saatlikDagilim: Array(24).fill(0) })
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
-// Son 7 günün günlük teslimat sayıları
+// GET /api/istatistik/haftalik  →  son 7 günün günlük toplamları
 app.get('/api/istatistik/haftalik', async (_req, res) => {
   try {
+    if (!dbBagli) return res.json([])
     const yediGunOnce = new Date()
-    yediGunOnce.setDate(yediGunOnce.getDate() - 7)
-    yediGunOnce.setHours(0,0,0,0)
-
+    yediGunOnce.setDate(yediGunOnce.getDate() - 7); yediGunOnce.setHours(0,0,0,0)
     const veriler = await TeslimatModel.aggregate([
       { $match: { bitisZamani: { $gte: yediGunOnce } } },
-      { $group: {
-          _id : { $dateToString: { format: '%Y-%m-%d', date: '$bitisZamani' } },
-          sayi: { $sum: 1 }
-      }},
+      { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$bitisZamani' } }, sayi: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
     res.json(veriler)
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
-// Son teslimatlar listesi (?limit=20&kuryeId=1)
+// GET /api/teslimatlar?limit=20&kuryeId=1
 app.get('/api/teslimatlar', async (req, res) => {
   try {
+    if (!dbBagli) return res.json([])
     const limit   = Math.min(Number(req.query.limit) || 20, 200)
     const kuryeId = req.query.kuryeId ? Number(req.query.kuryeId) : null
     const filtre  = kuryeId ? { kuryeId } : {}
     const liste   = await TeslimatModel.find(filtre).sort({ bitisZamani: -1 }).limit(limit)
     res.json(liste)
-  } catch (err) { res.status(500).json({ hata: err.message }) }
+  } catch (e) { res.status(500).json({ hata: e.message }) }
+})
+
+// GET /api/konum/:kuryeId  →  konum geçmişi (bonus)
+app.get('/api/konum/:kuryeId', async (req, res) => {
+  try {
+    if (!dbBagli) return res.json([])
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200)
+    const liste = await KonumModel
+      .find({ kuryeId: parseInt(req.params.kuryeId) })
+      .sort({ zaman: -1 }).limit(limit)
+    res.json(liste.reverse())
+  } catch (e) { res.status(500).json({ hata: e.message }) }
+})
+
+// Health check
+app.get('/api/saglik', (_req, res) => {
+  res.json({ durum: 'çalışıyor', db: dbBagli ? 'bağlı' : 'bağlı değil', zaman: new Date() })
 })
 
 // ════════════════════════════════════════════════════════════
 //  SOCKET.IO
 // ════════════════════════════════════════════════════════════
 io.on('connection', socket => {
-  socket.emit('kuryeleriGuncelle', kuryeler)
+  socket.emit('kuryeleriGuncelle',   kuryeler)
   socket.emit('siparisFisiGuncelle', siparisFisi)
 
   socket.on('yeniRotaCiz', async () => {
     for (const k of kuryeler) {
       if (!k.online || k.durum === 'teslim edildi') continue
       k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, true)
-      k.hedefSira = 1
-      k.optimizasyonSayisi++
+      k.hedefSira = 1; k.optimizasyonSayisi++
     }
     io.emit('kuryeleriGuncelle', kuryeler)
   })
 
-  socket.on('tekKuryeRotaCiz', async (kuryeId) => {
+  socket.on('tekKuryeRotaCiz', async kuryeId => {
     const k = kuryeler.find(k => k.id === kuryeId)
     if (k && k.online && k.durum !== 'teslim edildi') {
       k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, true)
-      k.hedefSira = 1
-      k.optimizasyonSayisi++
+      k.hedefSira = 1; k.optimizasyonSayisi++
       io.emit('kuryeleriGuncelle', kuryeler)
     }
   })
 
-  socket.on('kuryeOnlineDegistir', (kuryeId) => {
+  socket.on('kuryeOnlineDegistir', kuryeId => {
     const k = kuryeler.find(k => k.id === kuryeId)
     if (k) { k.online = !k.online; io.emit('kuryeleriGuncelle', kuryeler) }
   })
 
   socket.on('yeniSiparisEkle', async () => {
     const yeniId = kuryeler.length + 1
-    const bEn = 41.0000 + (Math.random() * 0.08)
-    const bBo = 28.9200 + (Math.random() * 0.10)
-    const hEn = 41.0200 + (Math.random() * 0.08)
-    const hBo = 28.9400 + (Math.random() * 0.10)
-    const yeniRota = await gercekRotaCiz(bEn, bBo, hEn, hBo, false)
-
-    await KuryeModel.findOneAndUpdate(
-      { kuryeId: yeniId },
-      { $setOnInsert: { kuryeId: yeniId, isim: 'Kurye ' + yeniId } },
-      { upsert: true }
-    )
-
-    kuryeler.push({
+    const bEn = 41.0000 + Math.random() * 0.08, bBo = 28.9200 + Math.random() * 0.10
+    const hEn = 41.0200 + Math.random() * 0.08, hBo = 28.9400 + Math.random() * 0.10
+    const rota = await gercekRotaCiz(bEn, bBo, hEn, hBo, false)
+    const yeniKurye = {
       id: yeniId, isim: 'Kurye ' + yeniId,
-      enlem: bEn, boylam: bBo,
-      hedefEnlem: hEn, hedefBoylam: hBo,
-      rota: yeniRota, hedefSira: 1,
-      durum: 'yolda', hiz: 0,
+      enlem: bEn, boylam: bBo, hedefEnlem: hEn, hedefBoylam: hBo,
+      rota, hedefSira: 1, durum: 'yolda', hiz: 0,
       optimizasyonSayisi: 0, online: true, eta: 0,
       baslangicZamani: new Date()
-    })
+    }
+    if (dbBagli) {
+      await KuryeModel.findOneAndUpdate(
+        { kuryeId: yeniId },
+        { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } },
+        { upsert: true }
+      ).catch(() => {})
+    }
+    kuryeler.push(yeniKurye)
     io.emit('kuryeleriGuncelle', kuryeler)
   })
 })
@@ -368,19 +372,22 @@ io.on('connection', socket => {
 // ════════════════════════════════════════════════════════════
 //  HAREKET DÖNGÜSÜ
 // ════════════════════════════════════════════════════════════
+let donguSayac = 0
+
 setInterval(() => {
+  donguSayac++
+
   kuryeler.forEach(k => {
     if (!k.online) return
 
     if (k.rota && k.hedefSira < k.rota.length) {
-      const sirakiNokta = k.rota[k.hedefSira]
-      const dEn  = sirakiNokta[0] - k.enlem
-      const dBo  = sirakiNokta[1] - k.boylam
-      const mesafe = Math.sqrt(dEn * dEn + dBo * dBo)
+      const [hEn, hBo] = k.rota[k.hedefSira]
+      const dEn = hEn - k.enlem, dBo = hBo - k.boylam
+      const uzak = Math.sqrt(dEn * dEn + dBo * dBo)
 
-      if (mesafe > 0.0005) {
-        k.enlem  += (dEn / mesafe) * 0.001
-        k.boylam += (dBo / mesafe) * 0.001
+      if (uzak > 0.0005) {
+        k.enlem  += (dEn / uzak) * 0.001
+        k.boylam += (dBo / uzak) * 0.001
         k.hiz     = 40 + Math.floor(Math.random() * 10)
         k.durum   = 'yolda'
       } else {
@@ -388,24 +395,31 @@ setInterval(() => {
       }
       k.eta = etaHesapla(k)
 
-    } else if (k.durum !== 'teslim edildi') {
-      k.durum = 'teslim edildi'
-      k.hiz   = 0
-      k.eta   = 0
-
-      const yeniLog = {
-        id         : Date.now() + k.id,
-        kuryeIsim  : k.isim,
-        zaman      : new Date().toLocaleTimeString('tr-TR'),
-        hedefEnlem : k.hedefEnlem,
-        hedefBoylam: k.hedefBoylam
+      // ~15sn'de bir konum snapshot (10 * 1.5sn = 15sn)
+      if (dbBagli && donguSayac % 10 === 0) {
+        KonumModel.create({
+          kuryeId: k.id, kuryeIsim: k.isim,
+          enlem: parseFloat(k.enlem.toFixed(5)),
+          boylam: parseFloat(k.boylam.toFixed(5)),
+          hiz: k.hiz
+        }).catch(() => {})
       }
-      siparisFisi.unshift(yeniLog)
+
+    } else if (k.durum !== 'teslim edildi') {
+      k.durum = 'teslim edildi'; k.hiz = 0; k.eta = 0
+
+      // DB'ye async kaydet (döngüyü bloklamaz)
+      teslimatKaydet(k)
+
+      const log = {
+        id: Date.now() + k.id, kuryeIsim: k.isim,
+        zaman: new Date().toLocaleTimeString('tr-TR'),
+        hedefEnlem: k.hedefEnlem, hedefBoylam: k.hedefBoylam
+      }
+      siparisFisi.unshift(log)
       if (siparisFisi.length > 100) siparisFisi.pop()
 
-      teslimatKaydet(k)  // async — ana döngüyü bloklamaz
-
-      io.emit('teslimatBildirimi', { isim: k.isim, zaman: yeniLog.zaman })
+      io.emit('teslimatBildirimi',   { isim: k.isim, zaman: log.zaman })
       io.emit('siparisFisiGuncelle', siparisFisi)
     }
   })
@@ -416,16 +430,33 @@ setInterval(() => {
 // ════════════════════════════════════════════════════════════
 //  BAŞLAT
 // ════════════════════════════════════════════════════════════
-async function baslat() {
-  try {
-    await mongoose.connect(MONGO_URI)
-    console.log('MongoDB bağlantısı kuruldu.')
-    await ilkYukleme()
-    server.listen(PORT, () => console.log(`Sunucu ${PORT} portunda çalışıyor.`))
-  } catch (err) {
-    console.error('Başlatma hatası:', err.message)
-    process.exit(1)
+async function ilkYukleme() {
+  for (const k of kuryeler) {
+    k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, false)
   }
+  if (dbBagli) {
+    for (const k of kuryeler) {
+      await KuryeModel.findOneAndUpdate(
+        { kuryeId: k.id },
+        { $setOnInsert: { kuryeId: k.id, isim: k.isim } },
+        { upsert: true }
+      ).catch(() => {})
+    }
+    console.log('✅ Kurye profilleri DB\'de hazır.')
+  }
+  console.log('✅ İlk rotalar yüklendi.')
 }
 
-baslat()
+mongoose.connect(MONGO_URI)
+  .then(() => {
+    dbBagli = true
+    console.log('✅ MongoDB bağlandı.')
+    server.listen(PORT, () => console.log(`🚀 Sunucu :${PORT}`))
+    ilkYukleme()
+  })
+  .catch(err => {
+    console.error('❌ MongoDB bağlanamadı:', err.message)
+    console.log('⚠️  DB olmadan devam ediliyor — veriler sadece bellekte tutulacak.')
+    server.listen(PORT, () => console.log(`🚀 Sunucu :${PORT} (DB yok)`))
+    ilkYukleme()
+  })
