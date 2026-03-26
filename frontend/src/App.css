@@ -15,7 +15,7 @@
 
 .karanlik {
   --bg:          #14192b;
-  --panel-bg:    #1c2236;
+  --panel-bg:    #2d4289;
   --kart-bg:     #242c42;
   --metin:       #d8e0f0;
   --metin-2:     #7a87a8;
@@ -715,4 +715,4 @@ body {
 
 @media (max-width: 480px) {
   .ist-ozet-grid { grid-template-columns: repeat(2, 1fr); }
-}
+}git 
