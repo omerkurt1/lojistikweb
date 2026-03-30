@@ -4,7 +4,7 @@ import L from 'leaflet'
 import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
-import IstatistikPaneli from './IstatistikPaneli'
+import IstatistikPaneli from './istatistik'
 
 // ─── İkonlar ────────────────────────────────────────────────────────────────
 const motorIkonu = new L.DivIcon({
