@@ -40,7 +40,8 @@ function HaritaKontrol({ hedef }) {
 }
 
 // ─── Socket (component dışında bir kez oluştur) ──────────────────────────────
-const soket = io('http://localhost:5000')
+const BACKEND = 'https://lojistikweb-backend.onrender.com'
+const soket = io(BACKEND)
 
 // ─── Renk paleti (kurye id'ye göre) ─────────────────────────────────────────
 const ROTA_RENKLERI = ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c']
