@@ -157,8 +157,13 @@ export default function Login() {
           <span style={styles.ayiracCizgi} />
         </div>
 
+        {/* Birincil aksiyon: Takip sayfası */}
+        <button style={styles.takipBtn} onClick={() => navigate('/takip')}>
+          📍  Canlı Takip Et →
+        </button>
+
         <button style={styles.demoBtn} onClick={() => navigate('/')}>
-          Demo olarak devam et
+          Yönetici Paneli olarak devam et
         </button>
       </div>
     </div>
@@ -265,5 +270,15 @@ const styles = {
     border: '1.5px solid #e8ecf8', borderRadius: 10,
     fontSize: 13, fontWeight: 600, color: '#6b7fa8',
     cursor: 'pointer', marginTop: 10,
+  },
+  takipBtn: {
+    width: '100%', padding: '13px',
+    background: 'linear-gradient(135deg, #0062ff 0%, #00b4d8 100%)',
+    color: '#fff', border: 'none', borderRadius: 10,
+    fontSize: 14, fontWeight: 700, cursor: 'pointer',
+    marginTop: 10,
+    boxShadow: '0 4px 18px rgba(0,98,255,0.28)',
+    transition: 'transform 0.15s, box-shadow 0.15s',
+    letterSpacing: '0.3px',
   },
 }

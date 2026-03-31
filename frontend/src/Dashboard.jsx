@@ -182,9 +182,8 @@ export default function Uygulama() {
           </div>
         </div>
 
-        {/* Aksiyon butonları */}
+        {/* Aksiyon butonları - sadece rota yenileme */}
         <div className="btn-grup">
-          <button className="btn btn-yesil" onClick={siparisEkle}>＋ Yeni Sipariş</button>
           <button className="btn btn-mavi"  onClick={tumRotaYenile}>🔄 Tüm Rotaları Yenile</button>
         </div>
 
@@ -200,13 +199,13 @@ export default function Uygulama() {
             className={`sekme${aktifSekme === 'log' ? ' aktif' : ''}`}
             onClick={() => { setSekme('log'); setRaporAcik(false) }}
           >
-            Geçmiş ({siparisFisi.length})
+            📋 Geçmiş
           </button>
           <button
             className={`sekme${aktifSekme === 'istatistik' ? ' aktif' : ''}`}
             onClick={() => { setSekme('istatistik'); setRaporAcik(true) }}
           >
-            📊 Rapor
+            📊 Raporlama
           </button>
         </div>
 
@@ -268,6 +267,9 @@ export default function Uygulama() {
         {/* ── Sipariş Geçmişi Log ── */}
         {aktifSekme === 'log' && (
           <div className="liste">
+            <div className="log-baslik-satir">
+              <span className="log-toplam-badge">{siparisFisi.length} teslimat</span>
+            </div>
             {siparisFisi.length === 0 ? (
               <p className="bos-mesaj">Henüz teslim edilen sipariş yok.</p>
             ) : (
@@ -298,12 +300,12 @@ export default function Uygulama() {
           <TileLayer
             url={
               karanlikMod
-                ? 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
             }
             attribution={
               karanlikMod
-                ? '© <a href="https://stadiamaps.com/">Stadia Maps</a> © <a href="https://openmaptiles.org/">OpenMapTiles</a>'
+                ? '© <a href="https://carto.com/">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 : '© OpenStreetMap contributors'
             }
           />

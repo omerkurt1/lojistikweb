@@ -364,6 +364,23 @@ body {
   font-size: 13px;
 }
 
+/* ── Geçmiş Sekme Başlık Satırı ── */
+.log-baslik-satir {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+}
+
+.log-toplam-badge {
+  background: var(--vurgu-hafif);
+  color: var(--vurgu);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--sinir);
+}
+
 /* ──────────────────────────────────────────────
    Harita Alanı
 ────────────────────────────────────────────── */
@@ -482,6 +499,10 @@ body {
 }
 
 @keyframes don {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spin {
   to { transform: rotate(360deg); }
 }
 

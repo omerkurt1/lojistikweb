@@ -1,7 +1,6 @@
 // src/pages/Takip.jsx
-// Route: /takip?id=1   → kuryeId=1'i canlı takip eder
-import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+// Route: /takip  →  Tüm kuryeler canlı izleme (salt okunur, yönetici arayüzü yok)
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import io from 'socket.io-client'
@@ -10,276 +9,543 @@ import 'leaflet/dist/leaflet.css'
 const BACKEND = 'https://lojistikweb-backend.onrender.com'
 const soket   = io(BACKEND)
 
-// ── Motor ikonu ──────────────────────────────────────────
-const motorIkonu = new L.DivIcon({
-  className: '',
-  html: `<div style="
-    font-size:26px; background:#fff; border-radius:50%;
-    width:44px; height:44px; display:flex;
-    align-items:center; justify-content:center;
-    box-shadow:0 4px 16px rgba(0,98,255,0.25);
-    border:2px solid #0062ff;">🛵</div>`,
-  iconSize: [44, 44],
-  iconAnchor: [22, 22],
-})
+/* ─── İkonlar ─────────────────────────────────────────────── */
+function kuryelkon(renk = '#0062ff', online = true) {
+  return new L.DivIcon({
+    className: '',
+    html: `<div style="
+      font-size:20px;
+      background:${online ? '#fff' : '#ccc'};
+      border-radius:50%;
+      width:38px; height:38px;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow:0 4px 14px ${renk}55;
+      border:2.5px solid ${renk};
+      transition:all 0.3s;">🛵</div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+  })
+}
 
 const hedefIkonu = new L.DivIcon({
   className: '',
   html: `<div style="
-    font-size:22px; background:#0062ff; border-radius:50% 50% 50% 0;
-    transform:rotate(-45deg); width:36px; height:36px;
+    font-size:16px; background:#ff4757; border-radius:50% 50% 50% 0;
+    transform:rotate(-45deg); width:32px; height:32px;
     display:flex; align-items:center; justify-content:center;
-    box-shadow:0 4px 12px rgba(0,98,255,0.4);">
+    box-shadow:0 4px 12px #ff475788;">
     <span style="transform:rotate(45deg)">📍</span></div>`,
-  iconSize: [36, 36],
-  iconAnchor: [18, 36],
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
 })
 
-// Kurye hareket edince harita onu takip etsin
-function HaritaTakip({ konum, aktif }) {
+/* ─── Renk paleti ──────────────────────────────────────────── */
+const RENKLER = [
+  '#0062ff','#ff4757','#2ed573','#ffa502','#a55eea',
+  '#1e90ff','#ff6348','#26de81','#fd9644','#45aaf2',
+]
+const renk = (id) => RENKLER[id % RENKLER.length]
+
+/* ─── Durum etiket bilgisi ─────────────────────────────────── */
+function durumInfo(d) {
+  switch ((d || '').toLowerCase()) {
+    case 'teslim edildi': return { emoji: '✅', bg: '#e8faf0', txt: '#1a7a45', label: 'Teslim Edildi' }
+    case 'paketi aldi':   return { emoji: '📦', bg: '#e8f0ff', txt: '#1a4db8', label: 'Paketi Aldı'   }
+    case 'yolda':         return { emoji: '🛵', bg: '#fff7e6', txt: '#b85a00', label: 'Yolda'         }
+    default:              return { emoji: '⏳', bg: '#f3f4f6', txt: '#6b7280', label: d || 'Bekleniyor'}
+  }
+}
+
+/* ─── ETA görsel sınıfı ────────────────────────────────────── */
+function etaRenk(eta) {
+  if (!eta || eta <= 0) return { bg:'#f3f4f6', txt:'#6b7280' }
+  if (eta <= 5)  return { bg:'#d1fae5', txt:'#065f46' }
+  if (eta <= 15) return { bg:'#fef9c3', txt:'#92400e' }
+  return             { bg:'#fee2e2', txt:'#991b1b' }
+}
+
+/* ─── Harita odak bileşeni ─────────────────────────────────── */
+function HaritaFokus({ hedef }) {
   const map = useMap()
-  const ilk = useRef(true)
   useEffect(() => {
-    if (!konum) return
-    if (ilk.current) {
-      map.setView([konum.enlem, konum.boylam], 15)
-      ilk.current = false
-    } else if (aktif) {
-      map.panTo([konum.enlem, konum.boylam], { animate: true, duration: 1 })
-    }
-  }, [konum, aktif, map])
+    if (hedef) map.flyTo([hedef.enlem, hedef.boylam], 16, { duration: 1 })
+  }, [hedef, map])
   return null
 }
 
-// Durum rengini döndür
-function durumRengi(durum) {
-  if (durum === 'teslim edildi') return { bg: '#e8f5e9', text: '#2e7d32', icon: '✅' }
-  if (durum === 'paketi aldi')   return { bg: '#e3f2fd', text: '#1565c0', icon: '📦' }
-  return                                { bg: '#fff8e1', text: '#e65100', icon: '🛵' }
+/* ─── Animasyonlu sayaç ────────────────────────────────────── */
+function useCanliSaat() {
+  const [saat, setSaat] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setSaat(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return saat.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-export default function Takip() {
-  const [searchParams] = useSearchParams()
-  const kuryeId        = parseInt(searchParams.get('id') || '1')
-
-  const [kurye,      setKurye]      = useState(null)
+/* ══════════════════════════════════════════════════════════════
+   ANA BİLEŞEN
+══════════════════════════════════════════════════════════════ */
+export default function CanlıTakip() {
+  const [kuryeler,   setKuryeler]   = useState([])
   const [baglanti,   setBaglanti]   = useState(false)
-  const [takipEt,    setTakipEt]    = useState(true)
-  const [adimlar,    setAdimlar]    = useState([])
+  const [secilenId,  setSecilenId]  = useState(null)
+  const [fokusHedef, setFokus]      = useState(null)
+  const [filtre,     setFiltre]     = useState('hepsi') // 'hepsi' | 'aktif' | 'offline'
+  const [aramaNot,   setAraNot]     = useState('')
+  const saat = useCanliSaat()
 
-  // Geçmiş konum izi
+  const merkez = [41.0082, 28.9784]
+
+  /* ── Socket bağlantısı ── */
   useEffect(() => {
-    if (kurye && kurye.enlem) {
-      setAdimlar(prev => {
-        const sonAdim = prev[prev.length - 1]
-        if (sonAdim && sonAdim[0] === kurye.enlem && sonAdim[1] === kurye.boylam) return prev
-        const yeni = [...prev, [kurye.enlem, kurye.boylam]]
-        return yeni.slice(-80) // son 80 adım
-      })
-    }
-  }, [kurye?.enlem, kurye?.boylam])
-
-  useEffect(() => {
-    soket.on('connect',    () => setBaglanti(true))
-    soket.on('disconnect', () => setBaglanti(false))
-
-    soket.emit('kuryeyiTakipEt', kuryeId)
-
-    soket.on('tekKuryeGuncelle', (veri) => {
-      if (veri.id === kuryeId) setKurye(veri)
-    })
-
+    soket.on('connect',           () => setBaglanti(true))
+    soket.on('disconnect',        () => setBaglanti(false))
+    soket.on('kuryeleriGuncelle', setKuryeler)
     return () => {
-      soket.off('tekKuryeGuncelle')
       soket.off('connect')
       soket.off('disconnect')
+      soket.off('kuryeleriGuncelle')
     }
-  }, [kuryeId])
+  }, [])
 
-  const durum  = kurye ? durumRengi(kurye.durum) : { bg: '#f5f7ff', text: '#8a9abc', icon: '⏳' }
-  const teslim = kurye?.durum === 'teslim edildi'
+  /* ── Filtreli + arama sonucu kurye listesi ── */
+  const gorsel = kuryeler.filter(k => {
+    const isimUydu = k.isim?.toLowerCase().includes(aramaNot.toLowerCase())
+    if (filtre === 'aktif')  return k.online  && isimUydu
+    if (filtre === 'offline') return !k.online && isimUydu
+    return isimUydu
+  })
+
+  /* ── Özet sayılar ── */
+  const toplam  = kuryeler.length
+  const aktif   = kuryeler.filter(k => k.online && k.durum !== 'teslim edildi').length
+  const offline = kuryeler.filter(k => !k.online).length
+  const teslim  = kuryeler.filter(k => k.durum === 'teslim edildi').length
+  const ortaEta = aktif > 0
+    ? Math.round(kuryeler.filter(k => k.online && k.eta > 0).reduce((s,k) => s + k.eta, 0) / aktif)
+    : 0
+
+  /* ── Kurye seçimi / haritaya gitme ── */
+  const kuryeSec = useCallback((k) => {
+    setSecilenId(prev => prev === k.id ? null : k.id)
+    setFokus({ ...k, _ts: Date.now() })
+  }, [])
 
   return (
-    <div style={styles.sayfa}>
+    <div style={s.sayfa}>
 
-      {/* ── Üst bar ── */}
-      <div style={styles.ustBar}>
-        <div style={styles.logo}>🚚 <strong style={{ letterSpacing: 2 }}>LOOP</strong></div>
-        <div style={{ ...styles.baglantiDot, background: baglanti ? '#00c853' : '#ff5252' }} />
-      </div>
+      {/* ══ ÜST NAVBAR ══ */}
+      <header style={s.navbar}>
+        <div style={s.navLogo}>
+          <span style={s.navBadge}>🛰️</span>
+          <span style={s.navBaslik}>Canlı Kurye İzleme</span>
+        </div>
 
-      {/* ── Durum kartı ── */}
-      <div style={styles.durumKarti}>
-        {teslim ? (
-          <div style={styles.teslimBlok}>
-            <div style={styles.teslimEmoji}>🎉</div>
-            <div style={styles.teslimBaslik}>Siparişiniz Teslim Edildi!</div>
-            <div style={styles.teslimAlt}>Alışverişiniz için teşekkürler. Bizi tercih ettiğiniz için mutluyuz.</div>
+        <div style={s.navOrtaList}>
+          {[
+            { key:'hepsi',   etiket:`Tümü (${toplam})` },
+            { key:'aktif',   etiket:`Aktif (${aktif})` },
+            { key:'offline', etiket:`Offline (${offline})` },
+          ].map(f => (
+            <button
+              key={f.key}
+              style={{ ...s.filtreBtn, ...(filtre === f.key ? s.filtreBtnAktif : {}) }}
+              onClick={() => setFiltre(f.key)}
+            >
+              {f.etiket}
+            </button>
+          ))}
+        </div>
+
+        <div style={s.navSag}>
+          <span style={s.saatText}>{saat}</span>
+          <div style={{ ...s.bagDot, background: baglanti ? '#22c55e' : '#ef4444' }} />
+          <span style={s.bagText}>{baglanti ? 'Canlı' : 'Bağlantı yok'}</span>
+        </div>
+      </header>
+
+      <div style={s.govde}>
+
+        {/* ══ SOL PANEL — KURYELİSTE ══ */}
+        <aside style={s.panel}>
+
+          {/* Arama */}
+          <div style={s.aramaKutu}>
+            <span style={s.aramaIcon}>🔍</span>
+            <input
+              style={s.aramaInput}
+              placeholder="Kurye ara..."
+              value={aramaNot}
+              onChange={e => setAraNot(e.target.value)}
+            />
           </div>
-        ) : (
-          <>
-            <div style={styles.durumUst}>
-              <div style={{ ...styles.durumBadge, background: durum.bg, color: durum.text }}>
-                {durum.icon} {kurye?.durum || 'Bağlanıyor...'}
-              </div>
-              <span style={styles.hizText}>{kurye?.hiz ? `${kurye.hiz} km/s` : ''}</span>
-            </div>
 
-            <div style={styles.etaSatir}>
-              <div style={styles.etaKart}>
-                <span style={styles.etaIkon}>⏱</span>
-                <div>
-                  <div style={styles.etaDeger}>
-                    {kurye?.eta ? `~${kurye.eta} dk` : '—'}
+          {/* Özet bant */}
+          <div style={s.ozetBant}>
+            {[
+              { label:'Toplam', val: toplam, color:'#6366f1' },
+              { label:'Yolda',  val: aktif,  color:'#f59e0b' },
+              { label:'Teslim', val: teslim, color:'#22c55e' },
+              { label:'Orta ETA', val: ortaEta > 0 ? `${ortaEta}dk` : '—', color:'#0ea5e9' },
+            ].map((it,i) => (
+              <div key={i} style={s.ozetKart}>
+                <span style={{ ...s.ozetVal, color: it.color }}>{it.val}</span>
+                <span style={s.ozetLabel}>{it.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Kurye listesi */}
+          <div style={s.liste}>
+            {gorsel.length === 0 ? (
+              <div style={s.bosMsg}>
+                {kuryeler.length === 0 ? '⏳ Bağlantı kuruluyor...' : '🔍 Sonuç bulunamadı'}
+              </div>
+            ) : gorsel.map(k => {
+              const di   = durumInfo(k.durum)
+              const etaR = etaEta(k)
+              const secili = secilenId === k.id
+              return (
+                <div
+                  key={k.id}
+                  style={{
+                    ...s.kuryeKart,
+                    borderColor: secili ? renk(k.id) : '#e5e7eb',
+                    boxShadow: secili ? `0 0 0 2px ${renk(k.id)}33, 0 4px 18px #0002` : '0 1px 4px #0001',
+                    opacity: k.online ? 1 : 0.55,
+                  }}
+                  onClick={() => kuryeSec(k)}
+                >
+                  {/* Üst satır */}
+                  <div style={s.kKartUst}>
+                    <div style={s.kIsimSatir}>
+                      <div style={{ ...s.kRenkDot, background: renk(k.id) }} />
+                      <strong style={s.kIsim}>{k.isim}</strong>
+                    </div>
+                    <span style={{ ...s.durumBadge, background: di.bg, color: di.txt }}>
+                      {di.emoji} {di.label}
+                    </span>
                   </div>
-                  <div style={styles.etaEtiket}>Tahmini Varış</div>
-                </div>
-              </div>
-              <div style={styles.etaKart}>
-                <span style={styles.etaIkon}>👤</span>
-                <div>
-                  <div style={styles.etaDeger}>{kurye?.isim || '—'}</div>
-                  <div style={styles.etaEtiket}>Kurye</div>
-                </div>
-              </div>
-            </div>
 
-            {/* İlerleme çubuğu */}
-            {kurye && (
-              <div style={styles.progressSarici}>
-                <div style={styles.progressAdimlar}>
-                  {['Sipariş Alındı', 'Paketi Aldı', 'Yolda', 'Teslim Edildi'].map((ad, i) => {
-                    const aktifler = ['sipariş alındı', 'paketi aldi', 'yolda', 'teslim edildi']
-                    const aktifIndex = aktifler.findIndex(a => a === kurye.durum?.toLowerCase())
-                    const gecildi = i <= aktifIndex
-                    return (
-                      <div key={i} style={styles.progressAdim}>
-                        <div style={{ ...styles.progressNokta, background: gecildi ? '#0062ff' : '#e8ecf8', transform: gecildi ? 'scale(1.15)' : 'scale(1)' }} />
-                        <span style={{ ...styles.progressEtiket, color: gecildi ? '#0a1628' : '#b0bcd4', fontWeight: gecildi ? 600 : 400 }}>{ad}</span>
+                  {/* ETA + Hız bilgi satırı */}
+                  {k.online && k.durum !== 'teslim edildi' && (
+                    <div style={s.kBilgiSatir}>
+                      <div style={{ ...s.etaBadge, background: etaR.bg, color: etaR.txt }}>
+                        ⏱ {k.eta > 0 ? `~${k.eta} dk kaldı` : 'Hesaplanıyor'}
                       </div>
-                    )
-                  })}
+                      <span style={s.hizText}>
+                        {k.hiz > 0 ? `${k.hiz} km/s` : '—'}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* ETA ilerleme çubuğu */}
+                  {k.online && k.durum !== 'teslim edildi' && k.eta > 0 && (
+                    <div style={s.etaBarArka}>
+                      <div style={{
+                        ...s.etaBarOn,
+                        width: `${Math.min(100, Math.max(5, 100 - (k.eta / 30) * 100))}%`,
+                        background: renk(k.id),
+                      }} />
+                    </div>
+                  )}
+
+                  {/* Teslim edildi durumu */}
+                  {k.durum === 'teslim edildi' && (
+                    <div style={s.teslimSatir}>✅ Teslimat tamamlandı</div>
+                  )}
+
+                  {/* Hayalet mod */}
+                  {!k.online && (
+                    <div style={s.offlineSatir}>⚫ Çevrimdışı</div>
+                  )}
                 </div>
-                <div style={styles.progressCizgi}>
-                  <div style={{
-                    ...styles.progressDolu,
-                    width: `${Math.min((['sipariş alındı','paketi aldi','yolda','teslim edildi'].findIndex(a=>a===kurye.durum?.toLowerCase())+1) / 4 * 100, 100)}%`
-                  }} />
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ── Harita ── */}
-      <div style={styles.haritaKapla}>
-        {kurye ? (
-          <MapContainer
-            center={[kurye.enlem, kurye.boylam]}
-            zoom={15}
-            style={{ width: '100%', height: '100%' }}
-            zoomControl={false}
-          >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <HaritaTakip konum={kurye} aktif={takipEt} />
-
-            {/* Geçmiş rota izi */}
-            {adimlar.length > 1 && (
-              <Polyline
-                positions={adimlar}
-                color="#0062ff"
-                weight={3}
-                opacity={0.4}
-                dashArray="6 4"
-              />
-            )}
-
-            {/* Kurye marker */}
-            <Marker position={[kurye.enlem, kurye.boylam]} icon={motorIkonu}>
-              <Popup><strong>{kurye.isim}</strong><br />{kurye.durum} — {kurye.hiz} km/s</Popup>
-            </Marker>
-
-            {/* Hedef marker */}
-            {!teslim && (
-              <Marker position={[kurye.hedefEnlem, kurye.hedefBoylam]} icon={hedefIkonu}>
-                <Popup>Teslimat Noktası</Popup>
-              </Marker>
-            )}
-          </MapContainer>
-        ) : (
-          <div style={styles.yukleniyor}>
-            <div style={styles.spinner} />
-            <p style={{ color: '#8a9abc', fontSize: 14, marginTop: 12 }}>Kurye bağlantısı kuruluyor...</p>
+              )
+            })}
           </div>
-        )}
+        </aside>
 
-        {/* Harita üstü buton */}
-        <button
-          style={{ ...styles.takipBtn, background: takipEt ? '#0062ff' : '#fff', color: takipEt ? '#fff' : '#0062ff' }}
-          onClick={() => setTakipEt(p => !p)}
-        >
-          {takipEt ? '📍 Takip Aktif' : '📍 Takip Et'}
-        </button>
+        {/* ══ HARİTA ══ */}
+        <div style={s.haritaAlani}>
+          {kuryeler.length > 0 ? (
+            <MapContainer
+              center={merkez}
+              zoom={12}
+              style={{ width: '100%', height: '100%' }}
+              zoomControl={true}
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution="© OpenStreetMap"
+              />
+              <HaritaFokus hedef={fokusHedef} />
+
+              {gorsel.map(k => (
+                k.enlem && k.boylam ? (
+                  <Marker
+                    key={k.id}
+                    position={[k.enlem, k.boylam]}
+                    icon={kuryelkon(renk(k.id), k.online)}
+                    eventHandlers={{ click: () => kuryeSec(k) }}
+                  >
+                    <Popup>
+                      <div style={{ minWidth: 160 }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4, color: renk(k.id) }}>
+                          {k.isim}
+                        </div>
+                        <div style={{ fontSize: 12, marginBottom: 3 }}>
+                          {durumInfo(k.durum).emoji} {durumInfo(k.durum).label}
+                        </div>
+                        {k.online && k.eta > 0 && (
+                          <div style={{ fontSize: 12, color: '#374151' }}>
+                            ⏱ <strong>~{k.eta} dk</strong> kaldı
+                          </div>
+                        )}
+                        {k.hiz > 0 && (
+                          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 3 }}>
+                            🏎️ {k.hiz} km/s
+                          </div>
+                        )}
+                        {!k.online && (
+                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>⚫ Çevrimdışı</div>
+                        )}
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              ))}
+
+              {/* Teslimat noktaları */}
+              {gorsel.map(k =>
+                k.hedefEnlem && k.durum !== 'teslim edildi' && k.online ? (
+                  <Marker
+                    key={`h-${k.id}`}
+                    position={[k.hedefEnlem, k.hedefBoylam]}
+                    icon={hedefIkonu}
+                  >
+                    <Popup>
+                      <div style={{ fontSize: 12 }}>
+                        <strong>{k.isim}</strong><br />📍 Teslimat noktası
+                      </div>
+                    </Popup>
+                  </Marker>
+                ) : null
+              )}
+
+              {/* Rota çizgileri */}
+              {gorsel.map(k =>
+                k.rota?.length > 1 ? (
+                  <Polyline
+                    key={`r-${k.id}`}
+                    positions={k.rota}
+                    color={renk(k.id)}
+                    weight={secilenId === k.id ? 5 : 3}
+                    opacity={k.online ? (secilenId === k.id ? 0.9 : 0.55) : 0.2}
+                    dashArray={k.online ? '6 4' : '2 6'}
+                  />
+                ) : null
+              )}
+            </MapContainer>
+          ) : (
+            <div style={s.yukleniyor}>
+              <div style={s.spinner} />
+              <p style={{ marginTop: 16, color: '#9ca3af', fontSize: 14 }}>
+                Kuryeler bekleniyor...
+              </p>
+            </div>
+          )}
+
+          {/* Harita üstü bilgi bandı */}
+          <div style={s.haritaBilgi}>
+            <span style={s.haritaBilgiItem}>👀 {gorsel.length} kurye gösteriliyor</span>
+            {secilenId && (
+              <button style={s.sifirlaBtn} onClick={() => setSecilenId(null)}>
+                × Seçimi Kaldır
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-
     </div>
   )
 }
 
-const styles = {
+/* ─── ETA rengi yardımcısı ─────────────────────────────────── */
+function etaEta(k) {
+  return etaRenk(k.eta)
+}
+
+/* ─── Stiller ──────────────────────────────────────────────── */
+const s = {
   sayfa: {
     display: 'flex', flexDirection: 'column',
-    height: '100vh', background: '#f0f4ff',
-    fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif",
+    height: '100vh', width: '100vw',
+    background: '#f8faff',
+    fontFamily: "'Inter', 'Segoe UI', -apple-system, sans-serif",
     overflow: 'hidden',
   },
-  ustBar: {
-    height: 56, background: '#fff',
-    borderBottom: '1px solid #e8ecf8',
+
+  /* navbar */
+  navbar: {
+    height: 58,
+    background: '#0f172a',
     display: 'flex', alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 20px',
+    padding: '0 22px',
     flexShrink: 0,
+    gap: 16,
+    boxShadow: '0 2px 16px rgba(0,0,0,0.3)',
   },
-  logo: { fontSize: 18, color: '#0a1628', display: 'flex', alignItems: 'center', gap: 8 },
-  baglantiDot: { width: 10, height: 10, borderRadius: '50%', transition: 'background 0.3s' },
-  durumKarti: {
-    background: '#fff', margin: '12px 16px 0',
-    borderRadius: 16, padding: '18px 20px',
-    boxShadow: '0 2px 16px rgba(0,0,50,0.07)',
-    flexShrink: 0,
+  navLogo: { display:'flex', alignItems:'center', gap:10, flexShrink:0 },
+  navBadge: { fontSize:22 },
+  navBaslik: { fontSize:15, fontWeight:700, color:'#e2e8f0', letterSpacing:'0.3px' },
+
+  navOrtaList: { display:'flex', gap:6, flexShrink:0 },
+  filtreBtn: {
+    padding: '5px 14px', borderRadius: 20,
+    border: '1.5px solid #334155',
+    background: 'transparent', color:'#94a3b8',
+    fontSize: 12, fontWeight:600, cursor:'pointer',
+    transition:'all 0.2s',
   },
-  teslimBlok: { textAlign: 'center', padding: '8px 0' },
-  teslimEmoji: { fontSize: 40, marginBottom: 8 },
-  teslimBaslik: { fontSize: 18, fontWeight: 800, color: '#0a1628', marginBottom: 4 },
-  teslimAlt: { fontSize: 13, color: '#8a9abc' },
-  durumUst: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  durumBadge: { padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700 },
-  hizText: { fontSize: 13, color: '#8a9abc', fontWeight: 600 },
-  etaSatir: { display: 'flex', gap: 12, marginBottom: 16 },
-  etaKart: {
-    flex: 1, background: '#f5f7ff', borderRadius: 12,
-    padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10,
+  filtreBtnAktif: {
+    background:'#3b82f6', border:'1.5px solid #3b82f6',
+    color:'#fff', boxShadow:'0 2px 8px #3b82f655',
   },
-  etaIkon: { fontSize: 20 },
-  etaDeger: { fontSize: 16, fontWeight: 800, color: '#0a1628' },
-  etaEtiket: { fontSize: 11, color: '#8a9abc', fontWeight: 500 },
-  progressSarici: { position: 'relative', paddingBottom: 4 },
-  progressAdimlar: { display: 'flex', justifyContent: 'space-between', marginBottom: 8, position: 'relative', zIndex: 1 },
-  progressAdim: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, flex: 1 },
-  progressNokta: { width: 10, height: 10, borderRadius: '50%', transition: 'all 0.3s' },
-  progressEtiket: { fontSize: 9, textAlign: 'center', lineHeight: 1.2 },
-  progressCizgi: { height: 3, background: '#e8ecf8', borderRadius: 2, position: 'absolute', top: 5, left: '5%', width: '90%', zIndex: 0 },
-  progressDolu: { height: '100%', background: '#0062ff', borderRadius: 2, transition: 'width 0.5s ease' },
-  haritaKapla: { flex: 1, position: 'relative', margin: '12px 16px 16px', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,50,0.10)' },
-  yukleniyor: { height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f5f7ff' },
-  spinner: { width: 32, height: 32, border: '3px solid #e8ecf8', borderTopColor: '#0062ff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' },
-  takipBtn: {
-    position: 'absolute', top: 12, right: 12, zIndex: 999,
-    padding: '8px 16px', border: '1.5px solid #0062ff',
-    borderRadius: 20, fontSize: 12, fontWeight: 700,
-    cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,98,255,0.2)',
-    transition: 'all 0.2s',
+
+  navSag: { display:'flex', alignItems:'center', gap:8, flexShrink:0 },
+  saatText: { fontSize:13, color:'#64748b', fontVariantNumeric:'tabular-nums' },
+  bagDot: { width:9, height:9, borderRadius:'50%', transition:'background 0.3s' },
+  bagText: { fontSize:12, color:'#64748b' },
+
+  /* gövde */
+  govde: { display:'flex', flex:1, overflow:'hidden' },
+
+  /* sol panel */
+  panel: {
+    width: 300, minWidth:300,
+    background:'#fff',
+    borderRight:'1px solid #e5e7eb',
+    display:'flex', flexDirection:'column',
+    gap:12, padding:'14px 12px',
+    overflowY:'auto',
+    flexShrink:0,
+  },
+
+  aramaKutu: {
+    display:'flex', alignItems:'center',
+    background:'#f1f5f9', borderRadius:10,
+    padding:'8px 12px', gap:8,
+    border:'1.5px solid #e2e8f0',
+  },
+  aramaIcon: { fontSize:15, color:'#9ca3af' },
+  aramaInput: {
+    border:'none', outline:'none', background:'transparent',
+    fontSize:13, color:'#1e293b', flex:1,
+  },
+
+  /* özet bant */
+  ozetBant: {
+    display:'grid', gridTemplateColumns:'repeat(4,1fr)',
+    gap:6, background:'#f8faff',
+    borderRadius:12, padding:'10px 8px',
+    border:'1px solid #e2e8f0',
+  },
+  ozetKart: {
+    display:'flex', flexDirection:'column',
+    alignItems:'center', gap:2,
+  },
+  ozetVal: { fontSize:16, fontWeight:800 },
+  ozetLabel: { fontSize:10, color:'#9ca3af', fontWeight:600, textTransform:'uppercase', letterSpacing:'0.04em' },
+
+  liste: { display:'flex', flexDirection:'column', gap:9, paddingBottom:8 },
+
+  bosMsg: {
+    textAlign:'center', color:'#9ca3af',
+    padding:'32px 0', fontSize:13,
+  },
+
+  /* Kurye kartı */
+  kuryeKart: {
+    background:'#fff', border:'2px solid #e5e7eb',
+    borderRadius:14, padding:'12px 13px',
+    cursor:'pointer', transition:'all 0.2s',
+  },
+
+  kKartUst: {
+    display:'flex', justifyContent:'space-between',
+    alignItems:'center', marginBottom:8, gap:6,
+  },
+  kIsimSatir: { display:'flex', alignItems:'center', gap:7 },
+  kRenkDot: { width:10, height:10, borderRadius:'50%', flexShrink:0 },
+  kIsim: { fontSize:13, color:'#111827' },
+
+  durumBadge: {
+    padding:'3px 10px', borderRadius:20,
+    fontSize:11, fontWeight:700, flexShrink:0,
+  },
+
+  kBilgiSatir: {
+    display:'flex', justifyContent:'space-between',
+    alignItems:'center', marginBottom:6,
+  },
+  etaBadge: {
+    padding:'3px 10px', borderRadius:8,
+    fontSize:12, fontWeight:700,
+  },
+  hizText: { fontSize:11, color:'#9ca3af', fontWeight:600 },
+
+  etaBarArka: {
+    height:4, background:'#f1f5f9',
+    borderRadius:4, overflow:'hidden',
+  },
+  etaBarOn: {
+    height:'100%', borderRadius:4,
+    transition:'width 0.6s ease',
+  },
+
+  teslimSatir: {
+    fontSize:11, color:'#059669',
+    fontWeight:600, marginTop:4,
+  },
+  offlineSatir: {
+    fontSize:11, color:'#9ca3af',
+    fontWeight:500, marginTop:4,
+  },
+
+  /* harita */
+  haritaAlani: { flex:1, position:'relative', overflow:'hidden' },
+
+  yukleniyor: {
+    height:'100%', display:'flex',
+    flexDirection:'column', alignItems:'center',
+    justifyContent:'center', background:'#f8faff',
+  },
+  spinner: {
+    width:36, height:36,
+    border:'3px solid #e2e8f0',
+    borderTopColor:'#3b82f6',
+    borderRadius:'50%',
+    animation:'spin 0.75s linear infinite',
+  },
+
+  haritaBilgi: {
+    position:'absolute', bottom:16, left:'50%',
+    transform:'translateX(-50%)',
+    background:'rgba(15,23,42,0.85)',
+    backdropFilter:'blur(8px)',
+    borderRadius:20, padding:'7px 18px',
+    display:'flex', alignItems:'center', gap:12,
+    zIndex:999, color:'#e2e8f0', fontSize:12,
+    boxShadow:'0 4px 16px rgba(0,0,0,0.25)',
+  },
+  haritaBilgiItem: { fontWeight:600 },
+  sifirlaBtn: {
+    background:'rgba(239,68,68,0.2)',
+    border:'1px solid rgba(239,68,68,0.4)',
+    borderRadius:8, color:'#fca5a5',
+    fontSize:11, padding:'2px 9px',
+    cursor:'pointer', fontWeight:700,
   },
 }

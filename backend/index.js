@@ -317,6 +317,38 @@ setInterval(() => {
 }, 1500)
 
 // ════════════════════════════════════════════════════════════
+//  OTOMATİK SİPARİŞ SİSTEMİ — Her 30sn'de 1 yeni kurye
+// ════════════════════════════════════════════════════════════
+setInterval(async () => {
+  const yeniId = kuryeler.length + 1
+  const bEn = 41.0000 + Math.random() * 0.08
+  const bBo = 28.9200 + Math.random() * 0.10
+  const hEn = 41.0200 + Math.random() * 0.08
+  const hBo = 28.9400 + Math.random() * 0.10
+  const rota = await gercekRotaCiz(bEn, bBo, hEn, hBo, false)
+  const yeniKurye = {
+    id: yeniId,
+    isim: 'Kurye ' + yeniId,
+    enlem: bEn, boylam: bBo,
+    hedefEnlem: hEn, hedefBoylam: hBo,
+    rota, hedefSira: 1,
+    durum: 'yolda', hiz: 0,
+    optimizasyonSayisi: 0, online: true,
+    eta: 0, baslangicZamani: new Date()
+  }
+  if (dbBagli) {
+    await KuryeModel.findOneAndUpdate(
+      { kuryeId: yeniId },
+      { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } },
+      { upsert: true }
+    ).catch(() => {})
+  }
+  kuryeler.push(yeniKurye)
+  io.emit('kuryeleriGuncelle', kuryeler)
+  console.log(`📦 Otomatik sipariş eklendi: ${yeniKurye.isim}`)
+}, 30000)
+
+// ════════════════════════════════════════════════════════════
 //  BAŞLAT
 // ════════════════════════════════════════════════════════════
 async function ilkYukleme() {
