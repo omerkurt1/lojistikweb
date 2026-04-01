@@ -26,13 +26,16 @@ export default function Login() {
     setYuk(true)
     try {
       if (sekme === 'giris') {
-        await giris({ email: form.email, sifre: form.sifre })
+        const veri = await giris({ email: form.email, sifre: form.sifre })
         setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
-        setTimeout(() => navigate('/'), 1000)
+        // Rol bazlı yönlendirme: admin → dashboard, diğer kullanıcılar → takip sayfası
+        const adminEmail = 'patron@loop.com'
+        const hedef = (form.email.trim().toLowerCase() === adminEmail) ? '/' : '/takip'
+        setTimeout(() => navigate(hedef), 1000)
       } else {
         await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
         setBasari('Hesabınız oluşturuldu! Giriş yapılıyor...')
-        setTimeout(() => navigate('/'), 1200)
+        setTimeout(() => navigate('/takip'), 1200)
       }
     } catch (err) {
       setHata(err.message)
@@ -157,13 +160,9 @@ export default function Login() {
           <span style={styles.ayiracCizgi} />
         </div>
 
-        {/* Birincil aksiyon: Takip sayfası */}
-        <button style={styles.takipBtn} onClick={() => navigate('/takip')}>
+        {/* Canlı takip sayfasına hizli erişim */}
+        <button id="btn-canli-takip" style={styles.takipBtn} onClick={() => navigate('/takip')}>
           📍  Canlı Takip Et →
-        </button>
-
-        <button style={styles.demoBtn} onClick={() => navigate('/')}>
-          Yönetici Paneli olarak devam et
         </button>
       </div>
     </div>
@@ -265,12 +264,6 @@ const styles = {
   },
   ayiracCizgi: { flex: 1, height: 1, background: '#e8ecf8' },
   ayiracMetin: { fontSize: 12, color: '#b0bcd4' },
-  demoBtn: {
-    width: '100%', padding: '11px', background: 'transparent',
-    border: '1.5px solid #e8ecf8', borderRadius: 10,
-    fontSize: 13, fontWeight: 600, color: '#6b7fa8',
-    cursor: 'pointer', marginTop: 10,
-  },
   takipBtn: {
     width: '100%', padding: '13px',
     background: 'linear-gradient(135deg, #0062ff 0%, #00b4d8 100%)',

@@ -58,6 +58,12 @@ export default function Uygulama() {
   const [karanlikMod,  setKaranlik]   = useState(false)
   const [aktifSekme,   setSekme]      = useState('kuryeler')   // 'kuryeler' | 'log' | 'istatistik'
   const [raporAcik,    setRaporAcik]  = useState(false)        // haritayı kapatıp rapor göster
+
+  // Sekme değiştirici — harita/rapor görünümünü de yönetir
+  const sekmeDegistir = (sekme) => {
+    setSekme(sekme)
+    setRaporAcik(sekme === 'istatistik')
+  }
   const [zoomHedef,    setZoomHedef]  = useState(null)
   const [secilenId,    setSecilenId]  = useState(null)
   const [bildirimler,  setBildirim]   = useState([])
@@ -138,7 +144,7 @@ export default function Uygulama() {
   // teslim → DB'den (sayfa yenilenince sıfırlanmaz)
   const toplam  = kuryeListesi.length
   const yolda   = kuryeListesi.filter(k => k.durum !== 'teslim edildi' && k.online).length
-  const offline = kuryeListesi.filter(k => !k.online).length
+  const aktif   = kuryeListesi.filter(k => k.online).length
   const teslim  = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => k.durum === 'teslim edildi').length
 
   return (
@@ -176,9 +182,9 @@ export default function Uygulama() {
             <span className="stat-deger">{teslim}</span>
             <span className="stat-etiket">Toplam Teslim</span>
           </div>
-          <div className="stat-kart offline">
-            <span className="stat-deger">{offline}</span>
-            <span className="stat-etiket">Offline</span>
+          <div className="stat-kart aktif">
+            <span className="stat-deger">{aktif}</span>
+            <span className="stat-etiket">Aktif</span>
           </div>
         </div>
 
@@ -190,22 +196,25 @@ export default function Uygulama() {
         {/* Sekme başlıkları */}
         <div className="sekme-baslik">
           <button
+            id="sekme-kuryeler"
             className={`sekme${aktifSekme === 'kuryeler' ? ' aktif' : ''}`}
-            onClick={() => { setSekme('kuryeler'); setRaporAcik(false) }}
+            onClick={() => sekmeDegistir('kuryeler')}
           >
-            Kuryeler ({toplam})
+            🏍 Kuryeler ({aktif}/{toplam})
           </button>
           <button
+            id="sekme-gecmis"
             className={`sekme${aktifSekme === 'log' ? ' aktif' : ''}`}
-            onClick={() => { setSekme('log'); setRaporAcik(false) }}
+            onClick={() => sekmeDegistir('log')}
           >
             📋 Geçmiş
           </button>
           <button
+            id="sekme-rapor"
             className={`sekme${aktifSekme === 'istatistik' ? ' aktif' : ''}`}
-            onClick={() => { setSekme('istatistik'); setRaporAcik(true) }}
+            onClick={() => sekmeDegistir('istatistik')}
           >
-            📊 Raporlama
+            📊 Rapor
           </button>
         </div>
 

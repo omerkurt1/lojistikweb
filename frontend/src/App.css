@@ -164,7 +164,7 @@ body {
 
 .stat-kart.yolda  .stat-deger { color: #f39c12; }
 .stat-kart.teslim .stat-deger { color: #27ae60; }
-.stat-kart.offline .stat-deger{ color: #888;    }
+.stat-kart.aktif  .stat-deger { color: #0056b3; }
 
 /* ── Buton grubu ── */
 .btn-grup {
