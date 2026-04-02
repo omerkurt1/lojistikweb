@@ -349,23 +349,52 @@ setInterval(async () => {
 }, 30000)
 
 // ════════════════════════════════════════════════════════════
-//  BAŞLAT
+//  BAŞLAT — Bulletproof Production Startup
 // ════════════════════════════════════════════════════════════
 async function ilkYukleme() {
-  for (const k of kuryeler) k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, false)
+  for (const k of kuryeler) {
+    k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, false)
+  }
   if (dbBagli) {
-    for (const k of kuryeler) await KuryeModel.findOneAndUpdate({ kuryeId: k.id }, { $setOnInsert: { kuryeId: k.id, isim: k.isim } }, { upsert: true }).catch(() => { })
+    for (const k of kuryeler) {
+      await KuryeModel.findOneAndUpdate(
+        { kuryeId: k.id },
+        { $setOnInsert: { kuryeId: k.id, isim: k.isim } },
+        { upsert: true }
+      ).catch(() => { })
+    }
   }
   console.log('✅ Rotalar yüklendi.')
 }
 
-mongoose.connect(MONGO_URI)
-  .then(() => { dbBagli = true; console.log('✅ MongoDB bağlandı.'); server.listen(PORT, () => console.log(`🚀 Sunucu :${PORT}`)); ilkYukleme() })
-  .catch(err => { console.error('❌ MongoDB:', err.message); console.log('⚠️  DB olmadan devam...'); server.listen(PORT, () => console.log(`🚀 Sunucu :${PORT} (DB yok)`)); ilkYukleme() })
+async function sunucuBaslat() {
+  // ── 1. Render'ın PORT'una her zaman bağlan — DB'den ÖNCE ──
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Sunucu ${PORT} portunda çalışıyor.`)
+  })
 
-const PORT = process.env.PORT || 5000;
+  // ── 2. MongoDB bağlantısını dene — başarısız olsa da uygulama çalışmaya devam eder ──
+  try {
+    if (!MONGO_URI) {
+      throw new Error('MONGO_URI ortam değişkeni tanımlı değil! Render "Environment" sekmesine ekleyin.')
+    }
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 10000, // 10 saniye sonra vazgeç
+      socketTimeoutMS: 45000,
+    })
+    dbBagli = true
+    console.log('✅ MongoDB Atlas bağlantısı başarılı.')
+  } catch (err) {
+    dbBagli = false
+    console.error('❌ MongoDB bağlantı hatası:', err.message)
+    console.warn('⚠️  Uygulama DB olmadan çalışmaya devam ediyor. Yalnızca bellek içi veri kullanılacak.')
+  }
 
-// Eğer sendeki kod server.listen ise 'app' yerine 'server' yazmayı unutma!
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Sunucu ${PORT} portunda aslanlar gibi çalışıyor!`);
-});
+  // ── 3. Başlangıç rotalarını yükle (DB'ye bağlı olsun ya da olmasın) ──
+  await ilkYukleme()
+}
+
+sunucuBaslat().catch(err => {
+  console.error('💀 Kritik başlatma hatası:', err.message)
+  process.exit(1)
+})
