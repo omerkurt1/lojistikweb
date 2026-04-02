@@ -2,15 +2,15 @@
 // npm install express socket.io cors axios mongoose dotenv bcryptjs jsonwebtoken stripe
 require('dotenv').config()
 
-const express    = require('express')
-const http       = require('http')
+const express = require('express')
+const http = require('http')
 const { Server } = require('socket.io')
-const cors       = require('cors')
-const axios      = require('axios')
-const mongoose   = require('mongoose')
+const cors = require('cors')
+const axios = require('axios')
+const mongoose = require('mongoose')
 
 // ─── Yeni route'lar ──────────────────────────────────────
-const authRoutes  = require('./routes/auth')
+const authRoutes = require('./routes/auth')
 const odemeRoutes = require('./routes/odeme')
 
 const app = express()
@@ -18,15 +18,15 @@ app.use(cors())
 app.use(express.json())
 
 // ─── Route'ları bağla ────────────────────────────────────
-app.use('/api/auth',  authRoutes)
+app.use('/api/auth', authRoutes)
 app.use('/api/odeme', odemeRoutes)
 
 const server = http.createServer(app)
-const io     = new Server(server, { cors: { origin: '*' } })
+const io = new Server(server, { cors: { origin: '*' } })
 
-const ORS_KEY   = process.env.ORS_API_KEY
+const ORS_KEY = process.env.ORS_API_KEY
 const MONGO_URI = process.env.MONGO_URI
-const PORT      = process.env.PORT || 5000
+const PORT = process.env.PORT || 5000
 
 // ════════════════════════════════════════════════════════════
 //  MONGOOSE MODELLERİ
@@ -67,10 +67,10 @@ const KonumSchema = new mongoose.Schema({
 }, { collection: 'konum_gecmis' })
 KonumSchema.index({ kuryeId: 1, zaman: -1 })
 
-const KuryeModel    = mongoose.model('Kurye',      KuryeSchema)
-const TeslimatModel = mongoose.model('Teslimat',   TeslimatSchema)
-const GunlukOzet    = mongoose.model('GunlukOzet', GunlukOzetSchema)
-const KonumModel    = mongoose.model('Konum',      KonumSchema)
+const KuryeModel = mongoose.model('Kurye', KuryeSchema)
+const TeslimatModel = mongoose.model('Teslimat', TeslimatSchema)
+const GunlukOzet = mongoose.model('GunlukOzet', GunlukOzetSchema)
+const KonumModel = mongoose.model('Konum', KonumSchema)
 
 let dbBagli = false
 
@@ -80,9 +80,9 @@ let dbBagli = false
 let siparisFisi = []
 
 const BASLANGIC_KURYELER = [
-  { id: 1, isim: 'Ahmet',  enlem: 41.0660, boylam: 28.9900, hedefEnlem: 41.0422, hedefBoylam: 29.0060 },
+  { id: 1, isim: 'Ahmet', enlem: 41.0660, boylam: 28.9900, hedefEnlem: 41.0422, hedefBoylam: 29.0060 },
   { id: 2, isim: 'Mehmet', enlem: 40.9900, boylam: 29.0250, hedefEnlem: 40.9540, hedefBoylam: 29.0950 },
-  { id: 3, isim: 'Ayse',   enlem: 40.9780, boylam: 28.8720, hedefEnlem: 40.9930, hedefBoylam: 28.9200 },
+  { id: 3, isim: 'Ayse', enlem: 40.9780, boylam: 28.8720, hedefEnlem: 40.9930, hedefBoylam: 28.9200 },
 ]
 
 let kuryeler = BASLANGIC_KURYELER.map(k => ({
@@ -143,7 +143,7 @@ async function teslimatKaydet(kurye) {
       { $inc: { toplamTeslimat: 1, [`saatlikDagilim.${saat}`]: 1 }, $set: { guncellemeZamani: simdi } },
       { upsert: true }
     )
-    const gunBas = new Date(); gunBas.setHours(0,0,0,0)
+    const gunBas = new Date(); gunBas.setHours(0, 0, 0, 0)
     const lider = await TeslimatModel.aggregate([
       { $match: { bitisZamani: { $gte: gunBas } } },
       { $group: { _id: '$kuryeIsim', sayi: { $sum: 1 } } },
@@ -158,15 +158,15 @@ async function teslimatKaydet(kurye) {
 // ════════════════════════════════════════════════════════════
 app.get('/api/istatistik/genel', async (_req, res) => {
   try {
-    if (!dbBagli) return res.json({ toplamTeslimat: 0, bugunTeslimat: 0, aktifKurye: kuryeler.filter(k=>k.online).length, yoldakiSiparis: kuryeler.filter(k=>k.durum!=='teslim edildi'&&k.online).length, genelOrtalamaSure: 0, dbDurumu: 'bağlı değil' })
-    const gunBas = new Date(); gunBas.setHours(0,0,0,0)
+    if (!dbBagli) return res.json({ toplamTeslimat: 0, bugunTeslimat: 0, aktifKurye: kuryeler.filter(k => k.online).length, yoldakiSiparis: kuryeler.filter(k => k.durum !== 'teslim edildi' && k.online).length, genelOrtalamaSure: 0, dbDurumu: 'bağlı değil' })
+    const gunBas = new Date(); gunBas.setHours(0, 0, 0, 0)
     const [toplam, bugun, profiller] = await Promise.all([
       TeslimatModel.countDocuments(),
       TeslimatModel.countDocuments({ bitisZamani: { $gte: gunBas } }),
       KuryeModel.find()
     ])
-    const genelOrt = profiller.length > 0 ? Math.round(profiller.reduce((t,k)=>t+k.ortalamaSure,0)/profiller.length) : 0
-    res.json({ toplamTeslimat: toplam, bugunTeslimat: bugun, aktifKurye: kuryeler.filter(k=>k.online).length, yoldakiSiparis: kuryeler.filter(k=>k.durum!=='teslim edildi'&&k.online).length, genelOrtalamaSure: genelOrt, dbDurumu: 'bağlı' })
+    const genelOrt = profiller.length > 0 ? Math.round(profiller.reduce((t, k) => t + k.ortalamaSure, 0) / profiller.length) : 0
+    res.json({ toplamTeslimat: toplam, bugunTeslimat: bugun, aktifKurye: kuryeler.filter(k => k.online).length, yoldakiSiparis: kuryeler.filter(k => k.durum !== 'teslim edildi' && k.online).length, genelOrtalamaSure: genelOrt, dbDurumu: 'bağlı' })
   } catch (e) { res.status(500).json({ hata: e.message }) }
 })
 
@@ -199,7 +199,7 @@ app.get('/api/istatistik/gunluk', async (_req, res) => {
 app.get('/api/istatistik/haftalik', async (_req, res) => {
   try {
     if (!dbBagli) return res.json([])
-    const y = new Date(); y.setDate(y.getDate()-7); y.setHours(0,0,0,0)
+    const y = new Date(); y.setDate(y.getDate() - 7); y.setHours(0, 0, 0, 0)
     res.json(await TeslimatModel.aggregate([
       { $match: { bitisZamani: { $gte: y } } },
       { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$bitisZamani' } }, sayi: { $sum: 1 } } },
@@ -211,7 +211,7 @@ app.get('/api/istatistik/haftalik', async (_req, res) => {
 app.get('/api/teslimatlar', async (req, res) => {
   try {
     if (!dbBagli) return res.json([])
-    const limit = Math.min(Number(req.query.limit)||20, 200)
+    const limit = Math.min(Number(req.query.limit) || 20, 200)
     const kuryeId = req.query.kuryeId ? Number(req.query.kuryeId) : null
     res.json(await TeslimatModel.find(kuryeId ? { kuryeId } : {}).sort({ bitisZamani: -1 }).limit(limit))
   } catch (e) { res.status(500).json({ hata: e.message }) }
@@ -267,11 +267,11 @@ io.on('connection', socket => {
 
   socket.on('yeniSiparisEkle', async () => {
     const yeniId = kuryeler.length + 1
-    const bEn = 41.0000 + Math.random()*0.08, bBo = 28.9200 + Math.random()*0.10
-    const hEn = 41.0200 + Math.random()*0.08, hBo = 28.9400 + Math.random()*0.10
+    const bEn = 41.0000 + Math.random() * 0.08, bBo = 28.9200 + Math.random() * 0.10
+    const hEn = 41.0200 + Math.random() * 0.08, hBo = 28.9400 + Math.random() * 0.10
     const rota = await gercekRotaCiz(bEn, bBo, hEn, hBo, false)
     const yeniKurye = { id: yeniId, isim: 'Kurye ' + yeniId, enlem: bEn, boylam: bBo, hedefEnlem: hEn, hedefBoylam: hBo, rota, hedefSira: 1, durum: 'yolda', hiz: 0, optimizasyonSayisi: 0, online: true, eta: 0, baslangicZamani: new Date() }
-    if (dbBagli) await KuryeModel.findOneAndUpdate({ kuryeId: yeniId }, { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } }, { upsert: true }).catch(()=>{})
+    if (dbBagli) await KuryeModel.findOneAndUpdate({ kuryeId: yeniId }, { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } }, { upsert: true }).catch(() => { })
     kuryeler.push(yeniKurye)
     io.emit('kuryeleriGuncelle', kuryeler)
   })
@@ -289,23 +289,23 @@ setInterval(() => {
     if (k.rota && k.hedefSira < k.rota.length) {
       const [hEn, hBo] = k.rota[k.hedefSira]
       const dEn = hEn - k.enlem, dBo = hBo - k.boylam
-      const uzak = Math.sqrt(dEn*dEn + dBo*dBo)
+      const uzak = Math.sqrt(dEn * dEn + dBo * dBo)
       if (uzak > 0.0005) {
-        k.enlem  += (dEn/uzak)*0.001
-        k.boylam += (dBo/uzak)*0.001
-        k.hiz     = 40 + Math.floor(Math.random()*10)
-        k.durum   = 'yolda'
+        k.enlem += (dEn / uzak) * 0.001
+        k.boylam += (dBo / uzak) * 0.001
+        k.hiz = 40 + Math.floor(Math.random() * 10)
+        k.durum = 'yolda'
       } else { k.hedefSira++ }
       k.eta = etaHesapla(k)
       if (dbBagli && donguSayac % 10 === 0) {
-        KonumModel.create({ kuryeId: k.id, kuryeIsim: k.isim, enlem: parseFloat(k.enlem.toFixed(5)), boylam: parseFloat(k.boylam.toFixed(5)), hiz: k.hiz }).catch(()=>{})
+        KonumModel.create({ kuryeId: k.id, kuryeIsim: k.isim, enlem: parseFloat(k.enlem.toFixed(5)), boylam: parseFloat(k.boylam.toFixed(5)), hiz: k.hiz }).catch(() => { })
       }
       // Müşteri takip odasına push et
       io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
     } else if (k.durum !== 'teslim edildi') {
       k.durum = 'teslim edildi'; k.hiz = 0; k.eta = 0
       teslimatKaydet(k)
-      const log = { id: Date.now()+k.id, kuryeIsim: k.isim, zaman: new Date().toLocaleTimeString('tr-TR'), hedefEnlem: k.hedefEnlem, hedefBoylam: k.hedefBoylam }
+      const log = { id: Date.now() + k.id, kuryeIsim: k.isim, zaman: new Date().toLocaleTimeString('tr-TR'), hedefEnlem: k.hedefEnlem, hedefBoylam: k.hedefBoylam }
       siparisFisi.unshift(log)
       if (siparisFisi.length > 100) siparisFisi.pop()
       io.emit('teslimatBildirimi', { isim: k.isim, zaman: log.zaman })
@@ -341,7 +341,7 @@ setInterval(async () => {
       { kuryeId: yeniId },
       { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } },
       { upsert: true }
-    ).catch(() => {})
+    ).catch(() => { })
   }
   kuryeler.push(yeniKurye)
   io.emit('kuryeleriGuncelle', kuryeler)
@@ -354,7 +354,7 @@ setInterval(async () => {
 async function ilkYukleme() {
   for (const k of kuryeler) k.rota = await gercekRotaCiz(k.enlem, k.boylam, k.hedefEnlem, k.hedefBoylam, false)
   if (dbBagli) {
-    for (const k of kuryeler) await KuryeModel.findOneAndUpdate({ kuryeId: k.id }, { $setOnInsert: { kuryeId: k.id, isim: k.isim } }, { upsert: true }).catch(()=>{})
+    for (const k of kuryeler) await KuryeModel.findOneAndUpdate({ kuryeId: k.id }, { $setOnInsert: { kuryeId: k.id, isim: k.isim } }, { upsert: true }).catch(() => { })
   }
   console.log('✅ Rotalar yüklendi.')
 }
@@ -362,3 +362,10 @@ async function ilkYukleme() {
 mongoose.connect(MONGO_URI)
   .then(() => { dbBagli = true; console.log('✅ MongoDB bağlandı.'); server.listen(PORT, () => console.log(`🚀 Sunucu :${PORT}`)); ilkYukleme() })
   .catch(err => { console.error('❌ MongoDB:', err.message); console.log('⚠️  DB olmadan devam...'); server.listen(PORT, () => console.log(`🚀 Sunucu :${PORT} (DB yok)`)); ilkYukleme() })
+
+const PORT = process.env.PORT || 5000;
+
+// Eğer sendeki kod server.listen ise 'app' yerine 'server' yazmayı unutma!
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Sunucu ${PORT} portunda aslanlar gibi çalışıyor!`);
+});
