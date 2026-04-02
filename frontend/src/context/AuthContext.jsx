@@ -23,12 +23,20 @@ export function AuthProvider({ children }) {
   }, [])
 
   const kayit = useCallback(async ({ isim, email, sifre }) => {
-    const res = await fetch(`${API}/auth/kayit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isim, email, sifre })
-    })
-    const veri = await res.json()
+    let res
+    try {
+      res = await fetch(`${API}/auth/kayit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isim, email, sifre })
+      })
+    } catch {
+      throw new Error('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.')
+    }
+    let veri
+    try { veri = await res.json() } catch {
+      throw new Error('Sunucu geçersiz yanıt döndürdü. Lütfen daha sonra tekrar deneyin.')
+    }
     if (!res.ok) throw new Error(veri.hata || 'Kayıt başarısız.')
     localStorage.setItem('loop_token', veri.token)
     setKullanici(veri.kullanici)
@@ -36,12 +44,20 @@ export function AuthProvider({ children }) {
   }, [])
 
   const giris = useCallback(async ({ email, sifre }) => {
-    const res = await fetch(`${API}/auth/giris`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, sifre })
-    })
-    const veri = await res.json()
+    let res
+    try {
+      res = await fetch(`${API}/auth/giris`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, sifre })
+      })
+    } catch {
+      throw new Error('Sunucuya ulaşılamıyor. İnternet bağlantınızı veya sunucu durumunu kontrol edin.')
+    }
+    let veri
+    try { veri = await res.json() } catch {
+      throw new Error('Sunucu henüz hazır değil, lütfen 30 saniye bekleyip tekrar deneyin. (Render soğuk başlatma)')
+    }
     if (!res.ok) throw new Error(veri.hata || 'Giriş başarısız.')
     localStorage.setItem('loop_token', veri.token)
     setKullanici(veri.kullanici)
