@@ -367,6 +367,25 @@ async function ilkYukleme() {
   console.log('✅ Rotalar yüklendi.')
 }
 
+async function adminSeed() {
+  // Eğer patron@loop.com yoksa otomatik oluştur
+  const User = require('./models/User')
+  const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'patron@loop.com'
+  const ADMIN_SIFRE    = process.env.ADMIN_SIFRE    || 'Loop2026!'
+  const ADMIN_ISIM     = 'Admin'
+  try {
+    const mevcut = await User.findOne({ email: ADMIN_EMAIL })
+    if (!mevcut) {
+      await User.create({ isim: ADMIN_ISIM, email: ADMIN_EMAIL, sifre: ADMIN_SIFRE })
+      console.log(`✅ Admin hesabı oluşturuldu → ${ADMIN_EMAIL} / ${ADMIN_SIFRE}`)
+    } else {
+      console.log(`ℹ️  Admin hesabı zaten mevcut → ${ADMIN_EMAIL}`)
+    }
+  } catch (err) {
+    console.error('❌ Admin seed hatası:', err.message)
+  }
+}
+
 async function sunucuBaslat() {
   // ── 1. Render'ın PORT'una her zaman bağlan — DB'den ÖNCE ──
   server.listen(PORT, '0.0.0.0', () => {
@@ -379,7 +398,7 @@ async function sunucuBaslat() {
       throw new Error('MONGO_URI ortam değişkeni tanımlı değil! Render "Environment" sekmesine ekleyin.')
     }
     await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 10000, // 10 saniye sonra vazgeç
+      serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
     })
     dbBagli = true
@@ -390,7 +409,10 @@ async function sunucuBaslat() {
     console.warn('⚠️  Uygulama DB olmadan çalışmaya devam ediyor. Yalnızca bellek içi veri kullanılacak.')
   }
 
-  // ── 3. Başlangıç rotalarını yükle (DB'ye bağlı olsun ya da olmasın) ──
+  // ── 3. Admin hesabını seed et (patron@loop.com yoksa yarat) ──
+  if (dbBagli) await adminSeed()
+
+  // ── 4. Başlangıç rotalarını yükle (DB'ye bağlı olsun ya da olmasın) ──
   await ilkYukleme()
 }
 
