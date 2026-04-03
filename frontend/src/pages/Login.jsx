@@ -27,23 +27,33 @@ export default function Login() {
     setYuk(true)
     try {
       if (sekme === 'giris') {
-        await giris({ email: form.email, sifre: form.sifre })
+        const veri = await giris({ email: form.email, sifre: form.sifre })
         setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
 
         setTimeout(() => {
           if (form.email.trim().toLowerCase() === 'patron@loop.com') {
             navigate('/')  // Admin → React Dashboard
           } else {
-            window.location.href = 'https://lojistikweb-vitrin.vercel.app/'  // Normal kullanıcı → Vitrin
+            // Kullanıcı bilgilerini URL parametresi olarak Vitrin'e ilet
+            const params = new URLSearchParams({
+              isim  : veri.kullanici.isim,
+              email : veri.kullanici.email,
+            })
+            window.location.href = `https://lojistikweb-vitrin.vercel.app/?${params.toString()}`
           }
         }, 1000)
 
       } else {
-        await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
+        const veri = await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
         setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
 
         setTimeout(() => {
-          window.location.href = 'https://lojistikweb-vitrin.vercel.app/'  // Kayıt → Vitrin
+          // Yeni kullanıcı bilgilerini URL parametresi olarak Vitrin'e ilet
+          const params = new URLSearchParams({
+            isim  : veri.kullanici.isim,
+            email : veri.kullanici.email,
+          })
+          window.location.href = `https://lojistikweb-vitrin.vercel.app/?${params.toString()}`
         }, 1200)
       }
     } catch (err) {
