@@ -28,13 +28,13 @@ const UserSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Şifreyi veritabanına kaydetmeden önce kriptola (Hash)
-UserSchema.pre('save', async function (next) {
+
+UserSchema.pre('save', async function () {
     if (!this.isModified('sifre')) {
-        return next();
+        return;
     }
     const salt = await bcrypt.genSalt(10);
     this.sifre = await bcrypt.hash(this.sifre, salt);
-    next();
 });
 
 // Giriş yaparken şifre doğru mu diye kontrol eden metod
