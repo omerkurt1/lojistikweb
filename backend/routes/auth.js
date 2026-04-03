@@ -17,6 +17,7 @@ router.post('/kayit', async (req, res) => {
   try {
     const { isim, email, sifre } = req.body
 
+    // ── 1. Alan doğrulama ──────────────────────────────────
     if (!isim || !email || !sifre) {
       return res.status(400).json({ hata: 'İsim, e-posta ve şifre zorunludur.' })
     }
@@ -24,23 +25,36 @@ router.post('/kayit', async (req, res) => {
       return res.status(400).json({ hata: 'Şifre en az 6 karakter olmalıdır.' })
     }
 
-    // E-posta daha önce kullanılmış mı?
-    const mevcut = await User.findOne({ email })
+    // ── 2. Mevcut kullanıcı kontrolü ───────────────────────
+    const mevcut = await User.findOne({ email: email.trim().toLowerCase() })
     if (mevcut) {
-      return res.status(409).json({ hata: 'Bu e-posta adresi zaten kayıtlı.' })
+      return res.status(400).json({ hata: 'Bu e-posta adresi zaten kayıtlı.' })
     }
 
-    const kullanici = await User.create({ isim, email, sifre })
+    // ── 3. Kullanıcı oluştur ───────────────────────────────
+    const kullanici = await User.create({ isim: isim.trim(), email: email.trim().toLowerCase(), sifre })
     const token     = tokenUret(kullanici._id)
 
-    res.status(201).json({
+    return res.status(201).json({
       mesaj     : 'Kayıt başarılı!',
       token,
       kullanici : kullanici.toJSON()
     })
   } catch (err) {
-    console.error('[Auth/kayit]', err.message)
-    res.status(500).json({ hata: 'Sunucu hatası.' })
+    // ── Tam hata nesnesini logla (Mongoose ValidationError detayları için) ──
+    console.error('[Auth/kayit] HATA DETAYI:', err)
+
+    // Mongoose duplicate key hatası (race condition durumunda)
+    if (err.code === 11000) {
+      return res.status(400).json({ hata: 'Bu e-posta adresi zaten kayıtlı.' })
+    }
+    // Mongoose doğrulama hatası → alan bazlı mesajları birleştir
+    if (err.name === 'ValidationError') {
+      const mesajlar = Object.values(err.errors).map(e => e.message).join(' | ')
+      return res.status(400).json({ hata: mesajlar })
+    }
+    // Diğer tüm hatalar → 500, ama mesajı da döndür (geliştirme kolaylığı için)
+    return res.status(500).json({ hata: `Sunucu hatası: ${err.message}` })
   }
 })
 

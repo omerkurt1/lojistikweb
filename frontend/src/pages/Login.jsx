@@ -5,13 +5,13 @@ import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const { giris, kayit } = useAuth()
-  const navigate         = useNavigate()
+  const navigate = useNavigate()
 
-  const [sekme,    setSekme]   = useState('giris')  // 'giris' | 'kayit'
-  const [form,     setForm]    = useState({ isim: '', email: '', sifre: '', sifreTekrar: '' })
-  const [yukleniyor, setYuk]   = useState(false)
-  const [hata,     setHata]    = useState('')
-  const [basari,   setBasari]  = useState('')
+  const [sekme, setSekme] = useState('giris')  // 'giris' | 'kayit'
+  const [form, setForm] = useState({ isim: '', email: '', sifre: '', sifreTekrar: '' })
+  const [yukleniyor, setYuk] = useState(false)
+  const [hata, setHata] = useState('')
+  const [basari, setBasari] = useState('')
 
   const guncelle = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }))
 
@@ -34,8 +34,11 @@ export default function Login() {
         setTimeout(() => navigate(hedef), 1000)
       } else {
         await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
-        setBasari('Hesabınız oluşturuldu! Giriş yapılıyor...')
-        setTimeout(() => navigate('/takip'), 1200)
+        setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
+        // ✔️ Kayıt başarılı → Dashboard'a değil, Vitrin landing sayfasına yönlendir
+        setTimeout(() => {
+          window.location.href = 'https://lojistikweb-vitrin.vercel.app/' // ← Kendi Vitrin URL'ini buraya yaz
+        }, 1200)
       }
     } catch (err) {
       setHata(err.message)
@@ -132,7 +135,7 @@ export default function Login() {
             </div>
           )}
 
-          {hata   && <div style={styles.hataMesaj}>{hata}</div>}
+          {hata && <div style={styles.hataMesaj}>{hata}</div>}
           {basari && <div style={styles.basariMesaj}>{basari}</div>}
 
           <button type="submit" disabled={yukleniyor} style={{
@@ -142,7 +145,7 @@ export default function Login() {
           }}>
             {yukleniyor
               ? (sekme === 'giris' ? 'Giriş yapılıyor...' : 'Hesap oluşturuluyor...')
-              : (sekme === 'giris' ? 'Giriş Yap →'       : 'Hesap Oluştur →')}
+              : (sekme === 'giris' ? 'Giriş Yap →' : 'Hesap Oluştur →')}
           </button>
         </form>
 
