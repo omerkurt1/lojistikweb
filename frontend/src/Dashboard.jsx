@@ -170,8 +170,8 @@ export default function Uygulama() {
 
         {/* İstatistik kartları */}
         <div className="stat-grid">
-          <div className="stat-kart">
-            <span className="stat-deger">{toplam}</span>
+          <div className="stat-kart" style={{ borderTop: '3px solid #00bcd4' }}>
+            <span className="stat-deger" style={{ color: '#00bcd4' }}>{toplam}</span>
             <span className="stat-etiket">Toplam</span>
           </div>
           <div className="stat-kart yolda">
@@ -182,8 +182,8 @@ export default function Uygulama() {
             <span className="stat-deger">{teslim}</span>
             <span className="stat-etiket">Toplam Teslim</span>
           </div>
-          <div className="stat-kart aktif">
-            <span className="stat-deger">{aktif}</span>
+          <div className="stat-kart" style={{ borderTop: '3px solid #00bcd4' }}>
+            <span className="stat-deger" style={{ color: '#00bcd4' }}>{aktif}</span>
             <span className="stat-etiket">Aktif</span>
           </div>
         </div>
