@@ -131,9 +131,15 @@ export default function MusteriTakip() {
 
   // ── Takip numarasını sorgula ──
   const siparisAra = useCallback(async () => {
-    const temiz = takipNo.trim().toUpperCase().replace('LOOP-', '')
+    const temiz = takipNo.trim().toUpperCase().replace('LOOP-', '').trim()
     if (!temiz) {
       setHata('Lütfen bir takip numarası girin.')
+      return
+    }
+
+    const kuryeId = parseInt(temiz, 10)
+    if (isNaN(kuryeId) || kuryeId <= 0) {
+      setHata('Geçersiz numara. Örnek: 1, 2, 3')
       return
     }
 
@@ -141,26 +147,46 @@ export default function MusteriTakip() {
     setHata('')
 
     try {
-      const res = await fetch(`${BACKEND}/api/takip/${temiz}`)
-      const veri = await res.json()
+      let veri = null
 
-      if (!res.ok) {
-        setHata(veri.hata || 'Sipariş bulunamadı.')
-        setYukleniyor(false)
+      // Önce yeni endpoint'i dene
+      try {
+        const res = await fetch(`${BACKEND}/api/takip/${kuryeId}`)
+        if (res.ok) {
+          veri = await res.json()
+        } else if (res.status === 404) {
+          const err = await res.json().catch(() => ({}))
+          setHata(err.hata || `LOOP-${kuryeId} numaralı sipariş bulunamadı.`)
+          return
+        } else {
+          throw new Error('non-ok')
+        }
+      } catch {
+        // Fallback: mevcut kurye endpoint'i (her zaman çalışıyor)
+        const res2 = await fetch(`${BACKEND}/api/kurye/${kuryeId}/konum`)
+        if (!res2.ok) {
+          setHata(`LOOP-${kuryeId} numaralı sipariş bulunamadı. Takip numaranızı kontrol edin.`)
+          return
+        }
+        veri = await res2.json()
+      }
+
+      if (!veri || !veri.enlem) {
+        setHata('Kurye konum bilgisi alınamadı. Lütfen tekrar deneyin.')
         return
       }
 
       setKurye(veri)
       setHaritaHedef([veri.enlem, veri.boylam])
 
-      // Socket odaya katıl
+      // Socket odaya katıl — gerçek zamanlı güncellemeler için
       if (soketRef.current) {
         soketRef.current.emit('kuryeyiTakipEt', veri.id)
       }
 
       setFaz('takip')
     } catch (err) {
-      setHata('Bağlantı hatası. Lütfen tekrar deneyin.')
+      setHata('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.')
     } finally {
       setYukleniyor(false)
     }
