@@ -6,22 +6,35 @@ import 'leaflet/dist/leaflet.css'
 import './App.css'
 import IstatistikPaneli from './istatistik'
 
-// ─── İkonlar ────────────────────────────────────────────────────────────────
-const motorIkonu = new L.DivIcon({
-  className: '',
-  html: `<div style="font-size:24px;background:white;border-radius:50%;width:32px;height:32px;
-         display:flex;justify-content:center;align-items:center;
-         box-shadow:0 2px 6px rgba(0,0,0,0.35);">🛵</div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16]
-})
+// ─── Kamyon SVG İkonu (Profesyonel Truck) ────────────────────────────────────
+const KAMYON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="white">
+  <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
+</svg>`
+
+function kamyonMarkerIkonu(online = true) {
+  const bg = online ? '#3b82f6' : '#6b7280'
+  return new L.DivIcon({
+    className: '',
+    html: `<div style="
+      background:${bg};
+      border-radius:50%;
+      width:36px; height:36px;
+      display:flex; justify-content:center; align-items:center;
+      box-shadow:0 3px 12px ${bg}55, 0 0 0 2.5px white;
+      border:2px solid white;
+      transition:all 0.3s;
+      opacity:${online ? 1 : 0.6};">${KAMYON_SVG}</div>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18]
+  })
+}
 
 const hedefIkonu = new L.DivIcon({
   className: '',
   html: `<div style="font-size:18px;background:#e74c3c;border-radius:50% 50% 50% 0;
          transform:rotate(-45deg);width:28px;height:28px;
          display:flex;justify-content:center;align-items:center;
-         box-shadow:0 2px 6px rgba(0,0,0,0.35);">
+         box-shadow:0 2px 6px rgba(0,0,0,0.35); border:2px solid white;">
            <span style="transform:rotate(45deg)">📍</span>
          </div>`,
   iconSize: [28, 28],
@@ -50,6 +63,10 @@ function rotaRengi(kurye) {
   const temel = ROTA_RENKLERI[kurye.id % ROTA_RENKLERI.length]
   return kurye.optimizasyonSayisi % 2 === 0 ? temel : '#e67e22'
 }
+
+// ─── Tile URL (OSM tek kaynak — karanlık mod CSS filtresiyle sağlanır) ────────
+const TILE_URL  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const TILE_ATTR = '© OpenStreetMap contributors'
 
 // ─── Ana Uygulama ─────────────────────────────────────────────────────────────
 export default function Uygulama() {
@@ -162,7 +179,7 @@ export default function Uygulama() {
 
         {/* Başlık */}
         <div className="panel-baslik">
-          <span className="panel-logo">🚚 Kurye Takip</span>
+          <span className="panel-logo">🚛 Kurye Takip</span>
           <button className="icon-btn" onClick={() => setKaranlik(p => !p)} title="Tema değiştir">
             {karanlikMod ? '☀️' : '🌙'}
           </button>
@@ -200,7 +217,7 @@ export default function Uygulama() {
             className={`sekme${aktifSekme === 'kuryeler' ? ' aktif' : ''}`}
             onClick={() => sekmeDegistir('kuryeler')}
           >
-            🏍 Kuryeler ({aktif}/{toplam})
+            🚛 Kuryeler ({aktif}/{toplam})
           </button>
           <button
             id="sekme-gecmis"
@@ -307,26 +324,21 @@ export default function Uygulama() {
       <div className="harita-alan">
         <MapContainer center={merkez} zoom={11}>
           <TileLayer
-            url={
-              karanlikMod
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-            }
-            attribution={
-              karanlikMod
-                ? '© <a href="https://carto.com/">CARTO</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                : '© OpenStreetMap contributors'
-            }
+            url={TILE_URL}
+            attribution={TILE_ATTR}
           />
 
           <HaritaKontrol hedef={zoomHedef} />
 
           {kuryeListesi.map(kurye => (
             <Fragment key={kurye.id}>
-              {/* Kurye marker */}
-              <Marker position={[kurye.enlem, kurye.boylam]} icon={motorIkonu}>
+              {/* Kurye marker — KAMYON ikonu */}
+              <Marker
+                position={[kurye.enlem, kurye.boylam]}
+                icon={kamyonMarkerIkonu(kurye.online)}
+              >
                 <Popup>
-                  <strong>{kurye.isim}</strong><br />
+                  <strong>🚛 {kurye.isim}</strong><br />
                   Durum: {kurye.durum}<br />
                   Hız: {kurye.hiz} km/s<br />
                   {kurye.eta > 0 && <>ETA: ~{kurye.eta} dk<br /></>}

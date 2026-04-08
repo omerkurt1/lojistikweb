@@ -390,9 +390,9 @@ body {
   position: relative;
 }
 
-/* Gece modunda tile katmanını aydınlat — marker ve rotalar etkilenmez */
+/* Gece modunda OSM tile'larını CSS ile karanlık temaya çevir */
 .karanlik .harita-alan .leaflet-tile-pane {
-  filter: brightness(2.15) saturate(0.85) contrast(0.92);
+  filter: invert(100%) hue-rotate(180deg) brightness(1.15) contrast(0.9);
 }
 
 /* Sol panel ile harita arası gölge ayracı */

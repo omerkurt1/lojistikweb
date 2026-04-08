@@ -224,6 +224,41 @@ app.get('/api/kurye/:id/konum', (req, res) => {
   res.json({ id: k.id, isim: k.isim, enlem: k.enlem, boylam: k.boylam, durum: k.durum, hiz: k.hiz, eta: k.eta })
 })
 
+// ── Müşteri sipariş takip (LOOP-{id} formatı) ─────────
+app.get('/api/takip/:trackingId', (req, res) => {
+  try {
+    // LOOP-3, LOOP-12 veya sadece 3, 12 formatını parse et
+    const raw = req.params.trackingId.toUpperCase().replace('LOOP-', '').trim()
+    const kuryeId = parseInt(raw, 10)
+
+    if (isNaN(kuryeId) || kuryeId <= 0) {
+      return res.status(400).json({ hata: 'Geçersiz takip numarası formatı. Örnek: LOOP-1 veya 1' })
+    }
+
+    const k = kuryeler.find(k => k.id === kuryeId)
+    if (!k) {
+      return res.status(404).json({ hata: `LOOP-${kuryeId} numaralı sipariş bulunamadı. Lütfen takip numaranızı kontrol edin.` })
+    }
+
+    // Müşteriye kurye verisi döndür (rota dahil — haritada çizilecek)
+    res.json({
+      id: k.id,
+      isim: k.isim,
+      enlem: k.enlem,
+      boylam: k.boylam,
+      hedefEnlem: k.hedefEnlem,
+      hedefBoylam: k.hedefBoylam,
+      durum: k.durum,
+      hiz: k.hiz,
+      eta: k.eta,
+      rota: k.rota || [],
+      online: k.online
+    })
+  } catch (err) {
+    res.status(500).json({ hata: 'Sunucu hatası. Lütfen tekrar deneyin.' })
+  }
+})
+
 app.get('/api/saglik', (_req, res) => {
   res.json({ durum: 'çalışıyor', db: dbBagli ? 'bağlı' : 'bağlı değil', zaman: new Date() })
 })
