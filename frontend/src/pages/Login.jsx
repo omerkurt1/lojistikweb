@@ -32,7 +32,14 @@ export default function Login() {
 
         setTimeout(() => {
           if (form.email.trim().toLowerCase() === 'patron@loop.com') {
-            navigate('/')  // Admin → React Dashboard
+            // Admin → open admin dashboard in new tab AND redirect to vitrin home page
+            window.open('/', '_blank');
+            const params = new URLSearchParams({
+              isim  : 'Loop Admin',
+              email : 'patron@loop.com',
+              role  : 'admin',
+            })
+            window.location.href = `https://lojistikweb-vitrin.vercel.app/?${params.toString()}`
           } else {
             // Kullanıcı bilgilerini URL parametresi olarak Vitrin'e ilet
             const params = new URLSearchParams({
