@@ -134,7 +134,7 @@ async function teslimatKaydet(kurye) {
     const doc = await KuryeModel.findOneAndUpdate(
       { kuryeId: kurye.id },
       { $set: { isim: kurye.isim, sonGuncelleme: simdi }, $inc: { toplamTeslimat: 1, toplamSure: sureDakika } },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: 'after' }
     )
     if (doc) { doc.ortalamaSure = Math.round(doc.toplamSure / doc.toplamTeslimat); await doc.save() }
     const saat = simdi.getHours()
