@@ -6,9 +6,8 @@ import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 import IstatistikPaneli from './istatistik'
-import { useAuth } from './context/AuthContext'
 
-// ─── Kamyon SVG İkonu (Profesyonel Truck) ────────────────────────────────────
+// ─── Kamyon SVG İkonu ────────────────────────────────────────────────────────
 const KAMYON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="white">
   <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>`
 
@@ -46,18 +45,16 @@ const hedefIkonu = new L.DivIcon({
 function HaritaKontrol({ hedef }) {
   const map = useMap()
   useEffect(() => {
-    if (hedef) {
-      map.flyTo([hedef.enlem, hedef.boylam], 15, { duration: 1.2 })
-    }
+    if (hedef) map.flyTo([hedef.enlem, hedef.boylam], 15, { duration: 1.2 })
   }, [hedef, map])
   return null
 }
 
-// ─── Socket (component dışında bir kez oluştur) ──────────────────────────────
+// ─── Socket ──────────────────────────────────────────────────────────────────
 const BACKEND = 'https://lojistikweb-backend.onrender.com'
 const soket = io(BACKEND)
 
-// ─── Renk paleti (kurye id'ye göre) ─────────────────────────────────────────
+// ─── Renk paleti ─────────────────────────────────────────────────────────────
 const ROTA_RENKLERI = ['#3498db', '#e74c3c', '#2ecc71', '#9b59b6', '#f39c12', '#1abc9c']
 function rotaRengi(kurye) {
   if (!kurye.online) return '#aaaaaa'
@@ -65,177 +62,35 @@ function rotaRengi(kurye) {
   return kurye.optimizasyonSayisi % 2 === 0 ? temel : '#e67e22'
 }
 
-// ─── Tile URL ─────────────────────────────────────────────────────────────────
 const TILE_URL  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 const TILE_ATTR = '© OpenStreetMap contributors'
 
-// ─── Profil Modalı ─────────────────────────────────────────────────────────────
-function ProfilModali({ kullanici, cikis, kapat }) {
-  const initials = kullanici?.isim
-    ? kullanici.isim.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-    : '?'
-
-  return (
-    <div style={profilStyles.overlay} onClick={kapat}>
-      <div style={profilStyles.modal} onClick={e => e.stopPropagation()}>
-        {/* Kapat butonu */}
-        <button style={profilStyles.kapatBtn} onClick={kapat}>✕</button>
-
-        {/* Avatar + İsim */}
-        <div style={profilStyles.avatarSarici}>
-          <div style={profilStyles.avatar}>{initials}</div>
-          <div>
-            <div style={profilStyles.isim}>{kullanici?.isim || '—'}</div>
-            <div style={profilStyles.email}>{kullanici?.email || '—'}</div>
-          </div>
-        </div>
-
-        {/* Bilgi satırları */}
-        <div style={profilStyles.bilgiGrid}>
-          <div style={profilStyles.bilgiKart}>
-            <span style={profilStyles.bilgiEtiket}>Ad Soyad</span>
-            <span style={profilStyles.bilgiDeger}>{kullanici?.isim || '—'}</span>
-          </div>
-          <div style={profilStyles.bilgiKart}>
-            <span style={profilStyles.bilgiEtiket}>E-Posta</span>
-            <span style={profilStyles.bilgiDeger}>{kullanici?.email || '—'}</span>
-          </div>
-          <div style={profilStyles.bilgiKart}>
-            <span style={profilStyles.bilgiEtiket}>Hesap Türü</span>
-            <span style={{
-              ...profilStyles.bilgiDeger,
-              color: kullanici?.email === 'patron@loop.com' ? '#e67e22' : '#27ae60',
-              fontWeight: 700,
-            }}>
-              {kullanici?.email === 'patron@loop.com' ? '👑 Admin' : '👤 Kullanıcı'}
-            </span>
-          </div>
-          <div style={profilStyles.bilgiKart}>
-            <span style={profilStyles.bilgiEtiket}>Durum</span>
-            <span style={{ ...profilStyles.bilgiDeger, color: '#27ae60', fontWeight: 700 }}>
-              ● Aktif
-            </span>
-          </div>
-        </div>
-
-        {/* Çıkış butonu */}
-        <button
-          style={profilStyles.cikisBtn}
-          onClick={() => { cikis(); kapat() }}
-        >
-          🚪 Çıkış Yap
-        </button>
-      </div>
-    </div>
-  )
-}
-
-const profilStyles = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.55)',
-    backdropFilter: 'blur(4px)',
-    zIndex: 9998,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  modal: {
-    background: '#fff',
-    borderRadius: 20,
-    padding: '36px 32px 28px',
-    width: '100%', maxWidth: 400,
-    position: 'relative',
-    boxShadow: '0 8px 48px rgba(0,0,0,0.22)',
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-  },
-  kapatBtn: {
-    position: 'absolute', top: 14, right: 18,
-    background: 'none', border: 'none',
-    fontSize: 18, cursor: 'pointer', color: '#8a9abc',
-    lineHeight: 1,
-  },
-  avatarSarici: {
-    display: 'flex', alignItems: 'center', gap: 16,
-    marginBottom: 28,
-    paddingBottom: 20,
-    borderBottom: '1px solid #e8ecf8',
-  },
-  avatar: {
-    width: 64, height: 64,
-    borderRadius: '50%',
-    background: 'linear-gradient(135deg, #0056b3, #00bcd4)',
-    color: '#fff',
-    fontSize: 22, fontWeight: 800,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-    boxShadow: '0 4px 14px rgba(0,86,179,0.30)',
-  },
-  isim: {
-    fontSize: 20, fontWeight: 700, color: '#0a1628',
-    marginBottom: 4,
-  },
-  email: {
-    fontSize: 13, color: '#8a9abc',
-  },
-  bilgiGrid: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr',
-    gap: 12, marginBottom: 24,
-  },
-  bilgiKart: {
-    background: '#f5f7ff',
-    borderRadius: 12,
-    padding: '12px 14px',
-    display: 'flex', flexDirection: 'column', gap: 4,
-    border: '1px solid #e8ecf8',
-  },
-  bilgiEtiket: {
-    fontSize: 10, fontWeight: 700, textTransform: 'uppercase',
-    letterSpacing: '0.06em', color: '#8a9abc',
-  },
-  bilgiDeger: {
-    fontSize: 14, fontWeight: 600, color: '#0a1628',
-  },
-  cikisBtn: {
-    width: '100%',
-    padding: '13px',
-    background: '#fff0f0',
-    border: '1.5px solid #ffcdd2',
-    borderRadius: 10,
-    color: '#c62828',
-    fontSize: 14, fontWeight: 700,
-    cursor: 'pointer',
-    transition: 'background 0.2s',
-  },
-}
-
 // ─── Ana Uygulama ─────────────────────────────────────────────────────────────
 export default function Uygulama() {
-  const { kullanici, cikis } = useAuth()
   const navigate = useNavigate()
 
-  const [kuryeListesi, setKuryeler]   = useState([])
-  const [siparisFisi,  setFis]        = useState([])
-  const [karanlikMod,  setKaranlik]   = useState(false)
+  const [kuryeListesi, setKuryeler] = useState([])
+  const [siparisFisi,  setFis]      = useState([])
+  const [karanlikMod,  setKaranlik] = useState(false)
 
-  // ── Sekme yönetimi — raporAcik'tan BAĞIMSIZ ──────────────────────────────
+  // ── Sekme yönetimi ─────────────────────────────────────────────────────────
   // 'kuryeler' | 'log' | 'istatistik'
+  // raporAcik is purely DERIVED — no second setState, no sync issues
   const [aktifSekme, setSekme] = useState('kuryeler')
-
-  // İstatistik sekmesi harita alanını değiştiriyor; diğer sekmeler haritayı korur
   const raporAcik = aktifSekme === 'istatistik'
 
-  const [profilAcik,   setProfilAcik] = useState(false)
-  const [zoomHedef,    setZoomHedef]  = useState(null)
-  const [secilenId,    setSecilenId]  = useState(null)
-  const [bildirimler,  setBildirim]   = useState([])
-  const [dbGenel,      setDbGenel]    = useState(null)
+  const [zoomHedef,   setZoomHedef] = useState(null)
+  const [secilenId,   setSecilenId] = useState(null)
+  const [bildirimler, setBildirim]  = useState([])
+  const [dbGenel,     setDbGenel]   = useState(null)
 
   const merkez = [41.0082, 28.9784]
 
-  // DB'den genel istatistik çek
+  // DB istatistik
   useEffect(() => {
     const cek = async () => {
       try {
-        const res = await fetch('https://lojistikweb-backend.onrender.com/api/istatistik/genel')
+        const res  = await fetch(`${BACKEND}/api/istatistik/genel`)
         const veri = await res.json()
         setDbGenel(veri)
       } catch { /* sessizce geç */ }
@@ -245,20 +100,20 @@ export default function Uygulama() {
     return () => clearInterval(t)
   }, [])
 
-  // ── Bildirim sistemi ──
+  // Bildirim sistemi
   const bildirimEkle = useCallback((mesaj, tip = 'bilgi') => {
     const id = Date.now() + Math.random()
     setBildirim(prev => [...prev, { id, mesaj, tip }])
     setTimeout(() => setBildirim(prev => prev.filter(b => b.id !== id)), 4500)
   }, [])
 
-  // ── Socket olayları ──
+  // Socket olayları
   useEffect(() => {
-    soket.on('kuryeleriGuncelle',  setKuryeler)
+    soket.on('kuryeleriGuncelle',   setKuryeler)
     soket.on('siparisFisiGuncelle', setFis)
-    soket.on('teslimatBildirimi', ({ isim, zaman }) => {
+    soket.on('teslimatBildirimi', ({ isim, zaman }) =>
       bildirimEkle(`✅ ${isim} teslimatı tamamladı! (${zaman})`, 'basari')
-    })
+    )
     return () => {
       soket.off('kuryeleriGuncelle')
       soket.off('siparisFisiGuncelle')
@@ -266,7 +121,7 @@ export default function Uygulama() {
     }
   }, [bildirimEkle])
 
-  // ── Aksiyon fonksiyonları ──
+  // Aksiyon fonksiyonları
   const tumRotaYenile = () => {
     soket.emit('yeniRotaCiz')
     bildirimEkle('🔄 Tüm aktif kuryeler için yeni rota oluşturuluyor...', 'bilgi')
@@ -282,9 +137,7 @@ export default function Uygulama() {
     e.stopPropagation()
     soket.emit('kuryeOnlineDegistir', kurye.id)
     bildirimEkle(
-      kurye.online
-        ? `⚫ ${kurye.isim} çevrimdışı yapıldı`
-        : `🟢 ${kurye.isim} çevrimiçi yapıldı`,
+      kurye.online ? `⚫ ${kurye.isim} çevrimdışı yapıldı` : `🟢 ${kurye.isim} çevrimiçi yapıldı`,
       'uyari'
     )
   }
@@ -294,61 +147,35 @@ export default function Uygulama() {
     setZoomHedef({ ...kurye, _ts: Date.now() })
   }
 
-  // ── Özet istatistikler ──
-  const toplam  = kuryeListesi.length
-  const yolda   = kuryeListesi.filter(k => k.durum !== 'teslim edildi' && k.online).length
-  const aktif   = kuryeListesi.filter(k => k.online).length
-  const teslim  = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => k.durum === 'teslim edildi').length
+  // Özet istatistikler
+  const toplam = kuryeListesi.length
+  const yolda  = kuryeListesi.filter(k => k.durum !== 'teslim edildi' && k.online).length
+  const aktif  = kuryeListesi.filter(k => k.online).length
+  const teslim = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => k.durum === 'teslim edildi').length
 
   return (
     <div className={`ana-kutu${karanlikMod ? ' karanlik' : ''}`}>
 
-      {/* ── Toast Bildirimleri ── */}
+      {/* Toast Bildirimleri */}
       <div className="bildirim-alan">
         {bildirimler.map(b => (
           <div key={b.id} className={`bildirim bildirim-${b.tip}`}>{b.mesaj}</div>
         ))}
       </div>
 
-      {/* ── Profil Modalı ── */}
-      {profilAcik && kullanici && (
-        <ProfilModali
-          kullanici={kullanici}
-          cikis={cikis}
-          kapat={() => setProfilAcik(false)}
-        />
-      )}
-
-      {/* ══════════════════════ SOL PANEL ══════════════════════ */}
+      {/* ══════════════ SOL PANEL ══════════════ */}
       <aside className="sol-panel">
 
-        {/* Başlık — tema + auth-gated profil butonu */}
+        {/* ── Başlık: yalnızca logo + tema butonu. Profil bu panelde YOK. ── */}
         <div className="panel-baslik">
           <span className="panel-logo">🚛 Kurye Takip</span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            {/* Kullanıcı giriş yapmışsa Profil butonu göster */}
-            {kullanici ? (
-              <button
-                id="btn-profil-acik"
-                title={`${kullanici.isim} — Profile Bak`}
-                onClick={() => setProfilAcik(true)}
-                style={profilBtnStyle}
-              >
-                {kullanici.isim.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}
-              </button>
-            ) : (
-              <a
-                href="https://lojistikweb1.vercel.app/giris"
-                style={girisLinkStyle}
-                title="Giriş Yap"
-              >
-                Giriş
-              </a>
-            )}
-            <button className="icon-btn" onClick={() => setKaranlik(p => !p)} title="Tema değiştir">
-              {karanlikMod ? '☀️' : '🌙'}
-            </button>
-          </div>
+          <button
+            className="icon-btn"
+            onClick={() => setKaranlik(p => !p)}
+            title="Tema değiştir"
+          >
+            {karanlikMod ? '☀️' : '🌙'}
+          </button>
         </div>
 
         {/* İstatistik kartları */}
@@ -384,7 +211,14 @@ export default function Uygulama() {
           </button>
         </div>
 
-        {/* ── Sekme Başlıkları — her zaman görünür, koşulsuz ── */}
+        {/*
+          ══════════════════════════════════════════════════════
+          SEKME BAŞLIKLARI — KOŞULSUZ, HER ZAMAN GÖRÜNÜR
+          Tab bar is rendered unconditionally. It is NEVER inside
+          any data-loading condition. Only the CONTENT below
+          changes based on aktifSekme.
+          ══════════════════════════════════════════════════════
+        */}
         <div className="sekme-baslik">
           <button
             id="sekme-kuryeler"
@@ -409,7 +243,8 @@ export default function Uygulama() {
           </button>
         </div>
 
-        {/* ── Kurye Listesi (yalnızca 'kuryeler' sekmesinde) ── */}
+        {/* ── SEKME İÇERİĞİ — yalnızca içerik koşullu, tab bar DEĞİL ── */}
+
         {aktifSekme === 'kuryeler' && (
           <div className="liste">
             {kuryeListesi.map(kurye => (
@@ -425,7 +260,7 @@ export default function Uygulama() {
                   </div>
                   <button
                     className={`toggle-btn${kurye.online ? ' aktif' : ' pasif'}`}
-                    onClick={(e) => onlineDegistir(kurye, e)}
+                    onClick={e => onlineDegistir(kurye, e)}
                   >
                     {kurye.online ? 'Aktif' : 'Pasif'}
                   </button>
@@ -449,7 +284,7 @@ export default function Uygulama() {
                 {kurye.online && kurye.durum !== 'teslim edildi' && (
                   <button
                     className="btn btn-kucuk btn-turuncu"
-                    onClick={(e) => tekRotaYenile(kurye, e)}
+                    onClick={e => tekRotaYenile(kurye, e)}
                   >
                     Bu Kurye İçin Rota Yenile
                   </button>
@@ -459,7 +294,6 @@ export default function Uygulama() {
           </div>
         )}
 
-        {/* ── Sipariş Geçmişi Log (yalnızca 'log' sekmesinde) ── */}
         {aktifSekme === 'log' && (
           <div className="liste">
             <div className="log-baslik-satir">
@@ -482,9 +316,12 @@ export default function Uygulama() {
             )}
           </div>
         )}
+
+        {/* 'istatistik' sekmesi içeriği sağ tarafta harita alanında render edilir */}
+
       </aside>
 
-      {/* ══════════════════════ HARİTA / RAPOR ══════════════════════ */}
+      {/* ══════════════ HARİTA / RAPOR ══════════════ */}
       {raporAcik ? (
         <div className="rapor-alan">
           <IstatistikPaneli />
@@ -497,10 +334,7 @@ export default function Uygulama() {
 
             {kuryeListesi.map(kurye => (
               <Fragment key={kurye.id}>
-                <Marker
-                  position={[kurye.enlem, kurye.boylam]}
-                  icon={kamyonMarkerIkonu(kurye.online)}
-                >
+                <Marker position={[kurye.enlem, kurye.boylam]} icon={kamyonMarkerIkonu(kurye.online)}>
                   <Popup>
                     <strong>🚛 {kurye.isim}</strong><br />
                     Durum: {kurye.durum}<br />
@@ -512,9 +346,7 @@ export default function Uygulama() {
 
                 {kurye.durum !== 'teslim edildi' && (
                   <Marker position={[kurye.hedefEnlem, kurye.hedefBoylam]} icon={hedefIkonu}>
-                    <Popup>
-                      <strong>{kurye.isim}</strong> — Teslimat Noktası
-                    </Popup>
+                    <Popup><strong>{kurye.isim}</strong> — Teslimat Noktası</Popup>
                   </Marker>
                 )}
 
@@ -536,32 +368,7 @@ export default function Uygulama() {
   )
 }
 
-// ── Satır-içi stil sabitleri ──────────────────────────────────────────────────
-const profilBtnStyle = {
-  width: 34, height: 34,
-  borderRadius: '50%',
-  background: 'linear-gradient(135deg, #0056b3, #00bcd4)',
-  color: '#fff',
-  border: 'none',
-  fontSize: 13, fontWeight: 800,
-  cursor: 'pointer',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  boxShadow: '0 2px 8px rgba(0,86,179,0.30)',
-  flexShrink: 0,
-  letterSpacing: '0.03em',
-}
-
-const girisLinkStyle = {
-  padding: '4px 12px',
-  borderRadius: 6,
-  background: 'rgba(0,86,179,0.08)',
-  border: '1px solid rgba(0,86,179,0.25)',
-  color: '#0056b3',
-  fontSize: 12, fontWeight: 700,
-  textDecoration: 'none',
-  cursor: 'pointer',
-}
-
+// ─── Stil sabitleri ───────────────────────────────────────────────────────────
 const partnerBtnStyle = {
   background: 'linear-gradient(135deg, #0a1628 0%, #0d2060 100%)',
   color: '#00c8ff',
