@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import io from 'socket.io-client'
@@ -209,6 +210,7 @@ const profilStyles = {
 // ─── Ana Uygulama ─────────────────────────────────────────────────────────────
 export default function Uygulama() {
   const { kullanici, cikis } = useAuth()
+  const navigate = useNavigate()
 
   const [kuryeListesi, setKuryeler]   = useState([])
   const [siparisFisi,  setFis]        = useState([])
@@ -372,6 +374,14 @@ export default function Uygulama() {
         {/* Aksiyon butonları */}
         <div className="btn-grup">
           <button className="btn btn-mavi" onClick={tumRotaYenile}>🔄 Tüm Rotaları Yenile</button>
+          <button
+            id="btn-partner-ag"
+            className="btn"
+            onClick={() => navigate('/partnerler')}
+            style={partnerBtnStyle}
+          >
+            🔗 Partner Ağı
+          </button>
         </div>
 
         {/* ── Sekme Başlıkları — her zaman görünür, koşulsuz ── */}
@@ -550,4 +560,13 @@ const girisLinkStyle = {
   fontSize: 12, fontWeight: 700,
   textDecoration: 'none',
   cursor: 'pointer',
+}
+
+const partnerBtnStyle = {
+  background: 'linear-gradient(135deg, #0a1628 0%, #0d2060 100%)',
+  color: '#00c8ff',
+  border: '1px solid rgba(0,200,255,0.25)',
+  fontSize: 13, fontWeight: 700,
+  letterSpacing: '0.01em',
+  boxShadow: '0 2px 10px rgba(0,98,255,0.20)',
 }

@@ -3,10 +3,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 
 // Sayfalar
-import Dashboard from './Dashboard'
-import Login     from './pages/Login'
-import Takip     from './pages/Takip'
-import Odeme     from './pages/Odeme'
+import Dashboard      from './Dashboard'
+import Login          from './pages/Login'
+import Takip          from './pages/Takip'
+import PartnerNetwork from './pages/PartnerNetwork'
 
 export default function App() {
   return (
@@ -14,15 +14,18 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           {/* Ana dashboard */}
-          <Route path="/"       element={<Dashboard />} />
+          <Route path="/"            element={<Dashboard />} />
 
           {/* Kullanıcı sayfaları */}
-          <Route path="/giris"  element={<Login />} />
-          <Route path="/takip"  element={<Takip />} />
-          <Route path="/odeme"  element={<Odeme />} />
+          <Route path="/giris"       element={<Login />} />
+          <Route path="/takip"       element={<Takip />} />
+          <Route path="/partnerler"  element={<PartnerNetwork />} />
+
+          {/* Eski ödeme URL'si → partner sayfasına yönlendir */}
+          <Route path="/odeme"       element={<Navigate to="/partnerler" replace />} />
 
           {/* Bilinmeyen path → ana sayfa */}
-          <Route path="*"       element={<Navigate to="/" replace />} />
+          <Route path="*"            element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

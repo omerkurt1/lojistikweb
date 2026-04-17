@@ -1,0 +1,635 @@
+// src/pages/PartnerNetwork.jsx
+// Route: /partnerler
+import { useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+// ─── Mock partner data ────────────────────────────────────────────────────────
+const PARTNERLER = [
+  {
+    id: 1,
+    isim: 'Global Freight Express',
+    kisa: 'Uluslararası Kargo & Lojistik',
+    aciklama:
+      'Avrupa ve Asya koridorlarında kapsamlı uluslararası kargo hizmetleri. Gümrük danışmanlığı, multimodal taşıma ve anlık gönderi takibi tek platformda.',
+    uzmanlik: ['Uluslararası Taşıma', 'Gümrük Danışmanlığı', 'Multimodal'],
+    renk: '#0062ff',
+    renk2: '#003fa8',
+    ikon: '✈️',
+    api: 'https://api.globalfreightexpress.com/v3/docs',
+    email: 'integrations@globalfreightexpress.com',
+    telefon: '+90 212 850 00 01',
+    entType: 'REST API',
+  },
+  {
+    id: 2,
+    isim: 'CityLine Last-Mile',
+    kisa: 'Şehir İçi Anlık Teslimat',
+    aciklama:
+      'İstanbul, Ankara ve İzmir başta olmak üzere 12 büyükşehirde aynı gün teslimat hizmeti. Bisiklet kuryeleri, elektrikli araçlar ve drone teslimatı seçenekleriyle karbon-nötr lojistik.',
+    uzmanlik: ['Same-Day Delivery', 'Micro-Fulfillment', 'Drone Pilot'],
+    renk: '#00c853',
+    renk2: '#007d33',
+    ikon: '🛵',
+    api: 'https://developer.cityline.io/docs',
+    email: 'partners@cityline.io',
+    telefon: '+90 216 444 58 78',
+    entType: 'Webhook + REST',
+  },
+  {
+    id: 3,
+    isim: 'ColdChain Logistics',
+    kisa: 'Soğuk Zincir & Kontrollü Depo',
+    aciklama:
+      'Farmasötik, gıda ve biyomedikal ürünler için -25°C ile +25°C arasında kesintisiz sıcaklık kontrollü depolama, taşıma ve dağıtım hizmeti. FDA & ISO 9001 sertifikalı.',
+    uzmanlik: ['Pharma Cold Chain', 'ISO 9001', 'Reefer Truck'],
+    renk: '#00bcd4',
+    renk2: '#007c91',
+    ikon: '🧊',
+    api: 'https://api.coldchain.com.tr/endpoints',
+    email: 'api-support@coldchain.com.tr',
+    telefon: '+90 232 500 22 44',
+    entType: 'SOAP + REST',
+  },
+  {
+    id: 4,
+    isim: 'AeroGlobal Cargo',
+    kisa: 'Hava Kargo & Ekspres Uçuş',
+    aciklama:
+      'Türkiye\'nin tüm havalimanlarına ve 60+ ülkeye günlük charter ve hat uçuşları. Kıymetli yük, e-ticaret paketleri ve acil gönderi için kapıdan kapıya hava kargo çözümleri.',
+    uzmanlik: ['Air Freight', 'Charter Uçuşu', 'Değerli Yük'],
+    renk: '#9c27b0',
+    renk2: '#6a0080',
+    ikon: '🚀',
+    api: 'https://cargo.aeroglobal.aero/api/v2/reference',
+    email: 'tech-partners@aeroglobal.aero',
+    telefon: '+90 312 960 77 00',
+    entType: 'OAuth 2.0 + REST',
+  },
+  {
+    id: 5,
+    isim: 'SwiftPort Maritime',
+    kisa: 'Deniz Yolu Konteyner Taşımacılığı',
+    aciklama:
+      'İzmir Aliağa, Mersin ve İstanbul limanlarından Akdeniz, Karadeniz ve Körfez hatlarına FCL/LCL konteyner çözümleri. Gerçek zamanlı gemi takip entegrasyonu.',
+    uzmanlik: ['FCL / LCL', 'Port Agency', 'AIS Takip'],
+    renk: '#ff6f00',
+    renk2: '#c43e00',
+    ikon: '🚢',
+    api: 'https://api.swiftport.com/marine/v1',
+    email: 'integrations@swiftport.com',
+    telefon: '+90 232 888 10 20',
+    entType: 'GraphQL + REST',
+  },
+  {
+    id: 6,
+    isim: 'TerraFleet Road Freight',
+    kisa: 'Karayolu Parsiyel & Komple Yük',
+    aciklama:
+      'TIR, frigorifik araç ve lowbed çekicilerden oluşan 2.000+ araçlık filo ile Türkiye\'nin tüm illerine ve TIR güzergahında 40+ ülkeye parsiyel ve komple yük hizmeti.',
+    uzmanlik: ['FTL / LTL', 'TIR Güzergahı', 'ADR Tehlikeli Madde'],
+    renk: '#f44336',
+    renk2: '#b71c1c',
+    ikon: '🚛',
+    api: 'https://terrafleet.com.tr/developers',
+    email: 'b2b@terrafleet.com.tr',
+    telefon: '+90 342 600 40 50',
+    entType: 'REST API + EDI',
+  },
+]
+
+// ─── Toast Bileşeni ───────────────────────────────────────────────────────────
+function Toast({ mesaj, kapat }) {
+  return (
+    <div style={toastStyle}>
+      <span>✅ {mesaj}</span>
+      <button onClick={kapat} style={toastKapatStyle}>✕</button>
+    </div>
+  )
+}
+
+// ─── Partner Detay Modalı ─────────────────────────────────────────────────────
+function PartnerModal({ partner, kapat, toastGoster }) {
+  const [gonderildi, setGonderildi] = useState(false)
+
+  const teklifIste = () => {
+    setGonderildi(true)
+    setTimeout(() => {
+      kapat()
+      toastGoster(`${partner.isim} ekibine özel teklif talebiniz iletildi!`)
+    }, 600)
+  }
+
+  return (
+    <div style={overlayStyle} onClick={kapat}>
+      <div style={modalStyle} onClick={e => e.stopPropagation()}>
+
+        {/* Başlık */}
+        <div style={{ ...modalHeaderStyle, background: `linear-gradient(135deg, ${partner.renk} 0%, ${partner.renk2} 100%)` }}>
+          <div style={modalIkonStyle}>{partner.ikon}</div>
+          <div>
+            <div style={modalIsimStyle}>{partner.isim}</div>
+            <div style={modalKisaStyle}>{partner.kisa}</div>
+          </div>
+          <button style={modalKapatBtnStyle} onClick={kapat}>✕</button>
+        </div>
+
+        <div style={modalGovdeStyle}>
+
+          {/* Uzmanlık etiketleri */}
+          <div style={etiketSatirStyle}>
+            {partner.uzmanlik.map(u => (
+              <span key={u} style={{ ...etiketStyle, borderColor: partner.renk, color: partner.renk }}>
+                {u}
+              </span>
+            ))}
+          </div>
+
+          {/* Entegrasyon bilgileri */}
+          <div style={bilgiGridStyle}>
+            <div style={bilgiKartStyle}>
+              <div style={bilgiEtiketStyle}>API Türü</div>
+              <div style={bilgiDegerStyle}>🔌 {partner.entType}</div>
+            </div>
+            <div style={bilgiKartStyle}>
+              <div style={bilgiEtiketStyle}>Destek E-Posta</div>
+              <a href={`mailto:${partner.email}`} style={{ ...bilgiDegerStyle, color: partner.renk, textDecoration: 'none' }}>
+                ✉️ {partner.email}
+              </a>
+            </div>
+            <div style={bilgiKartStyle}>
+              <div style={bilgiEtiketStyle}>Telefon</div>
+              <div style={bilgiDegerStyle}>📞 {partner.telefon}</div>
+            </div>
+            <div style={bilgiKartStyle}>
+              <div style={bilgiEtiketStyle}>API Dokümantasyon</div>
+              <a
+                href={partner.api}
+                target="_blank"
+                rel="noreferrer"
+                style={{ ...bilgiDegerStyle, color: partner.renk, textDecoration: 'none' }}
+              >
+                📄 Dokümana Git →
+              </a>
+            </div>
+          </div>
+
+          {/* CTA Butonlar */}
+          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+            <a
+              href={partner.api}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                ...apiBtn,
+                background: `linear-gradient(135deg, ${partner.renk}, ${partner.renk2})`,
+              }}
+            >
+              📚 API Dökümanları
+            </a>
+            <button
+              onClick={teklifIste}
+              disabled={gonderildi}
+              style={{
+                ...teklifBtnStyle,
+                borderColor: partner.renk,
+                color: gonderildi ? '#8a9abc' : partner.renk,
+                cursor: gonderildi ? 'default' : 'pointer',
+              }}
+            >
+              {gonderildi ? '✅ Talep Gönderildi' : '💼 Özel Teklif İste'}
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Ana Bileşen ──────────────────────────────────────────────────────────────
+export default function PartnerNetwork() {
+  const navigate = useNavigate()
+  const [secilenPartner, setSecilen] = useState(null)
+  const [toast, setToast]           = useState('')
+
+  const toastGoster = useCallback((mesaj) => {
+    setToast(mesaj)
+    setTimeout(() => setToast(''), 4000)
+  }, [])
+
+  return (
+    <div style={sayfaStyle}>
+
+      {/* Toast */}
+      {toast && <Toast mesaj={toast} kapat={() => setToast('')} />}
+
+      {/* Partner Detay Modalı */}
+      {secilenPartner && (
+        <PartnerModal
+          partner={secilenPartner}
+          kapat={() => setSecilen(null)}
+          toastGoster={toastGoster}
+        />
+      )}
+
+      {/* ── Header ── */}
+      <div style={headerStyle}>
+        <button style={geriBtn} onClick={() => navigate(-1)}>← Dashboard'a Dön</button>
+        <div style={headerIcStyle}>
+          <div style={headerBadgeStyle}>🔗 B2B Lojistik Ekosistemi</div>
+          <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#0062ff' }}>Ağı</span></h1>
+          <p style={headerAltStyle}>
+            Türkiye'nin ve dünyanın önde gelen lojistik operatörleriyle tek API üzerinden entegre olun.
+            Kara, hava, deniz ve soğuk zincir çözümlerini LOOP platformundan yönetin.
+          </p>
+        </div>
+
+        {/* İstatistik satırı */}
+        <div style={statSatirStyle}>
+          {[
+            { deger: '6+',    etiket: 'Aktif Partner' },
+            { deger: '40+',   etiket: 'Ülke Ağı'      },
+            { deger: '2.000+',etiket: 'Araç Filosu'   },
+            { deger: '7/24',  etiket: 'API Erişimi'   },
+          ].map(s => (
+            <div key={s.etiket} style={statKartStyle}>
+              <div style={statDegerStyle}>{s.deger}</div>
+              <div style={statEtiketStyle}>{s.etiket}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Partner Grid ── */}
+      <div style={gridWrapStyle}>
+        <div style={gridStyle}>
+          {PARTNERLER.map(p => (
+            <div key={p.id} style={kartStyle} className="partner-kart">
+
+              {/* Kart üst şerit */}
+              <div style={{ ...kartUstStyle, background: `linear-gradient(135deg, ${p.renk} 0%, ${p.renk2} 100%)` }}>
+                <span style={kartIkonStyle}>{p.ikon}</span>
+                <span style={entTypeBadgeStyle}>{p.entType}</span>
+              </div>
+
+              {/* Kart gövde */}
+              <div style={kartGovdeStyle}>
+                <h3 style={kartIsimStyle}>{p.isim}</h3>
+                <p style={kartKisaStyle}>{p.kisa}</p>
+                <p style={kartAciklamaStyle}>{p.aciklama}</p>
+
+                {/* Uzmanlık etiketleri */}
+                <div style={etiketSatirStyle}>
+                  {p.uzmanlik.map(u => (
+                    <span key={u} style={{ ...etiketStyle, borderColor: p.renk + '55', color: p.renk }}>
+                      {u}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Kart alt butonlar */}
+              <div style={kartAltStyle}>
+                <button
+                  onClick={() => setSecilen(p)}
+                  style={iletisimBtnStyle}
+                >
+                  📋 İletişim Bilgileri
+                </button>
+                <button
+                  onClick={() => {
+                    setSecilen(p)
+                    setTimeout(() => {
+                      toastGoster(`${p.isim} entegrasyon süreci başlatıldı!`)
+                    }, 200)
+                  }}
+                  style={{ ...entegreBtnStyle, background: `linear-gradient(135deg, ${p.renk}, ${p.renk2})` }}
+                >
+                  🔌 Entegre Ol
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── CTA Banner ── */}
+      <div style={ctaBannerStyle}>
+        <div>
+          <div style={ctaBaslikStyle}>Özel Entegrasyon mı İstiyorsunuz?</div>
+          <div style={ctaAltStyle}>
+            Mevcut partnerlerimizin dışında özel bir taşıyıcıyla entegrasyon için çözüm ekibimizle görüşün.
+          </div>
+        </div>
+        <button
+          style={ctaBtnStyle}
+          onClick={() => toastGoster('Çözüm ekibimiz en kısa sürede sizinle iletişime geçecek!')}
+        >
+          🤝 Özel Çözüm Talep Et
+        </button>
+      </div>
+
+      {/* Hover animasyonu için inline style */}
+      <style>{`
+        .partner-kart {
+          transition: transform 0.22s ease, box-shadow 0.22s ease;
+        }
+        .partner-kart:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 16px 48px rgba(0,0,50,0.14) !important;
+        }
+      `}</style>
+    </div>
+  )
+}
+
+// ─── Stiller ─────────────────────────────────────────────────────────────────
+const FF = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+
+const sayfaStyle = {
+  minHeight: '100vh',
+  background: 'linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 100%)',
+  fontFamily: FF,
+}
+
+const headerStyle = {
+  background: '#fff',
+  borderBottom: '1px solid #e8ecf8',
+  padding: '40px 48px 32px',
+}
+
+const geriBtn = {
+  background: 'none', border: 'none',
+  color: '#6b7fa8', fontSize: 13, fontWeight: 600,
+  cursor: 'pointer', padding: 0, marginBottom: 24,
+  display: 'block',
+}
+
+const headerIcStyle = {
+  maxWidth: 640,
+}
+
+const headerBadgeStyle = {
+  display: 'inline-flex', alignItems: 'center', gap: 6,
+  background: 'rgba(0,98,255,0.08)', border: '1px solid rgba(0,98,255,0.2)',
+  color: '#0062ff', fontSize: 11, fontWeight: 700,
+  letterSpacing: '0.06em', textTransform: 'uppercase',
+  padding: '4px 14px', borderRadius: 40, marginBottom: 14,
+}
+
+const headerBaslikStyle = {
+  fontSize: 36, fontWeight: 800, color: '#0a1628',
+  marginBottom: 12, lineHeight: 1.15,
+}
+
+const headerAltStyle = {
+  fontSize: 15, color: '#6b7fa8', lineHeight: 1.7,
+  maxWidth: 560, marginBottom: 28,
+}
+
+const statSatirStyle = {
+  display: 'flex', gap: 24, flexWrap: 'wrap',
+}
+
+const statKartStyle = {
+  background: '#f5f7ff',
+  border: '1px solid #e8ecf8',
+  borderRadius: 12, padding: '12px 20px',
+  minWidth: 110,
+}
+
+const statDegerStyle = {
+  fontSize: 24, fontWeight: 800, color: '#0062ff',
+}
+
+const statEtiketStyle = {
+  fontSize: 11, fontWeight: 600, color: '#8a9abc',
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+  marginTop: 2,
+}
+
+const gridWrapStyle = {
+  padding: '40px 48px',
+  maxWidth: 1280, margin: '0 auto',
+}
+
+const gridStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+  gap: 24,
+}
+
+const kartStyle = {
+  background: '#fff',
+  borderRadius: 18,
+  boxShadow: '0 4px 20px rgba(0,0,50,0.07)',
+  border: '1px solid #e8ecf8',
+  overflow: 'hidden',
+  display: 'flex', flexDirection: 'column',
+}
+
+const kartUstStyle = {
+  height: 80,
+  display: 'flex', alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '0 20px',
+}
+
+const kartIkonStyle = {
+  fontSize: 32,
+  filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.25))',
+}
+
+const entTypeBadgeStyle = {
+  background: 'rgba(255,255,255,0.2)',
+  color: '#fff', fontSize: 10, fontWeight: 700,
+  letterSpacing: '0.06em', textTransform: 'uppercase',
+  padding: '4px 10px', borderRadius: 40,
+  border: '1px solid rgba(255,255,255,0.3)',
+}
+
+const kartGovdeStyle = {
+  padding: '20px 20px 12px',
+  flex: 1, display: 'flex', flexDirection: 'column', gap: 8,
+}
+
+const kartIsimStyle = {
+  fontSize: 17, fontWeight: 800, color: '#0a1628', margin: 0,
+}
+
+const kartKisaStyle = {
+  fontSize: 12, fontWeight: 600, color: '#8a9abc',
+  textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0,
+}
+
+const kartAciklamaStyle = {
+  fontSize: 13, color: '#4a5568', lineHeight: 1.65,
+  margin: '4px 0 8px', flex: 1,
+}
+
+const etiketSatirStyle = {
+  display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4,
+}
+
+const etiketStyle = {
+  fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+  padding: '3px 9px', borderRadius: 40,
+  border: '1.5px solid', background: 'transparent',
+}
+
+const kartAltStyle = {
+  padding: '12px 20px 20px',
+  display: 'flex', gap: 10,
+}
+
+const iletisimBtnStyle = {
+  flex: 1, padding: '10px 0',
+  background: '#f5f7ff', border: '1.5px solid #e8ecf8',
+  borderRadius: 10, fontSize: 12, fontWeight: 700,
+  color: '#4a5568', cursor: 'pointer',
+  transition: 'background 0.2s',
+}
+
+const entegreBtnStyle = {
+  flex: 1, padding: '10px 0',
+  border: 'none', borderRadius: 10,
+  fontSize: 12, fontWeight: 700,
+  color: '#fff', cursor: 'pointer',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+  transition: 'opacity 0.2s, transform 0.15s',
+}
+
+// ─── Modal Stiller ────────────────────────────────────────────────────────────
+const overlayStyle = {
+  position: 'fixed', inset: 0,
+  background: 'rgba(10,22,40,0.60)',
+  backdropFilter: 'blur(6px)',
+  zIndex: 9000,
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  padding: 24,
+}
+
+const modalStyle = {
+  background: '#fff', borderRadius: 22,
+  width: '100%', maxWidth: 520,
+  boxShadow: '0 24px 80px rgba(0,0,0,0.28)',
+  overflow: 'hidden',
+  fontFamily: FF,
+}
+
+const modalHeaderStyle = {
+  padding: '28px 28px 24px',
+  display: 'flex', alignItems: 'center', gap: 16,
+  position: 'relative',
+}
+
+const modalIkonStyle = {
+  fontSize: 40,
+  filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))',
+  flexShrink: 0,
+}
+
+const modalIsimStyle = {
+  fontSize: 20, fontWeight: 800, color: '#fff',
+}
+
+const modalKisaStyle = {
+  fontSize: 12, color: 'rgba(255,255,255,0.75)',
+  fontWeight: 600, marginTop: 3,
+  textTransform: 'uppercase', letterSpacing: '0.05em',
+}
+
+const modalKapatBtnStyle = {
+  position: 'absolute', top: 14, right: 16,
+  background: 'rgba(255,255,255,0.18)',
+  border: 'none', borderRadius: '50%',
+  width: 32, height: 32, fontSize: 14,
+  color: '#fff', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+}
+
+const modalGovdeStyle = {
+  padding: '24px 28px 28px',
+  display: 'flex', flexDirection: 'column', gap: 16,
+}
+
+const bilgiGridStyle = {
+  display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
+}
+
+const bilgiKartStyle = {
+  background: '#f5f7ff', border: '1px solid #e8ecf8',
+  borderRadius: 12, padding: '12px 14px',
+  display: 'flex', flexDirection: 'column', gap: 4,
+}
+
+const bilgiEtiketStyle = {
+  fontSize: 10, fontWeight: 700, color: '#8a9abc',
+  textTransform: 'uppercase', letterSpacing: '0.06em',
+}
+
+const bilgiDegerStyle = {
+  fontSize: 12, fontWeight: 600, color: '#0a1628', wordBreak: 'break-all',
+}
+
+const apiBtn = {
+  flex: 1, padding: '12px 0',
+  border: 'none', borderRadius: 10,
+  color: '#fff', fontSize: 13, fontWeight: 700,
+  textDecoration: 'none', textAlign: 'center',
+  cursor: 'pointer', display: 'inline-flex',
+  alignItems: 'center', justifyContent: 'center',
+}
+
+const teklifBtnStyle = {
+  flex: 1, padding: '12px 0',
+  background: 'transparent',
+  border: '1.5px solid', borderRadius: 10,
+  fontSize: 13, fontWeight: 700,
+  transition: 'background 0.2s',
+}
+
+// ─── CTA Banner ───────────────────────────────────────────────────────────────
+const ctaBannerStyle = {
+  margin: '0 48px 48px',
+  background: 'linear-gradient(135deg, #0a1628 0%, #0d2060 100%)',
+  borderRadius: 20, padding: '36px 40px',
+  display: 'flex', alignItems: 'center',
+  justifyContent: 'space-between', gap: 24,
+  flexWrap: 'wrap',
+}
+
+const ctaBaslikStyle = {
+  fontSize: 20, fontWeight: 800, color: '#fff', marginBottom: 6,
+}
+
+const ctaAltStyle = {
+  fontSize: 13, color: 'rgba(255,255,255,0.60)', maxWidth: 500,
+}
+
+const ctaBtnStyle = {
+  padding: '13px 28px',
+  background: 'linear-gradient(135deg, #0062ff, #00bcd4)',
+  border: 'none', borderRadius: 12,
+  color: '#fff', fontSize: 14, fontWeight: 700,
+  cursor: 'pointer', whiteSpace: 'nowrap',
+  boxShadow: '0 6px 24px rgba(0,98,255,0.35)',
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+const toastStyle = {
+  position: 'fixed', bottom: 28, right: 28,
+  background: '#0a1628',
+  color: '#fff', padding: '14px 20px',
+  borderRadius: 12, fontSize: 14, fontWeight: 600,
+  boxShadow: '0 8px 32px rgba(0,0,0,0.30)',
+  display: 'flex', alignItems: 'center', gap: 14,
+  zIndex: 9999, animation: 'toastIn 0.3s ease forwards',
+  maxWidth: 420,
+}
+
+const toastKapatStyle = {
+  background: 'none', border: 'none',
+  color: 'rgba(255,255,255,0.5)', fontSize: 14,
+  cursor: 'pointer', lineHeight: 1, flexShrink: 0,
+}
