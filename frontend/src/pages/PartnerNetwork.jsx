@@ -300,12 +300,12 @@ export default function PartnerNetwork() {
                   onClick={() => {
                     setSecilen(p)
                     setTimeout(() => {
-                      toastGoster(`${p.isim} entegrasyon süreci başlatıldı!`)
+                      toastGoster(`${p.isim} ile görüşme talebiniz iletildi!`)
                     }, 200)
                   }}
                   style={{ ...entegreBtnStyle, background: `linear-gradient(135deg, ${p.renk}, ${p.renk2})` }}
                 >
-                  🔌 Entegre Ol
+                  📩 Teklif Al
                 </button>
               </div>
             </div>
