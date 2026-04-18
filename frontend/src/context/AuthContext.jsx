@@ -9,27 +9,6 @@ export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null)
   const [yukleniyor, setYukleniyor] = useState(true)
 
-  // ── Global Theme State ──
-  const [dark, setDark] = useState(() => {
-    const saved = localStorage.getItem('loop_theme_dark')
-    return saved !== null ? saved === 'true' : true
-  })
-
-  useEffect(() => {
-    localStorage.setItem('loop_theme_dark', dark)
-    if (dark) {
-      document.body.classList.add('dark-mode')
-      document.body.classList.remove('light-mode')
-    } else {
-      document.body.classList.add('light-mode')
-      document.body.classList.remove('dark-mode')
-    }
-  }, [dark])
-
-  const toggleTheme = useCallback(() => {
-    setDark(prev => !prev)
-  }, [])
-
   // Sayfa yüklenince token'dan kullanıcıyı geri yükle
   useEffect(() => {
     const token = localStorage.getItem('loop_token')
@@ -93,7 +72,7 @@ export function AuthProvider({ children }) {
   const token = localStorage.getItem('loop_token')
 
   return (
-    <AuthContext.Provider value={{ kullanici, token, yukleniyor, kayit, giris, cikis, dark, toggleTheme }}>
+    <AuthContext.Provider value={{ kullanici, token, yukleniyor, kayit, giris, cikis }}>
       {children}
     </AuthContext.Provider>
   )
