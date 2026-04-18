@@ -77,6 +77,8 @@ let dbBagli = false
 // ════════════════════════════════════════════════════════════
 //  BELLEK İÇİ DURUM
 // ════════════════════════════════════════════════════════════
+let siparisFisi = []
+
 // ════════════════════════════════════════════════════════════
 //  GLOBAL LOGISTICS HUBS — Real land-based coordinates
 //  These are the only permitted spawn/destination points.
