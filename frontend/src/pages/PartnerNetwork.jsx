@@ -1,7 +1,15 @@
 // src/pages/PartnerNetwork.jsx
-// Route: /partnerler
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+// ─── Profession SVG Icons ────────────────────────────────────────────────────
+const SVG_Plane = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21.5 4c0 0-2 .5-3.5 2L14.5 9.5 6.3 7.7l-1.6 1.6 6.3 3.6-4.6 4.6-2.8-.7L2 17.8l4.4 1.1L7.5 22l1.6-1.6-.7-2.8 4.6-4.6 3.6 6.3z"/></svg>;
+const SVG_Bike = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-3 11.5V14l-3-3 4-3 2 3h2"/></svg>;
+const SVG_Cold = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m14 16-2 2-2-2"/><path d="m10 8 2-2 2 2"/><path d="m16 10 2 2-2 2"/><path d="m8 14-2-2 2-2"/><line x1="12" x2="12" y1="4" y2="20"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="18" x2="16" y1="6" y2="8"/><line x1="6" x2="8" y1="18" y2="16"/><line x1="6" x2="8" y1="6" y2="8"/><line x1="18" x2="16" y1="18" y2="16"/></svg>;
+const SVG_Rocket = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>;
+const SVG_Ship = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"/><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"/><path d="M12 10v4"/><path d="M12 2v3"/></svg>;
+const SVG_Truck = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 17h4V5H2v12h3"/><path d="M20 17h2v-3.34a4 4 0 0 0-1.17-2.83L19 9h-5v8h2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>;
+const SVG_Check = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
 // ─── Mock partner data ────────────────────────────────────────────────────────
 const PARTNERLER = [
@@ -14,7 +22,7 @@ const PARTNERLER = [
     uzmanlik: ['Uluslararası Taşıma', 'Gümrük Danışmanlığı', 'Multimodal'],
     renk: '#0062ff',
     renk2: '#003fa8',
-    ikon: '✈️',
+    ikon: SVG_Plane,
     api: 'https://api.globalfreightexpress.com/v3/docs',
     email: 'integrations@globalfreightexpress.com',
     telefon: '+90 212 850 00 01',
@@ -29,7 +37,7 @@ const PARTNERLER = [
     uzmanlik: ['Same-Day Delivery', 'Micro-Fulfillment', 'Drone Pilot'],
     renk: '#00c853',
     renk2: '#007d33',
-    ikon: '🛵',
+    ikon: SVG_Bike,
     api: 'https://developer.cityline.io/docs',
     email: 'partners@cityline.io',
     telefon: '+90 216 444 58 78',
@@ -44,7 +52,7 @@ const PARTNERLER = [
     uzmanlik: ['Pharma Cold Chain', 'ISO 9001', 'Reefer Truck'],
     renk: '#00bcd4',
     renk2: '#007c91',
-    ikon: '🧊',
+    ikon: SVG_Cold,
     api: 'https://api.coldchain.com.tr/endpoints',
     email: 'api-support@coldchain.com.tr',
     telefon: '+90 232 500 22 44',
@@ -59,7 +67,7 @@ const PARTNERLER = [
     uzmanlik: ['Air Freight', 'Charter Uçuşu', 'Değerli Yük'],
     renk: '#9c27b0',
     renk2: '#6a0080',
-    ikon: '🚀',
+    ikon: SVG_Rocket,
     api: 'https://cargo.aeroglobal.aero/api/v2/reference',
     email: 'tech-partners@aeroglobal.aero',
     telefon: '+90 312 960 77 00',
@@ -74,7 +82,7 @@ const PARTNERLER = [
     uzmanlik: ['FCL / LCL', 'Port Agency', 'AIS Takip'],
     renk: '#ff6f00',
     renk2: '#c43e00',
-    ikon: '🚢',
+    ikon: SVG_Ship,
     api: 'https://api.swiftport.com/marine/v1',
     email: 'integrations@swiftport.com',
     telefon: '+90 232 888 10 20',
@@ -89,7 +97,7 @@ const PARTNERLER = [
     uzmanlik: ['FTL / LTL', 'TIR Güzergahı', 'ADR Tehlikeli Madde'],
     renk: '#f44336',
     renk2: '#b71c1c',
-    ikon: '🚛',
+    ikon: SVG_Truck,
     api: 'https://terrafleet.com.tr/developers',
     email: 'b2b@terrafleet.com.tr',
     telefon: '+90 342 600 40 50',
@@ -101,7 +109,7 @@ const PARTNERLER = [
 function Toast({ mesaj, kapat }) {
   return (
     <div style={toastStyle}>
-      <span>✅ {mesaj}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{SVG_Check} {mesaj}</span>
       <button onClick={kapat} style={toastKapatStyle}>✕</button>
     </div>
   )
@@ -148,17 +156,17 @@ function PartnerModal({ partner, kapat, toastGoster }) {
           <div style={bilgiGridStyle}>
             <div style={bilgiKartStyle}>
               <div style={bilgiEtiketStyle}>API Türü</div>
-              <div style={bilgiDegerStyle}>🔌 {partner.entType}</div>
+              <div style={bilgiDegerStyle}>{partner.entType}</div>
             </div>
             <div style={bilgiKartStyle}>
               <div style={bilgiEtiketStyle}>Destek E-Posta</div>
               <a href={`mailto:${partner.email}`} style={{ ...bilgiDegerStyle, color: partner.renk, textDecoration: 'none' }}>
-                ✉️ {partner.email}
+                {partner.email}
               </a>
             </div>
             <div style={bilgiKartStyle}>
               <div style={bilgiEtiketStyle}>Telefon</div>
-              <div style={bilgiDegerStyle}>📞 {partner.telefon}</div>
+              <div style={bilgiDegerStyle}>{partner.telefon}</div>
             </div>
             <div style={bilgiKartStyle}>
               <div style={bilgiEtiketStyle}>API Dokümantasyon</div>
@@ -168,7 +176,7 @@ function PartnerModal({ partner, kapat, toastGoster }) {
                 rel="noreferrer"
                 style={{ ...bilgiDegerStyle, color: partner.renk, textDecoration: 'none' }}
               >
-                📄 Dokümana Git →
+                Dokümana Git →
               </a>
             </div>
           </div>
@@ -184,7 +192,7 @@ function PartnerModal({ partner, kapat, toastGoster }) {
                 background: `linear-gradient(135deg, ${partner.renk}, ${partner.renk2})`,
               }}
             >
-              📚 API Dökümanları
+              API Dökümanları
             </a>
             <button
               onClick={teklifIste}
@@ -196,7 +204,7 @@ function PartnerModal({ partner, kapat, toastGoster }) {
                 cursor: gonderildi ? 'default' : 'pointer',
               }}
             >
-              {gonderildi ? '✅ Talep Gönderildi' : '💼 Özel Teklif İste'}
+              {gonderildi ? 'Talep Gönderildi' : 'Özel Teklif İste'}
             </button>
           </div>
 
@@ -236,7 +244,7 @@ export default function PartnerNetwork() {
       <div style={headerStyle}>
         <button style={geriBtn} onClick={() => navigate(-1)}>← Dashboard'a Dön</button>
         <div style={headerIcStyle}>
-          <div style={headerBadgeStyle}>🔗 B2B Lojistik Ekosistemi</div>
+          <div style={headerBadgeStyle}>B2B Lojistik Ekosistemi</div>
           <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#0062ff' }}>Ağı</span></h1>
           <p style={headerAltStyle}>
             Türkiye'nin ve dünyanın önde gelen lojistik operatörleriyle tek API üzerinden entegre olun.
@@ -294,7 +302,7 @@ export default function PartnerNetwork() {
                   onClick={() => setSecilen(p)}
                   style={iletisimBtnStyle}
                 >
-                  📋 İletişim Bilgileri
+                  İletişim Bilgileri
                 </button>
                 <button
                   onClick={() => {
@@ -305,7 +313,7 @@ export default function PartnerNetwork() {
                   }}
                   style={{ ...entegreBtnStyle, background: `linear-gradient(135deg, ${p.renk}, ${p.renk2})` }}
                 >
-                  📩 Teklif Al
+                  Teklif Al
                 </button>
               </div>
             </div>
@@ -325,7 +333,7 @@ export default function PartnerNetwork() {
           style={ctaBtnStyle}
           onClick={() => toastGoster('Çözüm ekibimiz en kısa sürede sizinle iletişime geçecek!')}
         >
-          🤝 Özel Çözüm Talep Et
+          Özel Çözüm Talep Et
         </button>
       </div>
 

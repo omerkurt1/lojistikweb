@@ -5,6 +5,14 @@ import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 import IstatistikPaneli from './istatistik'
+import { useAuth } from './context/AuthContext'
+
+// Professional SVG Glyphs for local components
+const SVG_Alert = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+const SVG_Warn = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+const SVG_Radio = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m8 17 4 4 4-4"/></svg>
+const SVG_Wrench = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+const SVG_Shield = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  CONSTANTS
@@ -14,8 +22,9 @@ const BACKEND = 'https://lojistikweb-backend.onrender.com'
 const soket = io(BACKEND)
 
 // Two tile layers — professional readability for both themes
-const TILE_URL  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-const TILE_ATTR = '© OpenStreetMap contributors'
+const TILE_LIGHT  = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+const TILE_ATTR = '© OpenStreetMap contributors, © CARTO'
 
 // Unified courier color — corporate cyan
 const KURYE_RENK = '#00bcd4'
@@ -40,12 +49,12 @@ const PARTNER_MAP = {
 
 // ── Anomaly seed data ──
 const ANOMALY_SEED = [
-  { id: 'A1', severity: 'critical', title: 'Sahte POD Tespiti',  detail: 'GPS-konum uyuşmazlığı — Teslimat #881, konumdan 2.4km sapma', time: '14:22', icon: '🚨' },
-  { id: 'A2', severity: 'warning',  title: 'Rota Sapması',       detail: 'CityLine Kurye #42 planlanan rotadan 3.2km sapmış', time: '13:58', icon: '⚠️' },
-  { id: 'A3', severity: 'critical', title: 'SLA İhlali',          detail: 'ColdChain teslimat #556 — 45dk gecikme, soğuk zincir riski', time: '13:41', icon: '🚨' },
-  { id: 'A4', severity: 'info',     title: 'Hız Limiti Aşımı',    detail: 'Kurye Mehmet — Anlık hız 112km/s, limit: 90km/s', time: '13:15', icon: '📡' },
-  { id: 'A5', severity: 'warning',  title: 'Uzun Mola Tespiti',   detail: 'Kurye Hasan — 47dk hareketsiz, planlı mola 15dk', time: '12:50', icon: '⚠️' },
-  { id: 'A6', severity: 'info',     title: 'Araç Bakım Uyarısı',  detail: 'TerraFleet #TF-0812 — Motor sıcaklık sensörü uyarısı', time: '12:30', icon: '🔧' },
+  { id: 'A1', severity: 'critical', title: 'Sahte POD Tespiti',  detail: 'GPS-konum uyuşmazlığı — Teslimat #881, konumdan 2.4km sapma', time: '14:22', icon: SVG_Alert },
+  { id: 'A2', severity: 'warning',  title: 'Rota Sapması',       detail: 'CityLine Kurye #42 planlanan rotadan 3.2km sapmış', time: '13:58', icon: SVG_Warn },
+  { id: 'A3', severity: 'critical', title: 'SLA İhlali',          detail: 'ColdChain teslimat #556 — 45dk gecikme, soğuk zincir riski', time: '13:41', icon: SVG_Alert },
+  { id: 'A4', severity: 'info',     title: 'Hız Limiti Aşımı',    detail: 'Kurye Mehmet — Anlık hız 112km/s, limit: 90km/s', time: '13:15', icon: SVG_Radio },
+  { id: 'A5', severity: 'warning',  title: 'Uzun Mola Tespiti',   detail: 'Kurye Hasan — 47dk hareketsiz, planlı mola 15dk', time: '12:50', icon: SVG_Warn },
+  { id: 'A6', severity: 'info',     title: 'Araç Bakım Uyarısı',  detail: 'TerraFleet #TF-0812 — Motor sıcaklık sensörü uyarısı', time: '12:30', icon: SVG_Wrench },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -72,16 +81,13 @@ function kamyonIkon(online = true) {
   })
 }
 
+const HEDEF_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`
+
 const hedefIkon = new L.DivIcon({
   className: '',
-  html: `<div style="font-size:16px;background:#e74c3c;border-radius:50% 50% 50% 0;
-         transform:rotate(-45deg);width:28px;height:28px;
-         display:flex;justify-content:center;align-items:center;
-         box-shadow:0 2px 6px rgba(0,0,0,0.35); border:2px solid white;">
-           <span style="transform:rotate(45deg)">📍</span>
-         </div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 28]
+  html: `<div style="color:white; background:${KURYE_RENK}; border-radius:50%; width:24px; height:24px; display:flex; justify-content:center; align-items:center; box-shadow:0 3px 8px rgba(0,0,0,0.4); border:2px solid white;">${HEDEF_SVG}</div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12]
 })
 
 function HaritaKontrol({ hedef }) {
@@ -165,7 +171,7 @@ function AnomalyPanel({ acik, toggle, t }) {
     }}>
       <div style={{ padding: '16px 18px', borderBottom: `1px solid ${t.cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: t.text }}>🛡️ Anomali & Güvenlik</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: t.text, display: 'flex', alignItems: 'center', gap: 6 }}>{SVG_Shield} Anomali & Güvenlik</div>
           <div style={{ fontSize: 10, color: t.textDim, marginTop: 2 }}>{alerts.length} aktif uyarı</div>
         </div>
         <button onClick={toggle} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: t.textMuted, cursor: 'pointer', fontFamily: FF, fontWeight: 700 }}>✕</button>
@@ -193,7 +199,10 @@ function AnomalyPanel({ acik, toggle, t }) {
           </div>
         ))}
         {alerts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: 40, color: t.textDim, fontSize: 13 }}>✅ Tüm anomaliler çözüldü</div>
+          <div style={{ textAlign: 'center', padding: 40, color: t.textDim, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Tüm anomaliler çözüldü
+          </div>
         )}
       </div>
     </div>
@@ -205,8 +214,8 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t }) {
   if (!kurye) return null
   const partner = PARTNER_MAP[kurye.id % 8]
 
-  const reAssign = () => { bildirimEkle(`🔄 ${kurye.isim} yükü en yakın partner kuryeye aktarılıyor...`, 'uyari'); kapat() }
-  const redCode  = () => { bildirimEkle(`🔴 RED-CODE VIP: ${kurye.isim} teslimatı maksimum önceliğe alındı!`, 'basari'); kapat() }
+  const reAssign = () => { bildirimEkle(`🔁 ${kurye.isim} yükü en yakın partner kuryeye aktarılıyor...`, 'uyari'); kapat() }
+  const redCode  = () => { bildirimEkle(`🛑 RED-CODE VIP: ${kurye.isim} teslimatı maksimum önceliğe alındı!`, 'basari'); kapat() }
   const suspend  = () => { bildirimEkle(`⛔ ${partner.firma} — ${kurye.isim} ağ erişimi askıya alındı.`, 'uyari'); kapat() }
 
   return (
@@ -236,9 +245,9 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t }) {
           </div>
           <div style={{ fontSize: 10, color: t.textDim, marginBottom: 14, fontFamily: 'monospace' }}>📍 {kurye.enlem?.toFixed(5)}, {kurye.boylam?.toFixed(5)}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            <button onClick={reAssign} style={{ ...actionBtn, background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}>🔄 Acil Yeniden Ata — En Yakın Partner</button>
-            <button onClick={redCode} style={{ ...actionBtn, background: `${t.danger}15`, border: `1px solid ${t.danger}30`, color: t.danger }}>🔴 RED-CODE Tetikle — VIP Öncelik</button>
-            <button onClick={suspend} style={{ ...actionBtn, background: `${t.warn}12`, border: `1px solid ${t.warn}25`, color: t.warn }}>⛔ Partneri Askıya Al — Ağ Erişimini Kes</button>
+            <button onClick={reAssign} style={{ ...actionBtn, background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}>🔁 Acil Yeniden Ata</button>
+            <button onClick={redCode} style={{ ...actionBtn, background: `${t.danger}15`, border: `1px solid ${t.danger}30`, color: t.danger }}>🛑 RED-CODE Tetikle</button>
+            <button onClick={suspend} style={{ ...actionBtn, background: `${t.warn}12`, border: `1px solid ${t.warn}25`, color: t.warn }}>⛔ Partneri Askıya Al</button>
           </div>
         </div>
       </div>
@@ -256,7 +265,7 @@ export default function Uygulama() {
   const [bildirimler,  setBildirim] = useState([])
 
   // Theme
-  const [dark, setDark] = useState(true)
+  const { dark, toggleTheme } = useAuth()
   const t = tema(dark)
 
   // UI state
@@ -297,7 +306,7 @@ export default function Uygulama() {
   // ── Actions ──
   const tumRotaYenile = () => { soket.emit('yeniRotaCiz'); bildirimEkle('🔄 Tüm rotalar yeniden hesaplanıyor...', 'bilgi') }
   const tekRotaYenile = (k, e) => { e.stopPropagation(); soket.emit('tekKuryeRotaCiz', k.id); bildirimEkle(`🔄 ${k.isim} rotası optimize ediliyor...`, 'bilgi') }
-  const onlineDegistir = (k, e) => { e.stopPropagation(); soket.emit('kuryeOnlineDegistir', k.id); bildirimEkle(k.online ? `⚫ ${k.isim} çevrimdışı` : `🟢 ${k.isim} çevrimiçi`, 'uyari') }
+  const onlineDegistir = (k, e) => { e.stopPropagation(); soket.emit('kuryeOnlineDegistir', k.id); bildirimEkle(k.online ? `Deaktive: ${k.isim} çevrimdışı` : `Aktif: ${k.isim} çevrimiçi`, 'uyari') }
   const kuryeyiSec = (k) => { setSecilenId(k.id); setZoomHedef({ ...k, _ts: Date.now() }) }
 
   // Stats
@@ -336,12 +345,12 @@ export default function Uygulama() {
       ) : (
         <div style={{ position: 'absolute', top: 0, left: SIDEBAR_W, right: anomalyAcik ? 340 : 0, bottom: 0, zIndex: 1, transition: 'right 0.3s ease' }}>
           <MapContainer center={merkez} zoom={11} style={{ width: '100%', height: '100%' }} zoomControl={false}>
-            <TileLayer url={TILE_URL} attribution={TILE_ATTR} />
+            <TileLayer url={dark ? TILE_DARK : TILE_LIGHT} attribution={TILE_ATTR} />
             <HaritaKontrol hedef={zoomHedef} />
             {kuryeListesi.map(kurye => (
               <Fragment key={kurye.id}>
                 <Marker position={[kurye.enlem, kurye.boylam]} icon={kamyonIkon(kurye.online)} eventHandlers={{ click: () => setIntervention(kurye) }}>
-                  <Popup><div style={{ fontFamily: FF, fontSize: 12 }}><strong>🚛 {kurye.isim}</strong> — {PARTNER_MAP[kurye.id % 8]?.firma}<br />{kurye.durum} • {kurye.hiz} km/s{kurye.eta > 0 && <><br />ETA: ~{kurye.eta} dk</>}</div></Popup>
+                  <Popup><div style={{ fontFamily: FF, fontSize: 12 }}><strong>{kurye.isim}</strong> — {PARTNER_MAP[kurye.id % 8]?.firma}<br />{kurye.durum} • {kurye.hiz} km/s{kurye.eta > 0 && <><br />ETA: ~{kurye.eta} dk</>}</div></Popup>
                 </Marker>
                 {kurye.durum !== 'teslim edildi' && (
                   <Marker position={[kurye.hedefEnlem, kurye.hedefBoylam]} icon={hedefIkon}>
@@ -384,7 +393,7 @@ export default function Uygulama() {
               {saat.toLocaleTimeString('tr-TR')}
             </span>
             <button
-              onClick={() => setDark(p => !p)}
+              onClick={toggleTheme}
               title="Tema Değiştir"
               style={{
                 width: 34, height: 20, borderRadius: 12, padding: 0, cursor: 'pointer',
@@ -430,26 +439,25 @@ export default function Uygulama() {
           ))}
         </div>
 
-        {/* ── ACTION BUTTONS ── */}
         <div style={{ padding: '10px 14px', borderBottom: `1px solid ${t.panelBorder}`, display: 'flex', gap: 6, flexShrink: 0 }}>
           <button onClick={tumRotaYenile} style={{ ...actionBtn, flex: 1, background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent, fontSize: 11 }}>
-            🔄 Rotaları Yenile
+            Rotaları Yenile
           </button>
           <button onClick={() => setAnomalyAcik(p => !p)} style={{
             ...actionBtn, background: anomalyAcik ? `${t.danger}15` : t.cardBg,
             border: `1px solid ${anomalyAcik ? `${t.danger}30` : t.cardBorder}`,
-            color: anomalyAcik ? t.danger : t.textMuted, fontSize: 11, minWidth: 90,
+            color: anomalyAcik ? t.danger : t.textMuted, fontSize: 11, minWidth: 90, display: 'flex', alignItems: 'center'
           }}>
-            🛡️ Anomali <span style={{ background: t.danger, color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 8, marginLeft: 4 }}>6</span>
+            {SVG_Alert} Anomali <span style={{ background: t.danger, color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 8, marginLeft: 4 }}>6</span>
           </button>
         </div>
 
         {/* ── TAB BAR — ALWAYS VISIBLE ── */}
         <div style={{ display: 'flex', borderBottom: `1px solid ${t.panelBorder}`, flexShrink: 0 }}>
           {[
-            { key: 'kuryeler',   label: `🚛 Filo (${aktif}/${toplam})` },
-            { key: 'log',        label: '📋 Geçmiş' },
-            { key: 'istatistik', label: '📊 Rapor' },
+            { key: 'kuryeler',   label: `Filo (${aktif}/${toplam})` },
+            { key: 'log',        label: 'Geçmiş' },
+            { key: 'istatistik', label: 'Rapor' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setSekme(tab.key)} style={{
               background: aktifSekme === tab.key ? `${t.accent}10` : 'transparent',
