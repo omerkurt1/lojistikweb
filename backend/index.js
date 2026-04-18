@@ -77,18 +77,69 @@ let dbBagli = false
 // ════════════════════════════════════════════════════════════
 //  BELLEK İÇİ DURUM
 // ════════════════════════════════════════════════════════════
-let siparisFisi = []
-
-const BASLANGIC_KURYELER = [
-  { id: 1, isim: 'Ahmet', enlem: 41.0660, boylam: 28.9900, hedefEnlem: 41.0422, hedefBoylam: 29.0060 },
-  { id: 2, isim: 'Mehmet', enlem: 40.9900, boylam: 29.0250, hedefEnlem: 40.9540, hedefBoylam: 29.0950 },
-  { id: 3, isim: 'Ayse', enlem: 40.9780, boylam: 28.8720, hedefEnlem: 40.9930, hedefBoylam: 28.9200 },
+// ════════════════════════════════════════════════════════════
+//  GLOBAL LOGISTICS HUBS — Real land-based coordinates
+//  These are the only permitted spawn/destination points.
+//  No courier can ever appear in the sea.
+// ════════════════════════════════════════════════════════════
+const GLOBAL_HUBS = [
+  { id: 'IST', isim: 'İstanbul Hub',        enlem: 41.0082, boylam: 28.9784 },
+  { id: 'FRA', isim: 'Frankfurt Gateway',   enlem: 50.1109, boylam:  8.6821 },
+  { id: 'LON', isim: 'London Heathrow',     enlem: 51.4700, boylam: -0.4543 },
+  { id: 'ANK', isim: 'Ankara Logistics',    enlem: 39.9208, boylam: 32.8541 },
+  { id: 'MUC', isim: 'Munich FreightPort',  enlem: 48.1351, boylam: 11.5820 },
+  { id: 'WAW', isim: 'Warsaw Transit',      enlem: 52.2297, boylam: 21.0122 },
+  { id: 'BUC', isim: 'Bucharest Depot',     enlem: 44.4268, boylam: 26.1025 },
+  { id: 'ATH', isim: 'Athens Port',         enlem: 37.9838, boylam: 23.7275 },
+  { id: 'SOF', isim: 'Sofia Cross-dock',    enlem: 42.6977, boylam: 23.3219 },
+  { id: 'BEL', isim: 'Belgrade TIR Hub',    enlem: 44.8176, boylam: 20.4569 },
+  { id: 'BUD', isim: 'Budapest Freight',    enlem: 47.4979, boylam: 19.0402 },
+  { id: 'VIE', isim: 'Vienna Gateway',      enlem: 48.2082, boylam: 16.3738 },
 ]
 
-let kuryeler = BASLANGIC_KURYELER.map(k => ({
+const CARGO_TYPES = [
+  'Air Freight FCL',
+  'Cross-border LTL',
+  'Maritime Container TEU',
+  'Road Freight FTL',
+  'Intermodal TIR',
+  'Pharma Cold Chain',
+  'Bonded Warehouse Transfer',
+  'Express B2B Parcel',
+]
+
+const COURIER_NAMES = [
+  'Ahmet Çelik', 'Mehmet Demir', 'Ayşe Kaya', 'Fatma Şahin',
+  'Ali Yıldız',  'Hasan Arslan', 'Elif Güneş', 'Okan Doğan',
+]
+
+// Pick two different hubs at random — guarantees land-to-land only
+function rastgeleHubCifti() {
+  let a = Math.floor(Math.random() * GLOBAL_HUBS.length)
+  let b
+  do { b = Math.floor(Math.random() * GLOBAL_HUBS.length) } while (b === a)
+  return [GLOBAL_HUBS[a], GLOBAL_HUBS[b]]
+}
+
+// Create a small jitter (max ±0.03°, ~3km) so couriers don't stack on hub centre
+function hubJitter(hub) {
+  return {
+    enlem: hub.enlem + (Math.random() - 0.5) * 0.06,
+    boylam: hub.boylam + (Math.random() - 0.5) * 0.06,
+  }
+}
+
+const BASLANGIC_KURYELER = [
+  { id: 1, isim: COURIER_NAMES[0], ...hubJitter(GLOBAL_HUBS[0]), ...{ hedefEnlem: hubJitter(GLOBAL_HUBS[1]).enlem, hedefBoylam: hubJitter(GLOBAL_HUBS[1]).boylam } },
+  { id: 2, isim: COURIER_NAMES[1], ...hubJitter(GLOBAL_HUBS[2]), ...{ hedefEnlem: hubJitter(GLOBAL_HUBS[3]).enlem, hedefBoylam: hubJitter(GLOBAL_HUBS[3]).boylam } },
+  { id: 3, isim: COURIER_NAMES[2], ...hubJitter(GLOBAL_HUBS[4]), ...{ hedefEnlem: hubJitter(GLOBAL_HUBS[5]).enlem, hedefBoylam: hubJitter(GLOBAL_HUBS[5]).boylam } },
+]
+
+let kuryeler = BASLANGIC_KURYELER.map((k, i) => ({
   ...k, rota: [], hedefSira: 1,
   durum: 'yolda', hiz: 0, optimizasyonSayisi: 0,
-  online: true, eta: 0, baslangicZamani: new Date()
+  online: true, eta: 0, baslangicZamani: new Date(),
+  kargoTuru: CARGO_TYPES[i % CARGO_TYPES.length],
 }))
 
 // ════════════════════════════════════════════════════════════
@@ -352,24 +403,29 @@ setInterval(() => {
 }, 1500)
 
 // ════════════════════════════════════════════════════════════
-//  OTOMATİK SİPARİŞ SİSTEMİ — Her 30sn'de 1 yeni kurye
+//  OTOMATİK SİPARİŞ SİSTEMİ — Every 30s, hub-to-hub only
 // ════════════════════════════════════════════════════════════
 setInterval(async () => {
   const yeniId = kuryeler.length + 1
-  const bEn = 41.0000 + Math.random() * 0.08
-  const bBo = 28.9200 + Math.random() * 0.10
-  const hEn = 41.0200 + Math.random() * 0.08
-  const hBo = 28.9400 + Math.random() * 0.10
-  const rota = await gercekRotaCiz(bEn, bBo, hEn, hBo, false)
+  const [basHub, hedefHub] = rastgeleHubCifti()
+  const bas   = hubJitter(basHub)
+  const hedef = hubJitter(hedefHub)
+  const courierName = COURIER_NAMES[(yeniId - 1) % COURIER_NAMES.length] + ' #' + yeniId
+  const kargoTuru = CARGO_TYPES[Math.floor(Math.random() * CARGO_TYPES.length)]
+
+  const rota = await gercekRotaCiz(bas.enlem, bas.boylam, hedef.enlem, hedef.boylam, false)
   const yeniKurye = {
     id: yeniId,
-    isim: 'Kurye ' + yeniId,
-    enlem: bEn, boylam: bBo,
-    hedefEnlem: hEn, hedefBoylam: hBo,
+    isim: courierName,
+    enlem: bas.enlem,  boylam: bas.boylam,
+    hedefEnlem: hedef.enlem, hedefBoylam: hedef.boylam,
     rota, hedefSira: 1,
     durum: 'yolda', hiz: 0,
     optimizasyonSayisi: 0, online: true,
-    eta: 0, baslangicZamani: new Date()
+    eta: 0, baslangicZamani: new Date(),
+    kargoTuru,
+    originHub: basHub.isim,
+    destHub:   hedefHub.isim,
   }
   if (dbBagli) {
     await KuryeModel.findOneAndUpdate(
@@ -380,7 +436,7 @@ setInterval(async () => {
   }
   kuryeler.push(yeniKurye)
   io.emit('kuryeleriGuncelle', kuryeler)
-  console.log(`📦 Otomatik sipariş eklendi: ${yeniKurye.isim}`)
+  console.log(`📦 Global shipment #${yeniId}: ${basHub.isim} → ${hedefHub.isim} (${kargoTuru})`)
 }, 30000)
 
 // ════════════════════════════════════════════════════════════

@@ -36,16 +36,16 @@ function rotaRengi(k) {
   return k.online ? '#00bcd4' : '#555'
 }
 
-// ── Partner enrichment data ──
+// ── Partner enrichment data — global freight types ──
 const PARTNER_MAP = {
-  0: { firma: 'Global Freight Express', tip: 'Uluslararası Kargo', kargoTuru: 'Multimodal Yük' },
-  1: { firma: 'CityLine Last-Mile',    tip: 'Şehir İçi Teslimat', kargoTuru: 'E-Ticaret Paketi' },
-  2: { firma: 'ColdChain Logistics',    tip: 'Soğuk Zincir',       kargoTuru: 'Farmasötik' },
-  3: { firma: 'AeroGlobal Cargo',       tip: 'Hava Kargo',         kargoTuru: 'Değerli Yük' },
-  4: { firma: 'SwiftPort Maritime',     tip: 'Deniz Yolu',         kargoTuru: 'FCL Konteyner' },
-  5: { firma: 'TerraFleet Road',        tip: 'Karayolu TIR',       kargoTuru: 'Komple Yük' },
-  6: { firma: 'EcoFleet Green',         tip: 'Elektrikli Filo',    kargoTuru: 'Mikro Teslimat' },
-  7: { firma: 'NightOwl Express',       tip: 'Gece Operasyonu',    kargoTuru: 'Acil Gönderi' },
+  0: { firma: 'Global Freight Express', tip: 'Air Freight',      kargoTuru: 'Air Freight FCL'            },
+  1: { firma: 'CityLine Last-Mile',     tip: 'Cross-border',     kargoTuru: 'Cross-border LTL'           },
+  2: { firma: 'ColdChain Logistics',    tip: 'Cold Chain',       kargoTuru: 'Pharma Cold Chain'          },
+  3: { firma: 'AeroGlobal Cargo',       tip: 'Air Cargo',        kargoTuru: 'Air Freight FCL'            },
+  4: { firma: 'SwiftPort Maritime',     tip: 'Maritime',         kargoTuru: 'Maritime Container TEU'     },
+  5: { firma: 'TerraFleet Road',        tip: 'Road Freight TIR', kargoTuru: 'Intermodal TIR'            },
+  6: { firma: 'EcoFleet Green',         tip: 'Express Parcel',   kargoTuru: 'Express B2B Parcel'         },
+  7: { firma: 'NightOwl Express',       tip: 'Bonded Warehouse', kargoTuru: 'Bonded Warehouse Transfer'  },
 }
 
 // ── Anomaly seed data ──
@@ -94,7 +94,8 @@ const hedefIkon = new L.DivIcon({
 function HaritaKontrol({ hedef }) {
   const map = useMap()
   useEffect(() => {
-    if (hedef) map.flyTo([hedef.enlem, hedef.boylam], 15, { duration: 1.2 })
+    // Zoom to 10 when centering on a specific courier — still legible at city scale
+    if (hedef) map.flyTo([hedef.enlem, hedef.boylam], 10, { duration: 1.2 })
   }, [hedef, map])
   return null
 }
@@ -277,7 +278,8 @@ export default function Uygulama() {
   const [interventionK, setIntervention] = useState(null)
 
   const raporAcik = aktifSekme === 'istatistik'
-  const merkez = [41.0082, 28.9784]
+  // Continental/Eurasian center — shows Europe, Middle East, and western Asia in one view
+  const merkez = [48.5, 18.0]
 
   // Clock
   const [saat, setSaat] = useState(new Date())
@@ -345,13 +347,23 @@ export default function Uygulama() {
         </div>
       ) : (
         <div style={{ position: 'absolute', top: 0, left: SIDEBAR_W, right: anomalyAcik ? 340 : 0, bottom: 0, zIndex: 1, transition: 'right 0.3s ease' }}>
-          <MapContainer center={merkez} zoom={11} style={{ width: '100%', height: '100%' }} zoomControl={false}>
+          <MapContainer center={merkez} zoom={5} style={{ width: '100%', height: '100%' }} zoomControl={false}>
             <TileLayer url={dark ? TILE_DARK : TILE_LIGHT} attribution={TILE_ATTR} />
             <HaritaKontrol hedef={zoomHedef} />
             {kuryeListesi.map(kurye => (
               <Fragment key={kurye.id}>
                 <Marker position={[kurye.enlem, kurye.boylam]} icon={kamyonIkon(kurye.online)} eventHandlers={{ click: () => setIntervention(kurye) }}>
-                  <Popup><div style={{ fontFamily: FF, fontSize: 12 }}><strong>{kurye.isim}</strong> — {PARTNER_MAP[kurye.id % 8]?.firma}<br />{kurye.durum} • {kurye.hiz} km/s{kurye.eta > 0 && <><br />ETA: ~{kurye.eta} dk</>}</div></Popup>
+                  <Popup>
+                    <div style={{ fontFamily: FF, fontSize: 12, minWidth: 180 }}>
+                      <strong style={{ fontSize: 13 }}>{kurye.isim}</strong><br />
+                      <span style={{ color: '#6a7fa8' }}>{PARTNER_MAP[kurye.id % 8]?.firma}</span><br />
+                      <span style={{ color: '#00bcd4', fontWeight: 700 }}>{kurye.kargoTuru || PARTNER_MAP[kurye.id % 8]?.kargoTuru}</span><br />
+                      {kurye.originHub && <><span style={{ color: '#888', fontSize: 11 }}>From: {kurye.originHub}</span><br /></>}
+                      {kurye.destHub   && <><span style={{ color: '#888', fontSize: 11 }}>To: {kurye.destHub}</span><br /></>}
+                      <span>{kurye.durum} • {kurye.hiz} km/s</span>
+                      {kurye.eta > 0 && <><br /><span>ETA: ~{kurye.eta} dk</span></>}
+                    </div>
+                  </Popup>
                 </Marker>
                 {kurye.durum !== 'teslim edildi' && (
                   <Marker position={[kurye.hedefEnlem, kurye.hedefBoylam]} icon={hedefIkon}>
