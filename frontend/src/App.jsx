@@ -7,6 +7,7 @@ import Dashboard      from './Dashboard'
 import Login          from './pages/Login'
 import Takip          from './pages/Takip'
 import PartnerNetwork from './pages/PartnerNetwork'
+import ProfilePage    from './pages/ProfilePage'
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/giris"       element={<Login />} />
           <Route path="/takip"       element={<Takip />} />
           <Route path="/partnerler"  element={<PartnerNetwork />} />
+          <Route path="/profil"      element={<ProfilePage />} />
 
           {/* Eski ödeme URL'si → partner sayfasına yönlendir */}
           <Route path="/odeme"       element={<Navigate to="/partnerler" replace />} />
