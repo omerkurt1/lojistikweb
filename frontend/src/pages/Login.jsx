@@ -32,21 +32,11 @@ export default function Login() {
 
         setTimeout(() => {
           if (form.email.trim().toLowerCase() === 'patron@loop.com') {
-            // Admin → open admin dashboard in new tab AND redirect to vitrin home page
-            window.open('/', '_blank');
-            const params = new URLSearchParams({
-              isim  : 'Loop Admin',
-              email : 'patron@loop.com',
-              role  : 'admin',
-            })
-            window.location.href = `https://lojistikweb-vitrin.vercel.app/?${params.toString()}`
+            // Admin → navigate to Dashboard (ProtectedRoute will validate)
+            navigate('/')
           } else {
-            // Kullanıcı bilgilerini URL parametresi olarak Vitrin'e ilet
-            const params = new URLSearchParams({
-              isim  : veri.kullanici.isim,
-              email : veri.kullanici.email,
-            })
-            window.location.href = `https://lojistikweb-vitrin.vercel.app/?${params.toString()}`
+            // Regular user → go to profile page within the SPA
+            navigate('/profil')
           }
         }, 1000)
 
@@ -55,12 +45,8 @@ export default function Login() {
         setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
 
         setTimeout(() => {
-          // Yeni kullanıcı bilgilerini URL parametresi olarak Vitrin'e ilet
-          const params = new URLSearchParams({
-            isim  : veri.kullanici.isim,
-            email : veri.kullanici.email,
-          })
-          window.location.href = `https://lojistikweb-vitrin.vercel.app/?${params.toString()}`
+          // New user → go to profile page within the SPA
+          navigate('/profil')
         }, 1200)
       }
     } catch (err) {

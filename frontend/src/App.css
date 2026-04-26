@@ -390,10 +390,8 @@ body {
   position: relative;
 }
 
-/* Gece modunda OSM tile'larını CSS ile karanlık temaya çevir */
-.karanlik .harita-alan .leaflet-tile-pane {
-  filter: invert(100%) hue-rotate(180deg) brightness(1.15) contrast(0.9);
-}
+/* Gece modunda — artık CSS filter yerine CartoDB Dark Matter tile layer kullanıyoruz.
+   Eski invert filter kaldırıldı (pitch black map issue — DIRECTIVE 5). */
 
 /* Sol panel ile harita arası gölge ayracı */
 .karanlik .sol-panel {

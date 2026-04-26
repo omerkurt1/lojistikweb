@@ -24,8 +24,9 @@ const soket = io(BACKEND)
 
 // Two tile layers — professional readability for both themes
 const TILE_LIGHT  = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-const TILE_DARK = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTR = '© OpenStreetMap contributors, © CARTO'
+// Dark Matter — professional dark-slate/greenish dark tiles, NOT pitch black
+const TILE_DARK   = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+const TILE_ATTR   = '© OpenStreetMap contributors, © CARTO'
 
 // Unified courier color — corporate cyan
 const KURYE_RENK = '#00bcd4'
@@ -128,23 +129,23 @@ function tema(dark) {
 //  SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// ── Financial HUD ──
-function FinansHUD({ t }) {
+// ── Financial HUD — DIRECTIVE 5: overflow-safe, bounded cards ──
+function FinansHUD({ t, lang }) {
   const gelir = 145320, maliyet = 108740
   const kar = gelir - maliyet
   const marj = ((kar / gelir) * 100).toFixed(1)
   const marjRenk = kar > 0 ? t.success : t.danger
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
       {[
-        { label: 'MÜŞTERİ GELİRİ', value: `₺${gelir.toLocaleString('tr-TR')}`, color: t.accent },
-        { label: 'PARTNER MALİYETİ', value: `₺${maliyet.toLocaleString('tr-TR')}`, color: t.warn },
-        { label: 'NET KÂR MARJI', value: `%${marj}`, color: marjRenk },
+        { label: lang === 'tr' ? 'MÜŞTERİ GELİRİ' : 'CLIENT REVENUE', value: `₺${gelir.toLocaleString('tr-TR')}`, color: t.accent },
+        { label: lang === 'tr' ? 'PARTNER MALİYETİ' : 'PARTNER COST', value: `₺${maliyet.toLocaleString('tr-TR')}`, color: t.warn },
+        { label: lang === 'tr' ? 'NET KÂR MARJI' : 'NET MARGIN', value: `%${marj}`, color: marjRenk },
       ].map(s => (
-        <div key={s.label} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: '10px 14px' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: t.textDim, letterSpacing: '0.08em', marginBottom: 4, fontFamily: FF }}>{s.label}</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: FF }}>{s.value}</div>
+        <div key={s.label} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: '8px 10px', minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: t.textDim, letterSpacing: '0.08em', marginBottom: 4, fontFamily: FF, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.label}</div>
+          <div style={{ fontSize: 17, fontWeight: 800, color: s.color, fontFamily: FF, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.value}</div>
         </div>
       ))}
     </div>
@@ -266,8 +267,8 @@ export default function Uygulama() {
   const [dbGenel,      setDbGenel]  = useState(null)
   const [bildirimler,  setBildirim] = useState([])
 
-  // Theme — from global SettingsContext
-  const { isDark: dark, toggleTheme } = useSettings()
+  // Theme + Language — from global SettingsContext
+  const { isDark: dark, toggleTheme, language: lang } = useSettings()
   const t = tema(dark)
 
   // UI state
@@ -427,13 +428,13 @@ export default function Uygulama() {
           </div>
         </div>
 
-        {/* ── FINANCIAL HUD ── */}
-        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${t.panelBorder}`, flexShrink: 0 }}>
+        {/* ── FINANCIAL HUD — DIRECTIVE 5: overflow safe ── */}
+        <div style={{ padding: '10px 12px', borderBottom: `1px solid ${t.panelBorder}`, flexShrink: 0, maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: t.textDim, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.success, boxShadow: `0 0 6px ${t.success}` }} />
-            FİNANSAL ÖZET — CANLI
+            {lang === 'tr' ? 'FİNANSAL ÖZET — CANLI' : 'FINANCIAL SUMMARY — LIVE'}
           </div>
-          <FinansHUD t={t} />
+          <FinansHUD t={t} lang={lang} />
         </div>
 
         {/* ── STATS ROW ── */}
@@ -560,13 +561,14 @@ export default function Uygulama() {
           to   { transform: translateX(0); opacity: 1; }
         }
         .leaflet-container {
-          background: #e8ecf8 !important;
+          background: ${dark ? '#1a1a2e' : '#e8ecf8'} !important;
         }
         .leaflet-control-zoom {
           border: 1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'} !important;
           border-radius: 8px !important;
           overflow: hidden;
           box-shadow: ${dark ? '0 4px 16px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'} !important;
+          z-index: 800 !important;
         }
         .leaflet-control-zoom a {
           background: ${dark ? 'rgba(11,17,32,0.9)' : '#fff'} !important;

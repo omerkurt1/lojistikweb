@@ -1,6 +1,7 @@
 // src/components/Navbar.jsx
 // Auth-aware top navigation bar — mounted via PublicLayout in App.jsx
-// NO modal state. NO hidden CSS. Explicit conditional rendering.
+// DIRECTIVE 3: Partner Network relocated to primary nav with consistent styling.
+// All labels use t() translations from SettingsContext.
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth }     from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
@@ -16,8 +17,19 @@ function initials(name = '') {
 
 export default function Navbar() {
   const { kullanici } = useAuth()
-  const { isDark }    = useSettings()
+  const { isDark, t } = useSettings()
   const navigate      = useNavigate()
+
+  // Standard link color — consistent across ALL nav items (Directive 3: no unique Partner styling)
+  const linkColor = isDark ? '#6a7fa8' : '#5a6a8a'
+
+  // Navigation items — Partner Network alongside Features, Operations, Why Us
+  const navLinks = [
+    { href: '#features',   label: t('features')   || (isDark ? 'Features' : 'Features'),   scroll: true },
+    { href: '#operations', label: t('operations')  || 'Operations',   scroll: true },
+    { href: '/partnerler', label: t('partnerNet'), scroll: false },
+    { href: '#why-us',     label: t('whyUs')       || (isDark ? 'Why Us' : 'Why Us'),       scroll: true },
+  ]
 
   return (
     <nav style={{
@@ -34,22 +46,27 @@ export default function Navbar() {
 
       {/* ── LEFT: Logo + links ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
-        <Link to="/" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
+        <Link to="/giris" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
           LOOP<span style={{ color: CYAN }}>.</span>
         </Link>
         <ul style={{ display: 'flex', gap: 32, listStyle: 'none', margin: 0, padding: 0 }}>
-          {[
-            { href: '/partnerler', label: 'Partner Ağı' },
-            { href: '/takip',      label: 'Kargo Takip'  },
-            { href: '/giris',      label: 'Operasyon'    },
-          ].map(item => (
+          {navLinks.map(item => (
             <li key={item.href}>
-              <Link
-                to={item.href}
-                style={{ color: isDark ? '#6a7fa8' : '#5a6a8a', textDecoration: 'none', fontSize: 14, fontWeight: 500 }}
-              >
-                {item.label}
-              </Link>
+              {item.scroll ? (
+                <a
+                  href={item.href}
+                  style={{ color: linkColor, textDecoration: 'none', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link
+                  to={item.href}
+                  style={{ color: linkColor, textDecoration: 'none', fontSize: 14, fontWeight: 500, transition: 'color 0.2s' }}
+                >
+                  {item.label}
+                </Link>
+              )}
             </li>
           ))}
         </ul>
@@ -87,7 +104,7 @@ export default function Navbar() {
                 {kullanici.isim}
               </div>
               <div style={{ fontSize: 11, color: CYAN, fontWeight: 600, marginTop: 1 }}>
-                Profilim &rarr;
+                {t('profile')} &rarr;
               </div>
             </div>
           </Link>
@@ -106,7 +123,7 @@ export default function Navbar() {
               }}
             >
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: CYAN, boxShadow: `0 0 6px ${CYAN}`, flexShrink: 0 }} />
-              MÜŞTERİ GİRİŞİ
+              {t('login')}
             </Link>
 
             <button
@@ -120,7 +137,7 @@ export default function Navbar() {
                 cursor: 'pointer', boxShadow: `0 4px 16px ${CYAN}40`,
               }}
             >
-              HEMEN BAŞLA
+              {t('getStarted')}
             </button>
           </>
         )}

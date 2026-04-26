@@ -1,320 +1,494 @@
 // src/pages/ProfilePage.jsx
+// LOOP Account Settings — DIRECTIVE 1
+// Glassmorphic dark-navy design ported from the HTML/Tailwind template.
+// Dark Mode toggle + Language selector wired directly to SettingsContext.
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth }     from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
 
 const FF   = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-const FFD  = "'Bebas Neue', sans-serif"
+const FFH  = "'Space Grotesk','Inter',sans-serif"
 const CYAN = '#00d4ff'
 const NAVY = '#060c1a'
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
-const SVG_User     = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-const SVG_Mail     = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-const SVG_Shield   = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-const SVG_LogOut   = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-const SVG_Back     = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-const SVG_Activity = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-const SVG_Settings = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-const SVG_Sliders  = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="6" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="4" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="8" y2="3"/><line x1="1" x2="7" y1="14" y2="14"/><line x1="9" x2="15" y1="12" y2="12"/><line x1="17" x2="23" y1="16" y2="16"/></svg>
-const SVG_Moon     = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-const SVG_Sun      = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-const SVG_Globe    = <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-const SVG_Check    = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+const ICO = {
+  person:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+  tune:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="4" x2="4" y1="21" y2="14"/><line x1="4" x2="4" y1="10" y2="3"/><line x1="12" x2="12" y1="21" y2="12"/><line x1="12" x2="12" y1="8" y2="3"/><line x1="20" x2="20" y1="21" y2="16"/><line x1="20" x2="20" y1="12" y2="3"/><line x1="2" x2="6" y1="14" y2="14"/><line x1="10" x2="14" y1="12" y2="12"/><line x1="18" x2="22" y1="16" y2="16"/></svg>,
+  activity: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  shield:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  logout:   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+  support:  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  dark:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+  lang:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+  edit:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+  biz:      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>,
+  badge:    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="3"/></svg>,
+  notif:    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  help:     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  settings: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  check:    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+}
 
-// ─── Helper: initials from name ────────────────────────────────────────────────
+// ─── Helper ─────────────────────────────────────────────────────────────────
 function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '??'
 }
 
-// ─── Theme token maps ──────────────────────────────────────────────────────────
-const darkTokens = {
-  bg: '#0b1120', navBg: 'rgba(11,17,32,0.97)', text: '#e8f0ff',
-  textMuted: '#6a7fa8', cardBg: 'rgba(255,255,255,0.03)',
-  border: 'rgba(255,255,255,0.07)', inputBg: 'rgba(255,255,255,0.05)',
-  segBg: 'rgba(255,255,255,0.04)', segActive: 'rgba(0,212,255,0.12)',
-}
-const lightTokens = {
-  bg: '#f0f4ff', navBg: 'rgba(255,255,255,0.97)', text: '#0a1628',
-  textMuted: '#5a6a8a', cardBg: '#ffffff',
-  border: '#e8ecf8', inputBg: '#f5f7ff',
-  segBg: '#eef1f8', segActive: 'rgba(0,212,255,0.1)',
+// ─── Theme Token Maps ───────────────────────────────────────────────────────
+function tk(isDark) {
+  if (isDark) return {
+    pageBg:    '#0d1515',
+    surfaceLo: '#151d1e',
+    surface:   '#0d1515',
+    surfaceHi: '#232b2c',
+    surfaceC:  '#192122',
+    text:      '#dce4e4',
+    textMuted: '#b9cacb',
+    textDim:   '#849495',
+    border:    'rgba(255,255,255,0.06)',
+    borderV:   '#3a494b',
+    accent:    '#00f2ff',
+    accentDim: 'rgba(0,242,255,0.12)',
+    accentBg:  'rgba(0,219,231,0.08)',
+    teal:      '#2dd4bf',
+    tealBg:    'rgba(45,212,191,0.10)',
+    tealBorder:'rgba(45,212,191,0.20)',
+    danger:    '#ff4757',
+    success:   '#2ed573',
+    warn:      '#ff9f1c',
+    purple:    '#a78bfa',
+    navBg:     'rgba(15,23,42,0.60)',
+    sidebarBg: 'rgba(15,23,42,0.40)',
+    glassBg:   'rgba(30,41,59,0.40)',
+    glassBorder: 'rgba(255,255,255,0.05)',
+    glassGlow: '0 0 12px rgba(0,242,255,0.2)',
+    inputBg:   '#0d1515',
+  }
+  return {
+    pageBg:    '#f0f4ff',
+    surfaceLo: '#f8faff',
+    surface:   '#ffffff',
+    surfaceHi: '#e8ecf8',
+    surfaceC:  '#f5f7ff',
+    text:      '#0a1628',
+    textMuted: '#5a6a8a',
+    textDim:   '#8a9abc',
+    border:    'rgba(0,0,0,0.08)',
+    borderV:   '#e8ecf8',
+    accent:    '#0062ff',
+    accentDim: 'rgba(0,98,255,0.10)',
+    accentBg:  'rgba(0,98,255,0.06)',
+    teal:      '#0d9488',
+    tealBg:    'rgba(13,148,136,0.08)',
+    tealBorder:'rgba(13,148,136,0.20)',
+    danger:    '#dc3545',
+    success:   '#27ae60',
+    warn:      '#e67e22',
+    purple:    '#7c3aed',
+    navBg:     'rgba(255,255,255,0.96)',
+    sidebarBg: 'rgba(248,250,255,0.95)',
+    glassBg:   'rgba(255,255,255,0.80)',
+    glassBorder: 'rgba(0,0,0,0.06)',
+    glassGlow: '0 0 12px rgba(0,98,255,0.1)',
+    inputBg:   '#ffffff',
+  }
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main Component ─────────────────────────────────────────────────────────
 export default function ProfilePage() {
   const { kullanici, cikis }              = useAuth()
   const { isDark, theme, setTheme, language, setLanguage, t } = useSettings()
-  const navigate  = useNavigate()
-  const [activeTab, setActiveTab] = useState('profil')
+  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState('general')
+  const [toast, setToast] = useState('')
 
-  const tk      = isDark ? darkTokens : lightTokens
+  const c       = tk(isDark)
   const isAdmin = kullanici?.email === 'patron@loop.com' || kullanici?.rol === 'admin'
 
-  // ── Not authenticated gate ────────────────────────────────────────────────
+  // ── Form state — initialized from auth ──
+  const [form, setForm] = useState({
+    firstName: kullanici?.isim?.split(' ')[0] || '',
+    lastName:  kullanici?.isim?.split(' ').slice(1).join(' ') || '',
+    email:     kullanici?.email || '',
+    phone:     '+1 (555) 019-2834',
+  })
+  const upd = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000) }
+
+  // ── Not authenticated gate ──
   if (!kullanici) {
     return (
-      <div style={{ minHeight: '100vh', background: tk.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}>
-        <div style={{ ...notAuthCardStyle, background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-          <div style={{ color: CYAN, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{SVG_Shield}</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: tk.text, marginBottom: 8 }}>{t('signInRequired')}</div>
-          <div style={{ fontSize: 13, color: tk.textMuted, marginBottom: 24 }}>{t('signInMsg')}</div>
-          <Link to="/giris" style={ctaBtnStyle}>{t('signIn')}</Link>
+      <div style={{ minHeight: '100vh', background: c.pageBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FF }}>
+        <div style={{ borderRadius: 20, padding: '48px 40px', textAlign: 'center', maxWidth: 360, background: c.surfaceC, border: `1px solid ${c.borderV}` }}>
+          <div style={{ color: c.accent, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{ICO.shield}</div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: c.text, marginBottom: 8 }}>{t('signInRequired')}</div>
+          <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 24 }}>{t('signInMsg')}</div>
+          <Link to="/giris" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, color: NAVY, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px rgba(0,212,255,0.3)` }}>{t('signIn')}</Link>
         </div>
       </div>
     )
   }
 
-  const handleCikis = () => { cikis(); navigate('/') }
+  const handleCikis = () => { cikis(); navigate('/giris') }
 
-  const tabs = [
-    { key: 'profil',    label: t('profileInfo'), icon: SVG_User     },
-    { key: 'aktivite',  label: t('activity'),    icon: SVG_Activity  },
-    { key: 'ayarlar',   label: t('settings'),    icon: SVG_Sliders   },
-    ...(isAdmin ? [{ key: 'admin', label: t('adminPanel'), icon: SVG_Settings }] : []),
+  // ── Sidebar Tabs ──
+  const sidebarTabs = [
+    { key: 'general',    label: t('profileInfo'),  icon: ICO.person   },
+    { key: 'prefs',      label: t('settings'),     icon: ICO.tune     },
+    { key: 'activity',   label: t('activity'),     icon: ICO.activity },
+    ...(isAdmin ? [{ key: 'admin', label: t('adminPanel'), icon: ICO.shield }] : []),
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: tk.bg, color: tk.text, fontFamily: FF }}>
+    <div style={{ minHeight: '100vh', background: c.pageBg, color: c.text, fontFamily: FF, overflow: 'hidden' }}>
 
-      {/* ── Sticky Top Navbar ── */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', height: 64, background: tk.navBg, borderBottom: `1px solid ${tk.border}`, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <button onClick={() => navigate(-1)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FF, color: tk.textMuted, background: tk.inputBg, border: `1px solid ${tk.border}` }}>
-            {SVG_Back} {t('back')}
-          </button>
-          <Link to="/" style={{ fontFamily: FFD, fontSize: 24, color: tk.text, textDecoration: 'none', letterSpacing: 1 }}>
-            LOOP<span style={{ color: CYAN }}>.</span>
-          </Link>
+      {/* ═══ Toast ═══ */}
+      {toast && (
+        <div style={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, padding: '12px 20px', borderRadius: 10, background: `${c.success}20`, border: `1px solid ${c.success}40`, color: c.success, fontSize: 13, fontWeight: 700, fontFamily: FF, boxShadow: '0 8px 24px rgba(0,0,0,0.3)', animation: 'fadeSlideIn 0.3s ease' }}>
+          {ICO.check} {toast}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Theme toggle pill */}
-          <button
-            onClick={() => setTheme(isDark ? 'light' : 'dark')}
-            title={isDark ? t('lightMode') : t('darkMode')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: FF, background: tk.inputBg, border: `1px solid ${tk.border}`, color: tk.textMuted, transition: 'all 0.2s' }}
-          >
-            {isDark ? SVG_Sun : SVG_Moon}
-            {isDark ? t('lightMode') : t('darkMode')}
-          </button>
-          <button onClick={handleCikis} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: FF, color: '#ff4757', background: 'rgba(255,71,87,0.08)', border: '1px solid rgba(255,71,87,0.2)' }}>
-            {SVG_LogOut} {t('logout')}
-          </button>
+      )}
+
+      {/* ═══ TOP NAV BAR ═══ */}
+      <nav style={{
+        position: 'fixed', top: 0, width: '100%', zIndex: 50, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '0 24px', height: 64,
+        background: c.navBg, backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: `1px solid ${c.border}`,
+        boxShadow: isDark ? '0 4px 24px rgba(0,0,0,0.3)' : '0 2px 12px rgba(0,0,0,0.04)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Link to="/" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: c.accent, fontFamily: FFH, textDecoration: 'none' }}>LOOP</Link>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <button style={iconBtnStyle(c)} title="Notifications">{ICO.notif}</button>
+          <button style={iconBtnStyle(c)} title="Help">{ICO.help}</button>
+          <button style={iconBtnStyle(c)} title="Settings">{ICO.settings}</button>
+          {/* Avatar */}
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${c.accent}, #0062ff)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#fff', cursor: 'pointer', border: `2px solid ${c.borderV}` }}>
+            {initials(kullanici.isim)}
+          </div>
         </div>
       </nav>
 
-      {/* ── Body ── */}
-      <div style={{ display: 'flex', gap: 24, padding: '40px', maxWidth: 1100, margin: '0 auto', alignItems: 'flex-start' }}>
+      {/* ═══ BODY: Sidebar + Main ═══ */}
+      <div style={{ display: 'flex', height: '100vh', paddingTop: 64 }}>
 
-        {/* ── LEFT Sidebar ── */}
-        <aside style={{ width: 260, flexShrink: 0, borderRadius: 20, padding: '28px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-          {/* Avatar */}
-          <div style={{ width: 84, height: 84, borderRadius: '50%', background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, padding: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 0 24px rgba(0,212,255,0.3)` }}>
-            <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#0b1120', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, fontWeight: 900, color: CYAN }}>
-              {initials(kullanici.isim)}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: 14, width: '100%' }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: tk.text }}>{kullanici.isim}</div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 5, color: tk.textMuted, fontSize: 12 }}>
-              {SVG_Mail} {kullanici.email}
-            </div>
-            {isAdmin && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 8, background: 'rgba(0,212,255,0.1)', border: '1px solid rgba(0,212,255,0.25)', color: CYAN, padding: '3px 10px', borderRadius: 40, fontSize: 9, fontWeight: 800, letterSpacing: '0.08em' }}>
-                {SVG_Shield} ADMIN
+        {/* ── LEFT SIDEBAR ── */}
+        <aside style={{
+          position: 'fixed', left: 0, top: 64, bottom: 0,
+          width: 260, padding: '24px 0',
+          background: c.sidebarBg, backdropFilter: 'blur(12px)',
+          borderRight: `1px solid ${c.border}`,
+          display: 'flex', flexDirection: 'column',
+          fontFamily: FFH, zIndex: 40,
+        }}>
+          {/* Workspace header */}
+          <div style={{ padding: '0 20px 20px', borderBottom: `1px solid ${c.border}`, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 6, background: c.surfaceC, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${c.borderV}`, color: c.accent }}>{ICO.biz}</div>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: c.text, margin: 0, fontFamily: FFH }}>LOOP Operations</h2>
+                <p style={{ fontSize: 12, color: c.textMuted, margin: 0 }}>Command Center v2.4</p>
               </div>
-            )}
+            </div>
           </div>
 
-          <div style={{ width: '100%', height: 1, background: tk.border, margin: '20px 0' }} />
+          {/* Nav tabs */}
+          <nav style={{ flex: 1, padding: '0 12px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {sidebarTabs.map(tab => {
+              const active = activeTab === tab.key
+              return (
+                <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+                  display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8,
+                  background: active ? c.accentDim : 'transparent',
+                  borderRight: active ? `2px solid ${c.accent}` : '2px solid transparent',
+                  border: 'none', borderLeft: 'none', borderTop: 'none', borderBottom: 'none',
+                  ...(active ? { borderRight: `2px solid ${c.accent}` } : {}),
+                  color: active ? c.accent : c.textDim,
+                  fontSize: 14, fontWeight: 500, fontFamily: FFH, cursor: 'pointer',
+                  transition: 'all 0.15s', textAlign: 'left', width: '100%',
+                }}>
+                  {tab.icon} <span>{tab.label}</span>
+                </button>
+              )
+            })}
+          </nav>
 
-          {/* Tab nav */}
-          {tabs.map(item => (
-            <button
-              key={item.key}
-              onClick={() => setActiveTab(item.key)}
-              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 8, marginBottom: 3, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: FF, textAlign: 'left', transition: 'all 0.2s', background: activeTab === item.key ? `${CYAN}14` : 'transparent', borderLeft: `3px solid ${activeTab === item.key ? CYAN : 'transparent'}`, color: activeTab === item.key ? CYAN : tk.textMuted }}
-            >
-              {item.icon} {item.label}
+          {/* Bottom links */}
+          <div style={{ padding: '16px 12px 0', borderTop: `1px solid ${c.border}`, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <button style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8, background: 'transparent', border: 'none', color: c.textDim, fontSize: 14, fontWeight: 500, fontFamily: FFH, cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+              {ICO.support} <span>{language === 'tr' ? 'Destek' : 'Support'}</span>
             </button>
-          ))}
-
-          <div style={{ marginTop: 'auto', paddingTop: 20, width: '100%' }}>
-            <button onClick={handleCikis} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px 0', borderRadius: 10, background: 'rgba(255,71,87,0.06)', border: '1px solid rgba(255,71,87,0.25)', color: '#ff4757', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>
-              {SVG_LogOut} {t('logout')}
+            <button onClick={handleCikis} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8, background: 'transparent', border: 'none', color: c.textDim, fontSize: 14, fontWeight: 500, fontFamily: FFH, cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+              {ICO.logout} <span>{t('logout')}</span>
             </button>
           </div>
         </aside>
 
-        {/* ── RIGHT Main ── */}
-        <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        {/* ── MAIN CONTENT ── */}
+        <main style={{ flex: 1, marginLeft: 260, overflowY: 'auto', padding: 24, background: c.pageBg }}>
+          <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
 
-          {/* ── Profil Tab ── */}
-          {activeTab === 'profil' && (<>
-            <div style={{ borderRadius: 16, padding: '24px 28px', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-              <div style={sectionTitleStyle}>{t('accountInfo')}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                {[
-                  { label: t('fullName'),     value: kullanici.isim  },
-                  { label: t('email'),        value: kullanici.email },
-                  { label: t('role'),         value: isAdmin ? t('systemAdmin') : t('operator') },
-                  { label: t('accountStatus'),value: t('accountActive') },
-                ].map(f => (
-                  <div key={f.label} style={{ borderRadius: 10, padding: '12px 14px', background: tk.inputBg, border: `1px solid ${tk.border}` }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: tk.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4 }}>{f.label}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: tk.text }}>{f.value}</div>
+            {/* ── Page Header ── */}
+            <header style={{ marginBottom: 8 }}>
+              <h1 style={{ fontSize: 42, fontWeight: 700, color: c.text, fontFamily: FFH, letterSpacing: '-0.02em', lineHeight: 1.1, margin: 0 }}>
+                {language === 'tr' ? 'Hesap Ayarları' : 'Account Settings'}
+              </h1>
+              <p style={{ fontSize: 16, color: c.textMuted, marginTop: 8, lineHeight: 1.6 }}>
+                {language === 'tr' ? 'Profil, tercih ve güvenlik ayarlarınızı yönetin.' : 'Manage your profile, preferences, and security configurations.'}
+              </p>
+            </header>
+
+            {/* ═══ USER IDENTITY CARD ═══ */}
+            <section style={{ background: c.glassBg, backdropFilter: 'blur(12px)', border: `1px solid ${c.glassBorder}`, borderRadius: 12, padding: 24, position: 'relative', overflow: 'hidden' }}>
+              {/* Left accent bar */}
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 3, height: '100%', background: `linear-gradient(180deg, ${c.accent}, ${c.teal})` }} />
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 24, position: 'relative', zIndex: 1 }}>
+                {/* Avatar */}
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div style={{ width: 96, height: 96, borderRadius: '50%', border: `2px solid ${c.accent}`, padding: 4, background: c.surfaceC, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: `linear-gradient(135deg, ${c.accent}, #0062ff)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: '#fff' }}>
+                      {initials(kullanici.isim)}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ borderRadius: 16, padding: '24px 28px', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-              <div style={sectionTitleStyle}>{t('sessionSec')}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {[
-                  { label: t('sessionStatus'), value: t('activeVerified'),   color: '#2ed573' },
-                  { label: t('tokenType'),     value: 'JWT Bearer',          color: CYAN      },
-                  { label: t('platform'),      value: 'LOOP Command Center v2', color: tk.text },
-                ].map(row => (
-                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: 10, background: tk.inputBg, border: `1px solid ${tk.border}` }}>
-                    <span style={{ fontSize: 12, color: tk.textMuted, fontWeight: 600 }}>{row.label}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: row.color }}>{row.value}</span>
+                  <div style={{ position: 'absolute', bottom: 2, right: 2, width: 24, height: 24, borderRadius: '50%', background: c.surfaceC, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${c.borderV}`, color: c.textMuted, cursor: 'pointer' }}>
+                    {ICO.edit}
                   </div>
-                ))}
-              </div>
-            </div>
-          </>)}
-
-          {/* ── Aktivite Tab ── */}
-          {activeTab === 'aktivite' && (
-            <div style={{ borderRadius: 16, padding: '24px 28px', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-              <div style={sectionTitleStyle}>{t('recentActivity')}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { label: language === 'tr' ? 'Dashboard erişimi'                 : 'Dashboard accessed',        time: language === 'tr' ? 'Az önce'       : 'Just now',      dot: '#2ed573' },
-                  { label: language === 'tr' ? 'Partner Network görüntülendi'      : 'Partner Network viewed',    time: language === 'tr' ? '12 dk önce'    : '12 min ago',    dot: CYAN      },
-                  { label: language === 'tr' ? 'Rota optimizasyonu tetiklendi'     : 'Route optimization triggered',time: language === 'tr' ? '1 saat önce' : '1 hour ago',   dot: '#ff9f1c' },
-                  { label: language === 'tr' ? 'Anomali incelendi — A1'            : 'Anomaly inspected — A1',    time: language === 'tr' ? 'Bugün 14:22'   : 'Today 14:22',   dot: '#ff4757' },
-                  { label: language === 'tr' ? 'Sistem girişi'                     : 'System login',              time: language === 'tr' ? 'Bugün'         : 'Today',         dot: '#2ed573' },
-                ].map((act, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', borderRadius: 10, background: tk.inputBg, border: `1px solid ${tk.border}` }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: act.dot, flexShrink: 0, boxShadow: `0 0 6px ${act.dot}` }} />
-                    <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: tk.text }}>{act.label}</span>
-                    <span style={{ fontSize: 11, color: tk.textMuted, flexShrink: 0 }}>{act.time}</span>
+                </div>
+                {/* Info */}
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ fontSize: 28, fontWeight: 600, color: c.text, fontFamily: FFH, margin: 0, lineHeight: 1.2 }}>{kullanici.isim}</h2>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: c.textMuted, fontSize: 14, fontFamily: FFH }}>
+                      {ICO.biz} <span>Global E-commerce Ltd.</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: c.textMuted, fontSize: 14, fontFamily: FFH }}>
+                      {ICO.badge} <span>{isAdmin ? (language === 'tr' ? 'Sistem Yöneticisi' : 'System Administrator') : (language === 'tr' ? 'Operatör' : 'Operations Manager')}</span>
+                    </div>
                   </div>
-                ))}
+                </div>
+                {/* Active Status */}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 6, background: c.tealBg, border: `1px solid ${c.tealBorder}`, color: c.teal, fontSize: 12, fontWeight: 600, letterSpacing: '0.05em', flexShrink: 0 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: c.teal, boxShadow: c.glassGlow }} />
+                  {language === 'tr' ? 'Aktif Durum' : 'Active Status'}
+                </span>
               </div>
-            </div>
-          )}
+            </section>
 
-          {/* ── Ayarlar Tab ── */}
-          {activeTab === 'ayarlar' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-              {/* Theme */}
-              <div style={{ borderRadius: 16, padding: '24px 28px', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-                <div style={sectionTitleStyle}>{t('theme')}</div>
-                <p style={{ fontSize: 13, color: tk.textMuted, marginBottom: 16 }}>
-                  {language === 'tr'
-                    ? 'Seçilen tema tüm sayfalara ve haritaya anında uygulanır.'
-                    : 'The selected theme is applied instantly across all pages and the map.'}
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {/* ═══ GENERAL INFO TAB ═══ */}
+            {activeTab === 'general' && (<>
+              {/* Personal Information Form */}
+              <section style={cardStyle(c)}>
+                <h3 style={sectionHeadStyle(c)}>{language === 'tr' ? 'Kişisel Bilgiler' : 'Personal Information'}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                   {[
-                    { val: 'dark',  label: t('darkMode'),  icon: SVG_Moon, preview: '#0b1120', accent: '#e8f0ff' },
-                    { val: 'light', label: t('lightMode'), icon: SVG_Sun,  preview: '#f0f4ff', accent: '#0a1628' },
-                  ].map(opt => (
-                    <button
-                      key={opt.val}
-                      onClick={() => setTheme(opt.val)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 12, cursor: 'pointer', fontFamily: FF, transition: 'all 0.2s', border: theme === opt.val ? `2px solid ${CYAN}` : `2px solid ${tk.border}`, background: theme === opt.val ? `${CYAN}10` : tk.inputBg }}
-                    >
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: opt.preview, display: 'flex', alignItems: 'center', justifyContent: 'center', color: opt.accent, flexShrink: 0, boxShadow: theme === opt.val ? `0 0 12px ${CYAN}40` : 'none' }}>
-                        {opt.icon}
-                      </div>
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: theme === opt.val ? CYAN : tk.text }}>{opt.label}</div>
-                        {theme === opt.val && <div style={{ fontSize: 11, color: CYAN, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>{SVG_Check} {language === 'tr' ? 'Seçili' : 'Active'}</div>}
-                      </div>
-                    </button>
+                    { key: 'firstName', label: language === 'tr' ? 'Ad' : 'First Name', type: 'text' },
+                    { key: 'lastName',  label: language === 'tr' ? 'Soyad' : 'Last Name', type: 'text' },
+                    { key: 'email',     label: language === 'tr' ? 'E-Posta Adresi' : 'Email Address', type: 'email' },
+                    { key: 'phone',     label: language === 'tr' ? 'Telefon' : 'Phone Number', type: 'tel' },
+                  ].map(f => (
+                    <div key={f.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <label style={labelStyle(c)}>{f.label}</label>
+                      <input
+                        type={f.type}
+                        value={form[f.key]}
+                        onChange={e => upd(f.key, e.target.value)}
+                        style={inputStyle(c)}
+                      />
+                    </div>
                   ))}
                 </div>
-              </div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 12 }}>
+                  <button onClick={() => showToast(language === 'tr' ? 'Değişiklikler kaydedildi' : 'Changes saved successfully')} style={saveBtnStyle(c)}>
+                    {language === 'tr' ? 'Değişiklikleri Kaydet' : 'Save Changes'}
+                  </button>
+                </div>
+              </section>
 
-              {/* Language */}
-              <div style={{ borderRadius: 16, padding: '24px 28px', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-                <div style={sectionTitleStyle}>{t('language')}</div>
-                <p style={{ fontSize: 13, color: tk.textMuted, marginBottom: 16 }}>
-                  {language === 'tr'
-                    ? 'Seçilen dil tüm arayüz ve Dashboard etiketlerine uygulanır.'
-                    : 'The selected language is applied to all UI labels and the Dashboard.'}
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              {/* Session Security */}
+              <section style={cardStyle(c)}>
+                <h3 style={sectionHeadStyle(c)}>{t('sessionSec')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {[
-                    { val: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-                    { val: 'en', label: 'English', flag: '🇬🇧' },
-                  ].map(opt => (
-                    <button
-                      key={opt.val}
-                      onClick={() => setLanguage(opt.val)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '16px 18px', borderRadius: 12, cursor: 'pointer', fontFamily: FF, transition: 'all 0.2s', border: language === opt.val ? `2px solid ${CYAN}` : `2px solid ${tk.border}`, background: language === opt.val ? `${CYAN}10` : tk.inputBg }}
-                    >
-                      <div style={{ fontSize: 28, lineHeight: 1 }}>{opt.flag}</div>
-                      <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: language === opt.val ? CYAN : tk.text }}>{opt.label}</div>
-                        {language === opt.val && <div style={{ fontSize: 11, color: CYAN, marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>{SVG_Check} {language === 'tr' ? 'Seçili' : 'Active'}</div>}
-                      </div>
-                    </button>
+                    { label: t('sessionStatus'), value: t('activeVerified'),   color: c.success },
+                    { label: t('tokenType'),     value: 'JWT Bearer',          color: c.accent  },
+                    { label: t('platform'),      value: 'LOOP Command Center v2', color: c.text },
+                  ].map(row => (
+                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 8, background: c.pageBg, border: `1px solid ${c.borderV}` }}>
+                      <span style={{ fontSize: 13, color: c.textMuted, fontWeight: 600 }}>{row.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: row.color }}>{row.value}</span>
+                    </div>
                   ))}
                 </div>
-              </div>
-            </div>
-          )}
+              </section>
+            </>)}
 
-          {/* ── Admin Tab ── */}
-          {activeTab === 'admin' && isAdmin && (
-            <div style={{ borderRadius: 16, padding: '24px 28px', background: tk.cardBg, border: `1px solid ${tk.border}` }}>
-              <div style={sectionTitleStyle}>{t('adminPanel')}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
-                {[
-                  { label: language === 'tr' ? 'Toplam Kullanıcı' : 'Total Users',    value: '—', color: CYAN },
-                  { label: language === 'tr' ? 'Aktif Oturum'     : 'Active Sessions', value: '1', color: '#2ed573' },
-                  { label: language === 'tr' ? 'Partner Sayısı'   : 'Partners',        value: '6', color: '#ff9f1c' },
-                  { label: language === 'tr' ? 'API Çağrısı / gün': 'API Calls / day', value: '—', color: '#a78bfa' },
-                ].map(s => (
-                  <div key={s.label} style={{ background: tk.inputBg, border: `1px solid ${tk.border}`, borderRadius: 12, padding: '16px 18px' }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: tk.textMuted, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{s.label}</div>
-                    <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
+            {/* ═══ PREFERENCES TAB ═══ */}
+            {activeTab === 'prefs' && (
+              <section style={cardStyle(c)}>
+                <h3 style={sectionHeadStyle(c)}>{language === 'tr' ? 'Arayüz Tercihleri' : 'Interface Preferences'}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+                  {/* Dark Mode Toggle */}
+                  <div style={prefRowStyle(c)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <span style={{ color: c.textMuted }}>{ICO.dark}</span>
+                      <div>
+                        <h4 style={{ fontSize: 16, fontWeight: 500, color: c.text, margin: 0, lineHeight: 1.6 }}>{t('darkMode')}</h4>
+                        <p style={{ fontSize: 14, color: c.textMuted, margin: 0, lineHeight: 1.5 }}>
+                          {language === 'tr' ? 'Düşük ışık ortamları için koyu tema.' : 'Enable dark operations theme for low-light environments.'}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Toggle switch */}
+                    <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={isDark}
+                        onChange={() => setTheme(isDark ? 'light' : 'dark')}
+                        style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+                      />
+                      <div style={{
+                        width: 44, height: 24, borderRadius: 12,
+                        background: isDark ? c.accent : c.surfaceHi,
+                        border: `1px solid ${c.borderV}`,
+                        position: 'relative', transition: 'background 0.3s',
+                      }}>
+                        <div style={{
+                          width: 20, height: 20, borderRadius: '50%',
+                          background: '#fff', border: '1px solid #ccc',
+                          position: 'absolute', top: 1, left: isDark ? 22 : 1,
+                          transition: 'left 0.3s',
+                          boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                        }} />
+                      </div>
+                    </label>
                   </div>
-                ))}
-              </div>
-              <Link to="/" style={{ ...ctaBtnStyle, display: 'inline-flex', textDecoration: 'none' }}>
-                {t('goToDashboard')}
-              </Link>
-            </div>
-          )}
+
+                  {/* Language Selector */}
+                  <div style={prefRowStyle(c)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <span style={{ color: c.textMuted }}>{ICO.lang}</span>
+                      <div>
+                        <h4 style={{ fontSize: 16, fontWeight: 500, color: c.text, margin: 0, lineHeight: 1.6 }}>{t('language')}</h4>
+                        <p style={{ fontSize: 14, color: c.textMuted, margin: 0, lineHeight: 1.5 }}>
+                          {language === 'tr' ? 'Birincil dashboard dilini seçin.' : 'Select your primary dashboard language.'}
+                        </p>
+                      </div>
+                    </div>
+                    <div style={{ position: 'relative' }}>
+                      <select
+                        value={language}
+                        onChange={e => setLanguage(e.target.value)}
+                        style={{
+                          appearance: 'none', MozAppearance: 'none', WebkitAppearance: 'none',
+                          background: c.surfaceC, border: `1px solid ${c.borderV}`, color: c.text,
+                          fontSize: 14, fontFamily: FF, borderRadius: 6,
+                          padding: '8px 36px 8px 14px',
+                          cursor: 'pointer', outline: 'none',
+                        }}
+                      >
+                        <option value="en">English (US)</option>
+                        <option value="tr">Türkçe</option>
+                      </select>
+                      <div style={{ pointerEvents: 'none', position: 'absolute', inset: '0 0 0 auto', display: 'flex', alignItems: 'center', paddingRight: 10, color: c.textMuted }}>
+                        ▾
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* ═══ ACTIVITY TAB ═══ */}
+            {activeTab === 'activity' && (
+              <section style={cardStyle(c)}>
+                <h3 style={sectionHeadStyle(c)}>{t('recentActivity')}</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { label: language === 'tr' ? 'Dashboard erişimi'              : 'Dashboard accessed',         time: language === 'tr' ? 'Az önce'    : 'Just now',    dot: c.success },
+                    { label: language === 'tr' ? 'Partner Network görüntülendi'   : 'Partner Network viewed',     time: language === 'tr' ? '12 dk önce' : '12 min ago',  dot: c.accent  },
+                    { label: language === 'tr' ? 'Rota optimizasyonu tetiklendi'  : 'Route optimization triggered', time: language === 'tr' ? '1 saat önce': '1 hour ago', dot: c.warn    },
+                    { label: language === 'tr' ? 'Anomali incelendi — A1'         : 'Anomaly inspected — A1',     time: language === 'tr' ? 'Bugün 14:22': 'Today 14:22', dot: c.danger  },
+                    { label: language === 'tr' ? 'Sistem girişi'                  : 'System login',               time: language === 'tr' ? 'Bugün'      : 'Today',       dot: c.success },
+                  ].map((act, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 8, background: c.pageBg, border: `1px solid ${c.borderV}` }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: act.dot, flexShrink: 0, boxShadow: `0 0 6px ${act.dot}` }} />
+                      <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: c.text }}>{act.label}</span>
+                      <span style={{ fontSize: 12, color: c.textDim, flexShrink: 0 }}>{act.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* ═══ ADMIN TAB ═══ */}
+            {activeTab === 'admin' && isAdmin && (
+              <section style={cardStyle(c)}>
+                <h3 style={sectionHeadStyle(c)}>{t('adminPanel')}</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 20 }}>
+                  {[
+                    { label: language === 'tr' ? 'Toplam Kullanıcı' : 'Total Users',    value: '—', color: c.accent },
+                    { label: language === 'tr' ? 'Aktif Oturum'     : 'Active Sessions', value: '1', color: c.success },
+                    { label: language === 'tr' ? 'Partner Sayısı'   : 'Partners',        value: '6', color: c.warn },
+                    { label: language === 'tr' ? 'API Çağrısı / gün': 'API Calls / day', value: '—', color: c.purple },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: c.pageBg, border: `1px solid ${c.borderV}`, borderRadius: 12, padding: '16px 18px' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: c.textDim, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 6 }}>{s.label}</div>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: s.color }}>{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+                <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, color: NAVY, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px rgba(0,212,255,0.3)` }}>
+                  {t('goToDashboard')}
+                </Link>
+              </section>
+            )}
+
+          </div>
         </main>
       </div>
+
+      {/* ═══ INLINE KEYFRAMES ═══ */}
+      <style>{`
+        @keyframes fadeSlideIn {
+          from { transform: translateX(30px); opacity: 0; }
+          to   { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   )
 }
 
-// ─── Shared Styles ────────────────────────────────────────────────────────────
-const sectionTitleStyle = {
-  fontSize: 15, fontWeight: 800, marginBottom: 18, letterSpacing: '-0.01em',
+// ─── Shared Style Helpers ───────────────────────────────────────────────────
+function iconBtnStyle(c) {
+  return { background: 'none', border: 'none', color: c.textDim, cursor: 'pointer', padding: 4, display: 'flex', transition: 'color 0.2s' }
 }
 
-const ctaBtnStyle = {
-  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  gap: 8, padding: '12px 28px', borderRadius: 10,
-  background: `linear-gradient(135deg, ${CYAN}, #0062ff)`,
-  color: NAVY, fontSize: 13, fontWeight: 800,
-  border: 'none', cursor: 'pointer', boxShadow: `0 6px 20px rgba(0,212,255,0.3)`,
+function cardStyle(c) {
+  return { background: c.surfaceLo, borderRadius: 12, border: `1px solid ${c.borderV}`, padding: 24 }
 }
 
-const notAuthCardStyle = {
-  borderRadius: 20, padding: '48px 40px', textAlign: 'center',
-  fontFamily: "'Inter',sans-serif", maxWidth: 360,
+function sectionHeadStyle(c) {
+  return { fontSize: 20, fontWeight: 500, color: c.text, marginTop: 0, marginBottom: 16, paddingBottom: 8, borderBottom: `1px solid ${c.borderV}`, fontFamily: "'Space Grotesk','Inter',sans-serif" }
+}
+
+function labelStyle(c) {
+  return { fontSize: 12, fontWeight: 600, color: c.textMuted, textTransform: 'uppercase', letterSpacing: '0.05em' }
+}
+
+function inputStyle(c) {
+  return { width: '100%', background: c.inputBg, border: `1px solid ${c.borderV}`, borderRadius: 4, padding: '10px 14px', color: c.text, fontSize: 16, fontFamily: "'Manrope','Inter',sans-serif", outline: 'none', transition: 'border-color 0.2s', boxSizing: 'border-box' }
+}
+
+function saveBtnStyle(c) {
+  return { background: c.surfaceC, border: `1px solid ${c.accent}`, color: c.accent, fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 24px', borderRadius: 4, cursor: 'pointer', fontFamily: "'Manrope','Inter',sans-serif", transition: 'all 0.2s' }
+}
+
+function prefRowStyle(c) {
+  return { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderRadius: 8, background: c.pageBg, border: `1px solid ${c.borderV}`, transition: 'background 0.2s' }
 }

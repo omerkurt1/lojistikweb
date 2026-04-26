@@ -17,6 +17,9 @@ const TRANSLATIONS = {
     back:         'Geri',
     login:        'Müşteri Girişi',
     getStarted:   'Hemen Başla',
+    features:     'Özellikler',
+    operations:   'Operasyonlar',
+    whyUs:        'Neden Biz',
 
     // Dashboard sidebar
     fleet:        'Filo',
@@ -106,6 +109,9 @@ const TRANSLATIONS = {
     back:         'Back',
     login:        'Client Login',
     getStarted:   'Get Started',
+    features:     'Features',
+    operations:   'Operations',
+    whyUs:        'Why Us',
 
     // Dashboard sidebar
     fleet:        'Fleet',
