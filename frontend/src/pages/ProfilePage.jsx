@@ -443,7 +443,7 @@ export default function ProfilePage() {
                     </div>
                   ))}
                 </div>
-                <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, color: NAVY, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px rgba(0,212,255,0.3)` }}>
+                <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, color: NAVY, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px rgba(0,212,255,0.3)` }}>
                   {t('goToDashboard')}
                 </Link>
               </section>

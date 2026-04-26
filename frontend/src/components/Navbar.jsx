@@ -46,7 +46,7 @@ export default function Navbar() {
 
       {/* ── LEFT: Logo + links ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
-        <Link to="/giris" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
+        <Link to="/" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
           LOOP<span style={{ color: CYAN }}>.</span>
         </Link>
         <ul style={{ display: 'flex', gap: 32, listStyle: 'none', margin: 0, padding: 0 }}>

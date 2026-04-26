@@ -33,10 +33,10 @@ export default function Login() {
         setTimeout(() => {
           if (form.email.trim().toLowerCase() === 'patron@loop.com') {
             // Admin → navigate to Dashboard (ProtectedRoute will validate)
-            navigate('/')
+            navigate('/dashboard')
           } else {
-            // Regular user → go to profile page within the SPA
-            navigate('/profil')
+            // Regular user → land on the main Vitrin page
+            navigate('/')
           }
         }, 1000)
 
@@ -45,8 +45,8 @@ export default function Login() {
         setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
 
         setTimeout(() => {
-          // New user → go to profile page within the SPA
-          navigate('/profil')
+          // New user → land on the main Vitrin page
+          navigate('/')
         }, 1200)
       }
     } catch (err) {

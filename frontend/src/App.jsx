@@ -12,6 +12,7 @@ import Login          from './pages/Login'
 import Takip          from './pages/Takip'
 import PartnerNetwork from './pages/PartnerNetwork'
 import ProfilePage    from './pages/ProfilePage'
+import Vitrin         from './pages/Vitrin'
 
 // ─── DIRECTIVE 4: ScrollToTop ────────────────────────────────────────────────
 // Forces window.scrollTo(0,0) on every route change so users always see the top.
@@ -44,7 +45,7 @@ function ProtectedRoute({ children }) {
 
   // Logged in but NOT admin → redirect
   const isAdmin = kullanici.email === 'patron@loop.com' || kullanici.rol === 'admin'
-  if (!isAdmin) return <Navigate to="/giris" replace />
+  if (!isAdmin) return <Navigate to="/" replace />
 
   return children
 }
@@ -68,9 +69,12 @@ export default function App() {
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
+            {/* Public Vitrin landing page — "/" */}
+            <Route path="/"      element={<PublicLayout><Vitrin /></PublicLayout>} />
+
             {/* Full-screen — own header, no shared Navbar */}
-            {/* DIRECTIVE 2: Dashboard is admin-only */}
-            <Route path="/"      element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            {/* DIRECTIVE 2: Dashboard is admin-only, now at /dashboard */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/takip" element={<Takip />} />
 
             {/* Public pages — share the top Navbar with auth-aware Profile button */}
@@ -80,7 +84,7 @@ export default function App() {
 
             {/* Redirects */}
             <Route path="/odeme" element={<Navigate to="/partnerler" replace />} />
-            <Route path="*"      element={<Navigate to="/giris" replace />} />
+            <Route path="*"      element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
