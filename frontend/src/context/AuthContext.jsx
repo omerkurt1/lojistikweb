@@ -11,6 +11,16 @@ export function AuthProvider({ children }) {
 
   // Sayfa yüklenince token'dan kullanıcıyı geri yükle
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const tokenFromUrl = params.get('loop_token')
+    if (tokenFromUrl) {
+      localStorage.setItem('loop_token', tokenFromUrl)
+      params.delete('loop_token')
+      const newSearch = params.toString()
+      const cleanUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`
+      window.history.replaceState({}, '', cleanUrl)
+    }
+
     const token = localStorage.getItem('loop_token')
     if (!token) { setYukleniyor(false); return }
     fetch(`${API}/auth/ben`, {

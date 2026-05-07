@@ -44,7 +44,9 @@ function ProtectedRoute({ children }) {
   if (!kullanici) return <Navigate to="/giris" replace />
 
   // Logged in but NOT admin → redirect
-  const isAdmin = kullanici.email === 'patron@loop.com' || kullanici.rol === 'admin'
+  const isAdmin =
+    (kullanici.email || '').toLowerCase() === 'patron@loop.com' ||
+    (kullanici.rol || '').toLowerCase() === 'admin'
   if (!isAdmin) return <Navigate to="/" replace />
 
   return children

@@ -31,8 +31,8 @@ export default function Login() {
         const sonuc = await giris({ email: form.email, sifre: form.sifre })
         const kullanici = sonuc?.kullanici
         const isAdmin =
-          kullanici?.email === 'patron@loop.com' ||
-          kullanici?.rol === 'admin'
+          (kullanici?.email || '').toLowerCase() === 'patron@loop.com' ||
+          (kullanici?.rol || '').toLowerCase() === 'admin'
 
         setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
         if (isAdmin) {
