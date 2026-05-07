@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettings } from '../context/SettingsContext'
-import { useAuth } from '../context/AuthContext'
 
 const FF = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
 const FFH = "'Bebas Neue','Impact',sans-serif"
@@ -104,9 +103,16 @@ function Hoverable({ children, style, hoverStyle, ...props }) {
 
 export default function Vitrin() {
   const { isDark, language } = useSettings()
-  const { kullanici } = useAuth()
   const navigate = useNavigate()
   const c = COPY[language === 'en' ? 'en' : 'tr']
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [onboardingStep, setOnboardingStep] = useState(1)
+  const [onboardingForm, setOnboardingForm] = useState({
+    companyName: '',
+    businessType: '',
+    fleetSize: '',
+    employees: '',
+  })
 
   const bg = isDark ? '#060c1a' : '#f5f8ff'
   const text = isDark ? '#e8f0ff' : '#0a1628'
@@ -119,8 +125,195 @@ export default function Vitrin() {
     : 'linear-gradient(180deg, #e0f0ff 0%, #f5f8ff 60%, #ffffff 100%)'
   const headlineColor = isDark ? '#e8f0ff' : '#0a1628'
 
+  function updateOnboardingField(field, value) {
+    setOnboardingForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function nextOnboardingStep() {
+    setOnboardingStep(prev => (prev >= 4 ? 4 : prev + 1))
+  }
+
   return (
     <div style={{ background: bg, color: text, fontFamily: FF, minHeight: '100vh', overflowX: 'hidden' }}>
+      {onboardingOpen && (
+        <div
+          onClick={() => setOnboardingOpen(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10000,
+            background: isDark ? 'rgba(4,8,16,0.70)' : 'rgba(34,45,70,0.34)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: 'min(920px, 100%)',
+              borderRadius: 22,
+              overflow: 'hidden',
+              background: isDark
+                ? 'linear-gradient(135deg, #07132a 0%, #081a3a 50%, #07132a 100%)'
+                : 'linear-gradient(135deg, #f6f9ff 0%, #ecf3ff 100%)',
+              border: isDark ? '1px solid rgba(0,212,255,0.20)' : '1px solid rgba(20,40,90,0.16)',
+              boxShadow: isDark ? '0 28px 80px rgba(0,0,0,0.62)' : '0 24px 70px rgba(40,66,118,0.28)',
+            }}
+          >
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '22px 28px',
+              borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(10,40,90,0.12)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 42, height: 42, borderRadius: 12,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: `linear-gradient(135deg, ${CYAN}, #0f79ff)`,
+                  color: '#051022', fontWeight: 900,
+                }}>L</div>
+                <div>
+                  <div style={{ fontSize: 30, fontFamily: FFH, lineHeight: 1, letterSpacing: 1 }}>LOOP Onboarding</div>
+                  <div style={{ fontSize: 12, color: muted, letterSpacing: '0.08em', textTransform: 'uppercase' }}>Logistics Partner Setup</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setOnboardingOpen(false)}
+                style={{
+                  width: 34, height: 34, borderRadius: '50%',
+                  border: 'none',
+                  background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(10,30,70,0.08)',
+                  color: isDark ? '#c9d8f6' : '#3c4b68',
+                  cursor: 'pointer',
+                  fontSize: 20,
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div style={{ padding: '24px 32px 28px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 26 }}>
+                {['Business', 'Shipments', 'Experience', 'Verify'].map((label, i) => {
+                  const active = onboardingStep === i + 1
+                  return (
+                    <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 34, height: 34, borderRadius: '50%',
+                        border: active ? `2px solid ${CYAN}` : (isDark ? '2px solid rgba(255,255,255,0.16)' : '2px solid rgba(30,50,90,0.20)'),
+                        color: active ? CYAN : muted,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 900,
+                      }}>{i + 1}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: active ? CYAN : muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <h3 style={{ margin: '0 0 8px', fontSize: 40, fontFamily: FFH, letterSpacing: 1 }}>Business Profile</h3>
+              <p style={{ margin: '0 0 20px', color: muted, lineHeight: 1.6 }}>
+                Tell us about your logistics operation. This helps us tailor route assignments and reporting to your fleet size.
+              </p>
+
+              <div style={{ display: 'grid', gap: 14 }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Business / Company Name</div>
+                  <input
+                    value={onboardingForm.companyName}
+                    onChange={e => updateOnboardingField('companyName', e.target.value)}
+                    placeholder="e.g. Yilmaz Freight Solutions"
+                    style={{
+                      width: '100%', padding: '14px 16px', borderRadius: 12,
+                      border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(20,40,90,0.18)',
+                      background: isDark ? 'rgba(255,255,255,0.04)' : '#f7faff',
+                      color: text, fontFamily: FF, fontSize: 16,
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Business Type</div>
+                  <input
+                    value={onboardingForm.businessType}
+                    onChange={e => updateOnboardingField('businessType', e.target.value)}
+                    placeholder="Select your shipment model"
+                    style={{
+                      width: '100%', padding: '14px 16px', borderRadius: 12,
+                      border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(20,40,90,0.18)',
+                      background: isDark ? 'rgba(255,255,255,0.04)' : '#f7faff',
+                      color: text, fontFamily: FF, fontSize: 16,
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Active Couriers / Vehicles</div>
+                    <input
+                      value={onboardingForm.fleetSize}
+                      onChange={e => updateOnboardingField('fleetSize', e.target.value)}
+                      placeholder="e.g. 25"
+                      style={{
+                        width: '100%', padding: '14px 16px', borderRadius: 12,
+                        border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(20,40,90,0.18)',
+                        background: isDark ? 'rgba(255,255,255,0.04)' : '#f7faff',
+                        color: text, fontFamily: FF, fontSize: 16,
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Total Employees</div>
+                    <input
+                      value={onboardingForm.employees}
+                      onChange={e => updateOnboardingField('employees', e.target.value)}
+                      placeholder="e.g. 1-10, 50-200"
+                      style={{
+                        width: '100%', padding: '14px 16px', borderRadius: 12,
+                        border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(20,40,90,0.18)',
+                        background: isDark ? 'rgba(255,255,255,0.04)' : '#f7faff',
+                        color: text, fontFamily: FF, fontSize: 16,
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '18px 28px',
+              borderTop: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(20,40,90,0.12)',
+              background: isDark ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.55)',
+            }}>
+              <div style={{ fontSize: 20, color: muted }}>Step {onboardingStep} of 4</div>
+              <button
+                onClick={nextOnboardingStep}
+                style={{
+                  padding: '12px 26px',
+                  borderRadius: 12,
+                  border: 'none',
+                  background: `linear-gradient(135deg, ${CYAN}, #0f79ff)`,
+                  color: '#051022',
+                  fontFamily: FF,
+                  fontWeight: 800,
+                  fontSize: 22,
+                  cursor: 'pointer',
+                }}
+              >
+                Continue →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <section
         id="hero"
         style={{
@@ -201,7 +394,7 @@ export default function Vitrin() {
 
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
-            onClick={() => navigate(kullanici ? '/profil' : '/giris')}
+            onClick={() => setOnboardingOpen(true)}
             style={{
               padding: '16px 38px',
               borderRadius: 12,
@@ -341,7 +534,7 @@ export default function Vitrin() {
         <h2 style={{ fontFamily: FFH, fontSize: 'clamp(28px, 5vw, 48px)', letterSpacing: 2, margin: '0 0 18px', color: headlineColor }}>{c.ctaTitle}</h2>
         <p style={{ fontSize: 15, color: muted, maxWidth: 540, margin: '0 auto 36px', lineHeight: 1.65 }}>{c.ctaDesc}</p>
         <button
-          onClick={() => navigate(kullanici ? '/profil' : '/giris')}
+          onClick={() => setOnboardingOpen(true)}
           style={{
             padding: '17px 48px',
             borderRadius: 12,

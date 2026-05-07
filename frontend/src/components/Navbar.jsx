@@ -2,7 +2,7 @@
 // Auth-aware top navigation bar — mounted via PublicLayout in App.jsx
 // DIRECTIVE 3: Partner Network relocated to primary nav with consistent styling.
 // All labels use t() translations from SettingsContext.
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth }     from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
 
@@ -19,6 +19,9 @@ export default function Navbar() {
   const { kullanici } = useAuth()
   const { isDark, t } = useSettings()
   const navigate      = useNavigate()
+  const { pathname }  = useLocation()
+
+  const partnerPageOnlyLogo = pathname === '/partnerler'
 
   // Standard link color — consistent across ALL nav items (Directive 3: no unique Partner styling)
   const linkColor = isDark ? '#6a7fa8' : '#5a6a8a'
@@ -30,6 +33,26 @@ export default function Navbar() {
     { href: '/partnerler', label: t('partnerNet'), scroll: false },
     { href: '#why-us',     label: t('whyUs')       || (isDark ? 'Why Us' : 'Why Us'),       scroll: true },
   ]
+
+  if (partnerPageOnlyLogo) {
+    return (
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
+        height: 72,
+        display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
+        padding: '0 32px',
+        background: isDark ? 'rgba(6,12,26,0.92)' : 'rgba(255,255,255,0.96)',
+        backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+        fontFamily: FF,
+        boxSizing: 'border-box',
+      }}>
+        <Link to="/" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
+          LOOP<span style={{ color: CYAN }}>.</span>
+        </Link>
+      </nav>
+    )
+  }
 
   return (
     <nav style={{
