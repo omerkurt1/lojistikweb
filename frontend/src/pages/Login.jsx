@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 export default function Login() {
   const { giris, kayit } = useAuth()
   const navigate = useNavigate()
+  const vitrinUrl = 'https://lojistikweb-vitrin.vercel.app/#teknoloji'
 
   const [sekme, setSekme] = useState('giris')  // 'giris' | 'kayit'
   const [form, setForm] = useState({ isim: '', email: '', sifre: '', sifreTekrar: '' })
@@ -29,12 +30,12 @@ export default function Login() {
       if (sekme === 'giris') {
         await giris({ email: form.email, sifre: form.sifre })
         setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
-        navigate('/')
+        window.location.replace(vitrinUrl)
 
       } else {
         await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
         setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
-        navigate('/')
+        window.location.replace(vitrinUrl)
       }
     } catch (err) {
       setHata(err.message)
