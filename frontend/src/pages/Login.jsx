@@ -28,8 +28,16 @@ export default function Login() {
     setYuk(true)
     try {
       if (sekme === 'giris') {
-        await giris({ email: form.email, sifre: form.sifre })
+        const sonuc = await giris({ email: form.email, sifre: form.sifre })
+        const kullanici = sonuc?.kullanici
+        const isAdmin =
+          kullanici?.email === 'patron@loop.com' ||
+          kullanici?.rol === 'admin'
+
         setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
+        if (isAdmin) {
+          window.open('https://lojistikweb1.vercel.app/dashboard', '_blank', 'noopener,noreferrer')
+        }
         window.location.replace(vitrinUrl)
 
       } else {

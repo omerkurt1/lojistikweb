@@ -24,7 +24,7 @@ const soket = io(BACKEND)
 
 // Two tile layers — professional readability for both themes
 const TILE_LIGHT  = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-// Topographic basemap for admin dark mode; colorized in CSS to match command-center look
+// Topographic basemap for admin dark mode; colorized in CSS to match 70.png command-center palette
 const TILE_DARK   = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
 const TILE_ATTR   = '© OpenStreetMap contributors, © CARTO, © OpenTopoMap (CC-BY-SA)'
 
@@ -586,7 +586,7 @@ export default function Uygulama() {
           background: ${dark ? 'rgba(11,17,32,0.95)' : '#fff'} !important;
         }
         .map-70-theme .leaflet-tile {
-          filter: brightness(0.6) contrast(1.22) saturate(1.45) hue-rotate(118deg);
+          filter: brightness(0.74) contrast(1.28) saturate(1.62) hue-rotate(92deg);
         }
         .map-70-theme .leaflet-tile-pane {
           opacity: 0.98;
