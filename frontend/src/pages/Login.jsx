@@ -27,27 +27,14 @@ export default function Login() {
     setYuk(true)
     try {
       if (sekme === 'giris') {
-        const veri = await giris({ email: form.email, sifre: form.sifre })
+        await giris({ email: form.email, sifre: form.sifre })
         setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
-
-        setTimeout(() => {
-          if (form.email.trim().toLowerCase() === 'patron@loop.com') {
-            // Admin → navigate to Dashboard (ProtectedRoute will validate)
-            navigate('/dashboard')
-          } else {
-            // Regular user → land on the main Vitrin page
-            navigate('/')
-          }
-        }, 1000)
+        navigate('/')
 
       } else {
-        const veri = await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
+        await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
         setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
-
-        setTimeout(() => {
-          // New user → land on the main Vitrin page
-          navigate('/')
-        }, 1200)
+        navigate('/')
       }
     } catch (err) {
       setHata(err.message)
