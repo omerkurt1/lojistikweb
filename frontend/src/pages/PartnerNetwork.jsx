@@ -20,8 +20,8 @@ const PARTNERLER = [
     aciklama:
       'Avrupa ve Asya koridorlarında kapsamlı uluslararası kargo hizmetleri. Gümrük danışmanlığı, multimodal taşıma ve anlık gönderi takibi tek platformda.',
     uzmanlik: ['Uluslararası Taşıma', 'Gümrük Danışmanlığı', 'Multimodal'],
-    renk: '#0062ff',
-    renk2: '#003fa8',
+    renk: '#3f6f6a',
+    renk2: '#2c4f4b',
     ikon: SVG_Plane,
     api: 'https://api.globalfreightexpress.com/v3/docs',
     email: 'integrations@globalfreightexpress.com',
@@ -35,8 +35,8 @@ const PARTNERLER = [
     aciklama:
       'İstanbul, Ankara ve İzmir başta olmak üzere 12 büyükşehirde aynı gün teslimat hizmeti. Bisiklet kuryeleri, elektrikli araçlar ve drone teslimatı seçenekleriyle karbon-nötr lojistik.',
     uzmanlik: ['Same-Day Delivery', 'Micro-Fulfillment', 'Drone Pilot'],
-    renk: '#00c853',
-    renk2: '#007d33',
+    renk: '#5f8f52',
+    renk2: '#3f6640',
     ikon: SVG_Bike,
     api: 'https://developer.cityline.io/docs',
     email: 'partners@cityline.io',
@@ -50,8 +50,8 @@ const PARTNERLER = [
     aciklama:
       'Farmasötik, gıda ve biyomedikal ürünler için -25°C ile +25°C arasında kesintisiz sıcaklık kontrollü depolama, taşıma ve dağıtım hizmeti. FDA & ISO 9001 sertifikalı.',
     uzmanlik: ['Pharma Cold Chain', 'ISO 9001', 'Reefer Truck'],
-    renk: '#00bcd4',
-    renk2: '#007c91',
+    renk: '#467b89',
+    renk2: '#2f5761',
     ikon: SVG_Cold,
     api: 'https://api.coldchain.com.tr/endpoints',
     email: 'api-support@coldchain.com.tr',
@@ -65,8 +65,8 @@ const PARTNERLER = [
     aciklama:
       'Türkiye\'nin tüm havalimanlarına ve 60+ ülkeye günlük charter ve hat uçuşları. Kıymetli yük, e-ticaret paketleri ve acil gönderi için kapıdan kapıya hava kargo çözümleri.',
     uzmanlik: ['Air Freight', 'Charter Uçuşu', 'Değerli Yük'],
-    renk: '#9c27b0',
-    renk2: '#6a0080',
+    renk: '#7b6a52',
+    renk2: '#584b39',
     ikon: SVG_Rocket,
     api: 'https://cargo.aeroglobal.aero/api/v2/reference',
     email: 'tech-partners@aeroglobal.aero',
@@ -80,8 +80,8 @@ const PARTNERLER = [
     aciklama:
       'İzmir Aliağa, Mersin ve İstanbul limanlarından Akdeniz, Karadeniz ve Körfez hatlarına FCL/LCL konteyner çözümleri. Gerçek zamanlı gemi takip entegrasyonu.',
     uzmanlik: ['FCL / LCL', 'Port Agency', 'AIS Takip'],
-    renk: '#ff6f00',
-    renk2: '#c43e00',
+    renk: '#a6693d',
+    renk2: '#7a4b2d',
     ikon: SVG_Ship,
     api: 'https://api.swiftport.com/marine/v1',
     email: 'integrations@swiftport.com',
@@ -95,8 +95,8 @@ const PARTNERLER = [
     aciklama:
       'TIR, frigorifik araç ve lowbed çekicilerden oluşan 2.000+ araçlık filo ile Türkiye\'nin tüm illerine ve TIR güzergahında 40+ ülkeye parsiyel ve komple yük hizmeti.',
     uzmanlik: ['FTL / LTL', 'TIR Güzergahı', 'ADR Tehlikeli Madde'],
-    renk: '#f44336',
-    renk2: '#b71c1c',
+    renk: '#8a5e4d',
+    renk2: '#664337',
     ikon: SVG_Truck,
     api: 'https://terrafleet.com.tr/developers',
     email: 'b2b@terrafleet.com.tr',
@@ -245,7 +245,7 @@ export default function PartnerNetwork() {
         <button style={geriBtn} onClick={() => navigate(-1)}>← Dashboard'a Dön</button>
         <div style={headerIcStyle}>
           <div style={headerBadgeStyle}>B2B Lojistik Ekosistemi</div>
-          <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#0062ff' }}>Ağı</span></h1>
+          <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#2f6f62' }}>Ağı</span></h1>
           <p style={headerAltStyle}>
             Türkiye'nin ve dünyanın önde gelen lojistik operatörleriyle tek API üzerinden entegre olun.
             Kara, hava, deniz ve soğuk zincir çözümlerini LOOP platformundan yönetin.
@@ -356,19 +356,19 @@ const FF = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 
 
 const sayfaStyle = {
   minHeight: '100vh',
-  background: 'linear-gradient(160deg, #f0f4ff 0%, #e8f0fe 100%)',
+  background: 'linear-gradient(160deg, #f8f4ec 0%, #f0e9dc 100%)',
   fontFamily: FF,
 }
 
 const headerStyle = {
-  background: '#fff',
-  borderBottom: '1px solid #e8ecf8',
+  background: '#fcf9f3',
+  borderBottom: '1px solid #e4dac7',
   padding: '40px 48px 32px',
 }
 
 const geriBtn = {
   background: 'none', border: 'none',
-  color: '#6b7fa8', fontSize: 13, fontWeight: 600,
+  color: '#6a5f4f', fontSize: 13, fontWeight: 600,
   cursor: 'pointer', padding: 0, marginBottom: 24,
   display: 'block',
 }
@@ -379,19 +379,19 @@ const headerIcStyle = {
 
 const headerBadgeStyle = {
   display: 'inline-flex', alignItems: 'center', gap: 6,
-  background: 'rgba(0,98,255,0.08)', border: '1px solid rgba(0,98,255,0.2)',
-  color: '#0062ff', fontSize: 11, fontWeight: 700,
+  background: 'rgba(63,111,106,0.10)', border: '1px solid rgba(63,111,106,0.25)',
+  color: '#2f6f62', fontSize: 11, fontWeight: 700,
   letterSpacing: '0.06em', textTransform: 'uppercase',
   padding: '4px 14px', borderRadius: 40, marginBottom: 14,
 }
 
 const headerBaslikStyle = {
-  fontSize: 36, fontWeight: 800, color: '#0a1628',
+  fontSize: 36, fontWeight: 800, color: '#2c3128',
   marginBottom: 12, lineHeight: 1.15,
 }
 
 const headerAltStyle = {
-  fontSize: 15, color: '#6b7fa8', lineHeight: 1.7,
+  fontSize: 15, color: '#6c6658', lineHeight: 1.7,
   maxWidth: 560, marginBottom: 28,
 }
 
@@ -400,18 +400,18 @@ const statSatirStyle = {
 }
 
 const statKartStyle = {
-  background: '#f5f7ff',
-  border: '1px solid #e8ecf8',
+  background: '#f6f0e6',
+  border: '1px solid #dfd1bc',
   borderRadius: 12, padding: '12px 20px',
   minWidth: 110,
 }
 
 const statDegerStyle = {
-  fontSize: 24, fontWeight: 800, color: '#0062ff',
+  fontSize: 24, fontWeight: 800, color: '#2f6f62',
 }
 
 const statEtiketStyle = {
-  fontSize: 11, fontWeight: 600, color: '#8a9abc',
+  fontSize: 11, fontWeight: 600, color: '#7a7568',
   textTransform: 'uppercase', letterSpacing: '0.05em',
   marginTop: 2,
 }
@@ -428,10 +428,10 @@ const gridStyle = {
 }
 
 const kartStyle = {
-  background: '#fff',
+  background: '#fffdf9',
   borderRadius: 18,
-  boxShadow: '0 4px 20px rgba(0,0,50,0.07)',
-  border: '1px solid #e8ecf8',
+  boxShadow: '0 6px 24px rgba(75,60,35,0.10)',
+  border: '1px solid #e6dccb',
   overflow: 'hidden',
   display: 'flex', flexDirection: 'column',
 }
@@ -462,16 +462,16 @@ const kartGovdeStyle = {
 }
 
 const kartIsimStyle = {
-  fontSize: 17, fontWeight: 800, color: '#0a1628', margin: 0,
+  fontSize: 17, fontWeight: 800, color: '#2e3028', margin: 0,
 }
 
 const kartKisaStyle = {
-  fontSize: 12, fontWeight: 600, color: '#8a9abc',
+  fontSize: 12, fontWeight: 600, color: '#7a7568',
   textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0,
 }
 
 const kartAciklamaStyle = {
-  fontSize: 13, color: '#4a5568', lineHeight: 1.65,
+  fontSize: 13, color: '#615d52', lineHeight: 1.65,
   margin: '4px 0 8px', flex: 1,
 }
 
@@ -492,9 +492,9 @@ const kartAltStyle = {
 
 const iletisimBtnStyle = {
   flex: 1, padding: '10px 0',
-  background: '#f5f7ff', border: '1.5px solid #e8ecf8',
+  background: '#f4eee3', border: '1.5px solid #d9ccb6',
   borderRadius: 10, fontSize: 12, fontWeight: 700,
-  color: '#4a5568', cursor: 'pointer',
+  color: '#5e594d', cursor: 'pointer',
   transition: 'background 0.2s',
 }
 
@@ -600,7 +600,7 @@ const teklifBtnStyle = {
 // ─── CTA Banner ───────────────────────────────────────────────────────────────
 const ctaBannerStyle = {
   margin: '0 48px 48px',
-  background: 'linear-gradient(135deg, #0a1628 0%, #0d2060 100%)',
+  background: 'linear-gradient(135deg, #3b4f4b 0%, #5e4a3c 100%)',
   borderRadius: 20, padding: '36px 40px',
   display: 'flex', alignItems: 'center',
   justifyContent: 'space-between', gap: 24,
@@ -612,16 +612,16 @@ const ctaBaslikStyle = {
 }
 
 const ctaAltStyle = {
-  fontSize: 13, color: 'rgba(255,255,255,0.60)', maxWidth: 500,
+  fontSize: 13, color: 'rgba(255,255,255,0.78)', maxWidth: 500,
 }
 
 const ctaBtnStyle = {
   padding: '13px 28px',
-  background: 'linear-gradient(135deg, #0062ff, #00bcd4)',
+  background: 'linear-gradient(135deg, #c58d4e, #a6693d)',
   border: 'none', borderRadius: 12,
-  color: '#fff', fontSize: 14, fontWeight: 700,
+  color: '#fffaf2', fontSize: 14, fontWeight: 700,
   cursor: 'pointer', whiteSpace: 'nowrap',
-  boxShadow: '0 6px 24px rgba(0,98,255,0.35)',
+  boxShadow: '0 8px 26px rgba(98,63,31,0.32)',
 }
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
