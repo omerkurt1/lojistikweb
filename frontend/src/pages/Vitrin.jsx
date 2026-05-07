@@ -1,243 +1,401 @@
 // src/pages/Vitrin.jsx
-// Public landing page — the main marketing/Vitrin page at "/"
-// Contains anchor sections for: #features, #operations, #why-us
+// Advanced Landing Page — the professional "Vitrin" at "/"
+// Matches the production design: bold headline typography, light/dark adaptive,
+// gradient accent pops, numbered step circles, feature cards, stats bar, CTA.
+// Integrates with SettingsContext (theme + i18n) and AuthContext (auth-aware buttons).
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettings } from '../context/SettingsContext'
 import { useAuth }     from '../context/AuthContext'
 
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
 const FF  = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-const FFH = "'Bebas Neue', sans-serif"
+const FFH = "'Bebas Neue','Impact',sans-serif"
 const CYAN = '#00d4ff'
-const NAVY = '#060c1a'
+
+/* ─── Reusable hover wrapper ─────────────────────────────────────────────── */
+function Hoverable({ children, style, hoverStyle, ...props }) {
+  const [hovered, setHovered] = useState(false)
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{ ...style, ...(hovered ? hoverStyle : {}) }}
+      {...props}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default function Vitrin() {
   const { isDark, t } = useSettings()
   const { kullanici }  = useAuth()
   const navigate       = useNavigate()
 
-  // Theme tokens
-  const bg       = isDark ? '#060c1a' : '#f0f4ff'
+  /* ─── Theme palette ────────────────────────────────────────────────────── */
+  const bg       = isDark ? '#060c1a' : '#f5f8ff'
   const text     = isDark ? '#e8f0ff' : '#0a1628'
   const muted    = isDark ? '#6a7fa8' : '#5a6a8a'
-  const cardBg   = isDark ? 'rgba(255,255,255,0.04)' : '#fff'
+  const cardBg   = isDark ? 'rgba(255,255,255,0.04)' : '#ffffff'
   const cardBrd  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
-  const sectionAlt = isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,50,100,0.03)'
+  const sectionAlt = isDark ? 'rgba(255,255,255,0.02)' : '#edf2ff'
+  const heroBg   = isDark
+    ? 'linear-gradient(180deg, #060c1a 0%, #0d1b30 50%, #060c1a 100%)'
+    : 'linear-gradient(180deg, #e0f0ff 0%, #f5f8ff 60%, #ffffff 100%)'
+  const headlineColor = isDark ? '#e8f0ff' : '#0a1628'
 
+  /* ─── Features data ────────────────────────────────────────────────────── */
   const features = [
-    { icon: '📡', title: isDark ? 'Real-Time Tracking' : t('vitrinFeature1Title') || 'Gerçek Zamanlı Takip', desc: t('vitrinFeature1Desc') || 'GPS destekli canlı araç ve kargo takibi ile teslimat süreçlerinizi anlık izleyin.' },
-    { icon: '🤖', title: t('vitrinFeature2Title') || 'AI Rota Optimizasyonu', desc: t('vitrinFeature2Desc') || 'Yapay zekâ ile en hızlı ve en verimli rotaları otomatik hesaplayın.' },
-    { icon: '📊', title: t('vitrinFeature3Title') || 'Gelişmiş Analitik', desc: t('vitrinFeature3Desc') || 'Teslimat performansı, maliyet analizi ve müşteri memnuniyeti raporları.' },
-    { icon: '🔒', title: t('vitrinFeature4Title') || 'Kurumsal Güvenlik', desc: t('vitrinFeature4Desc') || 'End-to-end şifreleme, rol tabanlı erişim ve anomali tespiti ile güvenlik.' },
-    { icon: '🌍', title: t('vitrinFeature5Title') || 'Global Operasyonlar', desc: t('vitrinFeature5Desc') || '190+ ülkede çok modlu lojistik operasyonlarını tek panelden yönetin.' },
-    { icon: '⚡', title: t('vitrinFeature6Title') || 'Entegrasyon API', desc: t('vitrinFeature6Desc') || 'RESTful API ile mevcut ERP, WMS ve TMS sistemlerinize sorunsuz entegre edin.' },
+    { icon: '📡', title: t('vitrinFeature1Title'), desc: t('vitrinFeature1Desc') },
+    { icon: '🤖', title: t('vitrinFeature2Title'), desc: t('vitrinFeature2Desc') },
+    { icon: '📊', title: t('vitrinFeature3Title'), desc: t('vitrinFeature3Desc') },
+    { icon: '🔒', title: t('vitrinFeature4Title'), desc: t('vitrinFeature4Desc') },
+    { icon: '🌍', title: t('vitrinFeature5Title'), desc: t('vitrinFeature5Desc') },
+    { icon: '⚡', title: t('vitrinFeature6Title'), desc: t('vitrinFeature6Desc') },
   ]
 
+  /* ─── Operations / Steps data ──────────────────────────────────────────── */
   const operations = [
-    { num: '01', title: t('vitrinOp1Title') || 'Kayıt & Onboarding', desc: t('vitrinOp1Desc') || 'Hesap oluşturun, filonuzu ekleyin ve partner ağınızı kurun.' },
-    { num: '02', title: t('vitrinOp2Title') || 'Sipariş & Dispatching', desc: t('vitrinOp2Desc') || 'Siparişleri otomatik olarak en uygun kuryeye atayın.' },
-    { num: '03', title: t('vitrinOp3Title') || 'Takip & Yönetim', desc: t('vitrinOp3Desc') || 'Gerçek zamanlı harita üzerinde tüm operasyonları izleyin ve yönetin.' },
-    { num: '04', title: t('vitrinOp4Title') || 'Analiz & Raporlama', desc: t('vitrinOp4Desc') || 'Performans metrikleri ve finansal raporlarla süreçleri optimize edin.' },
+    { num: '1', title: t('vitrinOp1Title'), desc: t('vitrinOp1Desc') },
+    { num: '2', title: t('vitrinOp2Title'), desc: t('vitrinOp2Desc') },
+    { num: '3', title: t('vitrinOp3Title'), desc: t('vitrinOp3Desc') },
+    { num: '4', title: t('vitrinOp4Title'), desc: t('vitrinOp4Desc') },
   ]
 
-  const whyUs = [
-    { stat: '99.7%', label: t('vitrinWhy1') || 'Uptime SLA' },
-    { stat: '190+', label: t('vitrinWhy2') || 'Desteklenen Ülke' },
-    { stat: '50ms', label: t('vitrinWhy3') || 'Ortalama Gecikme' },
-    { stat: '24/7', label: t('vitrinWhy4') || 'Destek' },
+  /* ─── Stats data ───────────────────────────────────────────────────────── */
+  const stats = [
+    { stat: '99.7%', label: t('vitrinWhy1') },
+    { stat: '190+',  label: t('vitrinWhy2') },
+    { stat: '50ms',  label: t('vitrinWhy3') },
+    { stat: '24/7',  label: t('vitrinWhy4') },
   ]
 
   return (
-    <div style={{ background: bg, color: text, fontFamily: FF, minHeight: '100vh' }}>
+    <div style={{ background: bg, color: text, fontFamily: FF, minHeight: '100vh', overflowX: 'hidden' }}>
 
-      {/* ═══ HERO ═══ */}
-      <section style={{
-        minHeight: '90vh', display: 'flex', flexDirection: 'column',
+      {/* ═══════════════════════════════════════════════════════════════════════
+          HERO SECTION — Bold headline typography matching production
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="hero" style={{
+        minHeight: '92vh', display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center', textAlign: 'center',
-        padding: '120px 24px 80px', position: 'relative', overflow: 'hidden',
+        padding: '100px 24px 60px', position: 'relative', overflow: 'hidden',
+        background: heroBg,
       }}>
-        {/* Decorative blobs */}
-        <div style={{ position: 'absolute', top: -200, left: -200, width: 600, height: 600, borderRadius: '50%', background: `radial-gradient(circle, ${CYAN}12 0%, transparent 70%)`, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -200, right: -200, width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, #0062ff10 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
+        {/* Decorative gradient orbs */}
+        <div style={{ position: 'absolute', top: -180, left: -180, width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, ${CYAN}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -180, right: -180, width: 450, height: 450, borderRadius: '50%', background: `radial-gradient(circle, #0062ff12 0%, transparent 70%)`, pointerEvents: 'none' }} />
+
+        {/* Badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: `${CYAN}10`, border: `1px solid ${CYAN}25`,
-          borderRadius: 24, padding: '6px 18px', marginBottom: 28,
-          fontSize: 12, fontWeight: 700, color: CYAN, letterSpacing: '0.05em',
+          background: isDark ? `${CYAN}12` : `${CYAN}15`,
+          border: `1.5px solid ${CYAN}40`,
+          borderRadius: 30, padding: '8px 22px', marginBottom: 36,
+          fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.12em',
+          textTransform: 'uppercase',
         }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: CYAN, boxShadow: `0 0 8px ${CYAN}` }} />
-          {t('vitrinBadge') || 'Yeni Nesil Lojistik Platformu'}
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: CYAN, boxShadow: `0 0 10px ${CYAN}` }} />
+          {t('vitrinBadge')}
         </div>
 
+        {/* ── Big bold headline — 3-line layout ── */}
         <h1 style={{
-          fontFamily: FFH, fontSize: 'clamp(42px, 7vw, 80px)',
-          letterSpacing: 2, lineHeight: 1.05, margin: '0 0 20px',
-          maxWidth: 800,
+          fontFamily: FFH, lineHeight: 0.95, margin: '0 0 28px',
+          maxWidth: 900, letterSpacing: 3,
         }}>
-          LOOP<span style={{ color: CYAN }}>.</span>
-          <br />
-          <span style={{ fontSize: 'clamp(18px, 3vw, 32px)', fontFamily: FF, fontWeight: 300, letterSpacing: 0, color: muted }}>
-            {t('vitrinHeroSub') || 'Akıllı Lojistik Yönetim Sistemi'}
+          <span style={{ display: 'block', fontSize: 'clamp(48px, 8vw, 96px)', color: headlineColor }}>
+            {t('vitrinHeroTitle1')}
+          </span>
+          <span style={{
+            display: 'block', fontSize: 'clamp(52px, 9vw, 110px)',
+            color: CYAN,
+            textShadow: isDark ? `0 0 40px ${CYAN}30` : 'none',
+          }}>
+            {t('vitrinHeroHighlight')}
+          </span>
+          <span style={{ display: 'block', fontSize: 'clamp(48px, 8vw, 96px)', color: headlineColor }}>
+            {t('vitrinHeroTitle2')}
           </span>
         </h1>
 
-        <p style={{ maxWidth: 580, fontSize: 16, lineHeight: 1.7, color: muted, margin: '0 0 40px' }}>
-          {t('vitrinHeroDesc') || 'Küresel tedarik zinciri operasyonlarınızı tek bir platformdan yönetin. Gerçek zamanlı takip, AI destekli rota optimizasyonu ve kurumsal güvenlik.'}
+        {/* Sub-description */}
+        <p style={{
+          maxWidth: 620, fontSize: 16, lineHeight: 1.75, color: muted,
+          margin: '0 0 44px', fontWeight: 400,
+        }}>
+          {t('vitrinHeroDesc')}
         </p>
 
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {/* ── Step number circles — visual element from screenshot 2 ── */}
+        <div style={{ display: 'flex', gap: 48, marginBottom: 44, justifyContent: 'center' }}>
+          {['1', '2', '3'].map((num, i) => (
+            <div key={num} style={{
+              width: 52, height: 52, borderRadius: '50%',
+              border: `2px solid ${CYAN}50`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 20, fontWeight: 900, color: CYAN,
+              fontFamily: FFH, letterSpacing: 1,
+              background: isDark ? `${CYAN}08` : `${CYAN}06`,
+              boxShadow: i === 2 ? `0 0 20px ${CYAN}30` : 'none',
+              transition: 'all 0.3s',
+            }}>
+              {num}
+            </div>
+          ))}
+        </div>
+
+        {/* ── CTA Buttons ── */}
+        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
           <button
+            id="btn-hero-start"
             onClick={() => navigate(kullanici ? '/profil' : '/giris')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '14px 32px', borderRadius: 10,
+              padding: '16px 38px', borderRadius: 12,
               background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
-              border: 'none', color: NAVY, fontFamily: FF,
+              border: 'none', color: '#060c1a', fontFamily: FF,
               fontSize: 15, fontWeight: 800, letterSpacing: '0.03em',
-              cursor: 'pointer', boxShadow: `0 6px 24px ${CYAN}40`,
+              cursor: 'pointer', boxShadow: `0 8px 32px ${CYAN}35`,
               transition: 'transform 0.2s, box-shadow 0.2s',
             }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 12px 40px ${CYAN}50` }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 8px 32px ${CYAN}35` }}
           >
-            {t('getStarted') || 'Hemen Başla'} →
+            {t('getStarted')} →
           </button>
           <button
+            id="btn-hero-track"
             onClick={() => navigate('/takip')}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '14px 28px', borderRadius: 10,
+              padding: '16px 32px', borderRadius: 12,
               background: 'transparent',
-              border: `1.5px solid ${CYAN}40`, color: CYAN,
+              border: `2px solid ${CYAN}45`, color: CYAN,
               fontFamily: FF, fontSize: 14, fontWeight: 700,
               cursor: 'pointer', transition: 'all 0.2s',
             }}
+            onMouseEnter={e => { e.currentTarget.style.background = `${CYAN}10`; e.currentTarget.style.borderColor = CYAN }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = `${CYAN}45` }}
           >
-            📍 {t('vitrinLiveTrack') || 'Canlı Takip'}
+            📍 {t('vitrinLiveTrack')}
           </button>
         </div>
       </section>
 
-      {/* ═══ FEATURES ═══ */}
-      <section id="features" style={{ padding: '80px 24px', background: sectionAlt }}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FEATURES SECTION
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="features" style={{ padding: '100px 24px', background: sectionAlt }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: CYAN, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              {t('features') || 'Özellikler'}
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+            }}>
+              {t('features')}
             </span>
-            <h2 style={{ fontFamily: FFH, fontSize: 'clamp(28px, 4vw, 44px)', letterSpacing: 1, margin: '12px 0 0' }}>
-              {t('vitrinFeaturesTitle') || 'Neden LOOP?'}
+            <h2 style={{
+              fontFamily: FFH, fontSize: 'clamp(32px, 5vw, 52px)',
+              letterSpacing: 2, margin: '14px 0 0', color: headlineColor,
+            }}>
+              {t('vitrinFeaturesTitle')}
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+            gap: 20,
+          }}>
             {features.map((f, i) => (
-              <div key={i} style={{
-                background: cardBg, border: `1px solid ${cardBrd}`,
-                borderRadius: 16, padding: '28px 24px',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                cursor: 'default',
-              }}>
-                <div style={{ fontSize: 32, marginBottom: 14 }}>{f.icon}</div>
-                <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 8px' }}>{f.title}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.65, color: muted, margin: 0 }}>{f.desc}</p>
-              </div>
+              <Hoverable
+                key={i}
+                style={{
+                  background: cardBg,
+                  border: `1px solid ${cardBrd}`,
+                  borderRadius: 18, padding: '32px 28px',
+                  transition: 'transform 0.25s, box-shadow 0.25s, border-color 0.25s',
+                  cursor: 'default',
+                }}
+                hoverStyle={{
+                  transform: 'translateY(-4px)',
+                  boxShadow: isDark ? `0 12px 40px rgba(0,212,255,0.08)` : '0 12px 40px rgba(0,0,80,0.08)',
+                  borderColor: `${CYAN}40`,
+                }}
+              >
+                <div style={{
+                  fontSize: 36, marginBottom: 16,
+                  width: 56, height: 56, borderRadius: 14,
+                  background: isDark ? `${CYAN}10` : `${CYAN}08`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {f.icon}
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 10px', color: headlineColor }}>{f.title}</h3>
+                <p style={{ fontSize: 14, lineHeight: 1.7, color: muted, margin: 0 }}>{f.desc}</p>
+              </Hoverable>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ OPERATIONS ═══ */}
-      <section id="operations" style={{ padding: '80px 24px' }}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          OPERATIONS / HOW IT WORKS
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="operations" style={{ padding: '100px 24px', background: bg }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: CYAN, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              {t('operations') || 'Operasyonlar'}
+          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+            }}>
+              {t('operations')}
             </span>
-            <h2 style={{ fontFamily: FFH, fontSize: 'clamp(28px, 4vw, 44px)', letterSpacing: 1, margin: '12px 0 0' }}>
-              {t('vitrinOpsTitle') || 'Nasıl Çalışır?'}
+            <h2 style={{
+              fontFamily: FFH, fontSize: 'clamp(32px, 5vw, 52px)',
+              letterSpacing: 2, margin: '14px 0 0', color: headlineColor,
+            }}>
+              {t('vitrinOpsTitle')}
             </h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {operations.map((op, i) => (
-              <div key={i} style={{
-                display: 'flex', alignItems: 'flex-start', gap: 24,
-                background: cardBg, border: `1px solid ${cardBrd}`,
-                borderRadius: 16, padding: '24px 28px',
-              }}>
+              <Hoverable
+                key={i}
+                style={{
+                  display: 'flex', alignItems: 'flex-start', gap: 24,
+                  background: cardBg, border: `1px solid ${cardBrd}`,
+                  borderRadius: 18, padding: '28px 32px',
+                  transition: 'transform 0.25s, box-shadow 0.25s',
+                }}
+                hoverStyle={{
+                  transform: 'translateX(6px)',
+                  boxShadow: isDark ? `0 8px 32px rgba(0,212,255,0.06)` : '0 8px 32px rgba(0,0,80,0.06)',
+                }}
+              >
                 <div style={{
-                  flexShrink: 0, width: 48, height: 48, borderRadius: 12,
-                  background: `linear-gradient(135deg, ${CYAN}20, #0062ff15)`,
-                  border: `1px solid ${CYAN}25`,
+                  flexShrink: 0, width: 54, height: 54, borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${CYAN}25, #0062ff18)`,
+                  border: `2px solid ${CYAN}35`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 18, fontWeight: 900, color: CYAN, fontFamily: FFH,
+                  fontSize: 22, fontWeight: 900, color: CYAN, fontFamily: FFH,
+                  letterSpacing: 1,
                 }}>
                   {op.num}
                 </div>
-                <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, margin: '0 0 6px' }}>{op.title}</h3>
-                  <p style={{ fontSize: 14, lineHeight: 1.65, color: muted, margin: 0 }}>{op.desc}</p>
+                <div style={{ paddingTop: 4 }}>
+                  <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 8px', color: headlineColor }}>{op.title}</h3>
+                  <p style={{ fontSize: 14, lineHeight: 1.7, color: muted, margin: 0 }}>{op.desc}</p>
                 </div>
-              </div>
+              </Hoverable>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ WHY US ═══ */}
-      <section id="why-us" style={{ padding: '80px 24px', background: sectionAlt }}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          STATS / WHY US
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="why-us" style={{ padding: '100px 24px', background: sectionAlt }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: CYAN, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-            {t('whyUs') || 'Neden Biz'}
+          <span style={{
+            fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+          }}>
+            {t('whyUs')}
           </span>
-          <h2 style={{ fontFamily: FFH, fontSize: 'clamp(28px, 4vw, 44px)', letterSpacing: 1, margin: '12px 0 48px' }}>
-            {t('vitrinWhyTitle') || 'Kurumsal Güvenilirlik'}
+          <h2 style={{
+            fontFamily: FFH, fontSize: 'clamp(32px, 5vw, 52px)',
+            letterSpacing: 2, margin: '14px 0 56px', color: headlineColor,
+          }}>
+            {t('vitrinWhyTitle')}
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
-            {whyUs.map((w, i) => (
-              <div key={i} style={{
-                background: cardBg, border: `1px solid ${cardBrd}`,
-                borderRadius: 16, padding: '32px 20px',
-              }}>
-                <div style={{ fontSize: 36, fontWeight: 900, color: CYAN, fontFamily: FFH, letterSpacing: 1, marginBottom: 8 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gap: 20,
+          }}>
+            {stats.map((w, i) => (
+              <Hoverable
+                key={i}
+                style={{
+                  background: cardBg,
+                  border: `1px solid ${cardBrd}`,
+                  borderRadius: 18, padding: '36px 24px',
+                  transition: 'transform 0.25s, box-shadow 0.25s',
+                }}
+                hoverStyle={{
+                  transform: 'translateY(-4px)',
+                  boxShadow: isDark ? `0 8px 28px rgba(0,212,255,0.08)` : '0 8px 28px rgba(0,0,80,0.06)',
+                }}
+              >
+                <div style={{
+                  fontSize: 42, fontWeight: 900, color: CYAN, fontFamily: FFH,
+                  letterSpacing: 2, marginBottom: 10,
+                  textShadow: isDark ? `0 0 20px ${CYAN}20` : 'none',
+                }}>
                   {w.stat}
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: muted }}>{w.label}</div>
-              </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: muted, letterSpacing: '0.03em' }}>
+                  {w.label}
+                </div>
+              </Hoverable>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══ CTA ═══ */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          CTA SECTION
+      ═══════════════════════════════════════════════════════════════════════ */}
       <section style={{
-        padding: '80px 24px', textAlign: 'center',
-        background: `linear-gradient(180deg, ${bg} 0%, ${isDark ? '#0a1830' : '#e6edff'} 100%)`,
+        padding: '100px 24px', textAlign: 'center',
+        background: isDark
+          ? 'linear-gradient(180deg, #060c1a 0%, #0d1b30 50%, #060c1a 100%)'
+          : 'linear-gradient(180deg, #ffffff 0%, #e6edff 50%, #f5f8ff 100%)',
       }}>
-        <h2 style={{ fontFamily: FFH, fontSize: 'clamp(24px, 4vw, 40px)', letterSpacing: 1, margin: '0 0 16px' }}>
-          {t('vitrinCtaTitle') || 'Lojistik Operasyonlarınızı Dönüştürün'}
+        <h2 style={{
+          fontFamily: FFH, fontSize: 'clamp(28px, 5vw, 48px)',
+          letterSpacing: 2, margin: '0 0 18px', color: headlineColor,
+        }}>
+          {t('vitrinCtaTitle')}
         </h2>
-        <p style={{ fontSize: 15, color: muted, maxWidth: 500, margin: '0 auto 32px', lineHeight: 1.6 }}>
-          {t('vitrinCtaDesc') || 'Ücretsiz hesap oluşturun ve LOOP platformunun gücünü keşfedin.'}
+        <p style={{
+          fontSize: 15, color: muted, maxWidth: 540,
+          margin: '0 auto 36px', lineHeight: 1.65,
+        }}>
+          {t('vitrinCtaDesc')}
         </p>
         <button
+          id="btn-cta-start"
           onClick={() => navigate(kullanici ? '/profil' : '/giris')}
           style={{
-            padding: '15px 40px', borderRadius: 10,
+            padding: '17px 48px', borderRadius: 12,
             background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
-            border: 'none', color: NAVY, fontFamily: FF,
+            border: 'none', color: '#060c1a', fontFamily: FF,
             fontSize: 16, fontWeight: 800, cursor: 'pointer',
-            boxShadow: `0 6px 24px ${CYAN}40`,
+            boxShadow: `0 8px 32px ${CYAN}35`,
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            letterSpacing: '0.03em',
           }}
+          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = `0 14px 44px ${CYAN}50` }}
+          onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = `0 8px 32px ${CYAN}35` }}
         >
-          {t('getStarted') || 'Hemen Başla'} →
+          {t('getStarted')} →
         </button>
       </section>
 
-      {/* ═══ FOOTER ═══ */}
+      {/* ═══════════════════════════════════════════════════════════════════════
+          FOOTER
+      ═══════════════════════════════════════════════════════════════════════ */}
       <footer style={{
-        padding: '32px 24px', textAlign: 'center',
+        padding: '36px 24px', textAlign: 'center',
         borderTop: `1px solid ${cardBrd}`,
-        fontSize: 12, color: muted,
+        fontSize: 12, color: muted, background: bg,
       }}>
-        © {new Date().getFullYear()} LOOP Logistics. {t('vitrinFooter') || 'Tüm hakları saklıdır.'}
+        © {new Date().getFullYear()} LOOP Logistics. {t('vitrinFooter')}
       </footer>
     </div>
   )
