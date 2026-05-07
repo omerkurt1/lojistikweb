@@ -24,9 +24,9 @@ const soket = io(BACKEND)
 
 // Two tile layers — professional readability for both themes
 const TILE_LIGHT  = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-// Dark Matter — professional dark-slate/greenish dark tiles, NOT pitch black
-const TILE_DARK   = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const TILE_ATTR   = '© OpenStreetMap contributors, © CARTO'
+// Topographic basemap for admin dark mode; colorized in CSS to match command-center look
+const TILE_DARK   = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
+const TILE_ATTR   = '© OpenStreetMap contributors, © CARTO, © OpenTopoMap (CC-BY-SA)'
 
 // Unified courier color — corporate cyan
 const KURYE_RENK = '#00bcd4'
@@ -348,7 +348,7 @@ export default function Uygulama() {
         </div>
       ) : (
         <div style={{ position: 'absolute', top: 0, left: SIDEBAR_W, right: anomalyAcik ? 340 : 0, bottom: 0, zIndex: 1, transition: 'right 0.3s ease' }}>
-          <MapContainer center={merkez} zoom={5} style={{ width: '100%', height: '100%' }} zoomControl={false}>
+          <MapContainer className={dark ? 'map-70-theme' : ''} center={merkez} zoom={5} style={{ width: '100%', height: '100%' }} zoomControl={false}>
             <TileLayer url={dark ? TILE_DARK : TILE_LIGHT} attribution={TILE_ATTR} />
             <HaritaKontrol hedef={zoomHedef} />
             {kuryeListesi.map(kurye => (
@@ -584,6 +584,12 @@ export default function Uygulama() {
         }
         .leaflet-popup-tip {
           background: ${dark ? 'rgba(11,17,32,0.95)' : '#fff'} !important;
+        }
+        .map-70-theme .leaflet-tile {
+          filter: brightness(0.6) contrast(1.22) saturate(1.45) hue-rotate(118deg);
+        }
+        .map-70-theme .leaflet-tile-pane {
+          opacity: 0.98;
         }
         .leaflet-control-attribution { display: none !important; }
         ::-webkit-scrollbar { width: 5px; }
