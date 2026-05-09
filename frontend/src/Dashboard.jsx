@@ -22,11 +22,9 @@ const FF = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe 
 const BACKEND = 'https://lojistikweb-backend.onrender.com'
 const soket = io(BACKEND)
 
-// Two tile layers — professional readability for both themes
-const TILE_LIGHT  = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-// Topographic basemap for admin dark mode; colorized in CSS to match 70.png command-center palette
-const TILE_DARK   = 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png'
-const TILE_ATTR   = '© OpenStreetMap contributors, © CARTO, © OpenTopoMap (CC-BY-SA)'
+// Fixed dashboard basemap for both light and dark UI modes
+const TILE_FIXED  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const TILE_ATTR   = '© OpenStreetMap contributors'
 
 // Unified courier color — corporate cyan
 const KURYE_RENK = '#00bcd4'
@@ -374,8 +372,8 @@ export default function Uygulama() {
         </div>
       ) : (
         <div style={{ position: 'absolute', top: 0, left: SIDEBAR_W, right: anomalyAcik ? 340 : 0, bottom: 0, zIndex: 1, transition: 'right 0.3s ease' }}>
-          <MapContainer className={dark ? 'map-70-theme' : ''} center={merkez} zoom={5} style={{ width: '100%', height: '100%' }} zoomControl={false}>
-            <TileLayer url={dark ? TILE_DARK : TILE_LIGHT} attribution={TILE_ATTR} />
+          <MapContainer center={merkez} zoom={5} style={{ width: '100%', height: '100%' }} zoomControl={false}>
+            <TileLayer url={TILE_FIXED} attribution={TILE_ATTR} />
             <HaritaKontrol hedef={zoomHedef} />
             {kuryeListesi.map(kurye => (
               <Fragment key={kurye.id}>
@@ -587,35 +585,29 @@ export default function Uygulama() {
           to   { transform: translateX(0); opacity: 1; }
         }
         .leaflet-container {
-          background: ${dark ? '#1a1a2e' : '#e8ecf8'} !important;
+          background: #e8ecf8 !important;
         }
         .leaflet-control-zoom {
-          border: 1px solid ${dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.15)'} !important;
+          border: 1px solid rgba(0,0,0,0.15) !important;
           border-radius: 8px !important;
           overflow: hidden;
-          box-shadow: ${dark ? '0 4px 16px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)'} !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
           z-index: 800 !important;
         }
         .leaflet-control-zoom a {
-          background: ${dark ? 'rgba(11,17,32,0.9)' : '#fff'} !important;
-          color: ${dark ? '#e8f0ff' : '#333'} !important;
-          border-color: ${dark ? 'rgba(255,255,255,0.08)' : '#ddd'} !important;
+          background: #fff !important;
+          color: #333 !important;
+          border-color: #ddd !important;
         }
         .leaflet-popup-content-wrapper {
-          background: ${dark ? 'rgba(11,17,32,0.95)' : '#fff'} !important;
-          color: ${dark ? '#e8f0ff' : '#333'} !important;
-          border: 1px solid ${dark ? 'rgba(255,255,255,0.1)' : '#ddd'} !important;
+          background: #fff !important;
+          color: #333 !important;
+          border: 1px solid #ddd !important;
           border-radius: 12px !important;
-          box-shadow: 0 8px 24px rgba(0,0,0,${dark ? '0.5' : '0.12'}) !important;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
         }
         .leaflet-popup-tip {
-          background: ${dark ? 'rgba(11,17,32,0.95)' : '#fff'} !important;
-        }
-        .map-70-theme .leaflet-tile {
-          filter: brightness(0.74) contrast(1.28) saturate(1.62) hue-rotate(92deg);
-        }
-        .map-70-theme .leaflet-tile-pane {
-          opacity: 0.98;
+          background: #fff !important;
         }
         .leaflet-control-attribution { display: none !important; }
         ::-webkit-scrollbar { width: 5px; }
