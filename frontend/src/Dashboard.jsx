@@ -37,6 +37,32 @@ function rotaRengi(k) {
   return k.online ? '#00bcd4' : '#555'
 }
 
+function normalizeDurum(durum = '') {
+  const s = String(durum).toLowerCase()
+  if (s.includes('teslim')) return 'teslim'
+  if (s.includes('yolda')) return 'yolda'
+  if (s.includes('paketi')) return 'paket'
+  return 'diger'
+}
+
+function isDelivered(durum = '') {
+  return normalizeDurum(durum) === 'teslim'
+}
+
+function durumEtiketi(durum = '', lang = 'tr') {
+  const k = normalizeDurum(durum)
+  if (lang === 'en') {
+    if (k === 'teslim') return 'Delivered'
+    if (k === 'yolda') return 'On Route'
+    if (k === 'paket') return 'Picked Up'
+    return durum || 'Preparing'
+  }
+  if (k === 'teslim') return 'Teslim Edildi'
+  if (k === 'yolda') return 'Yolda'
+  if (k === 'paket') return 'Paketi Aldı'
+  return durum || 'Hazırlanıyor'
+}
+
 // ── Partner enrichment data — global freight types ──
 const PARTNER_MAP = {
   0: { firma: 'Global Freight Express', tip: 'Air Freight',      kargoTuru: 'Air Freight FCL'            },
@@ -153,7 +179,7 @@ function FinansHUD({ t, lang }) {
 }
 
 // ── Anomaly Panel ──
-function AnomalyPanel({ acik, toggle, t }) {
+function AnomalyPanel({ acik, toggle, t, lang, tx }) {
   const [alerts, setAlerts] = useState(ANOMALY_SEED)
   const [resolved, setResolved] = useState(new Set())
 
@@ -174,8 +200,8 @@ function AnomalyPanel({ acik, toggle, t }) {
     }}>
       <div style={{ padding: '16px 18px', borderBottom: `1px solid ${t.cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 800, color: t.text, display: 'flex', alignItems: 'center', gap: 6 }}>{SVG_Shield} Anomali & Güvenlik</div>
-          <div style={{ fontSize: 10, color: t.textDim, marginTop: 2 }}>{alerts.length} aktif uyarı</div>
+          <div style={{ fontSize: 13, fontWeight: 800, color: t.text, display: 'flex', alignItems: 'center', gap: 6 }}>{SVG_Shield} {tx('anomalyTitle')}</div>
+          <div style={{ fontSize: 10, color: t.textDim, marginTop: 2 }}>{alerts.length} {tx('activeAlerts')}</div>
         </div>
         <button onClick={toggle} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 6, padding: '4px 10px', fontSize: 12, color: t.textMuted, cursor: 'pointer', fontFamily: FF, fontWeight: 700 }}>✕</button>
       </div>
@@ -195,8 +221,8 @@ function AnomalyPanel({ acik, toggle, t }) {
             <div style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.5, marginBottom: 8 }}>{a.detail}</div>
             {!resolved.has(a.id) && (
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => resolve(a.id)} style={{ background: `${t.success}15`, color: t.success, border: `1px solid ${t.success}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>✓ Çözüldü</button>
-                <button style={{ background: `${t.warn}12`, color: t.warn, border: `1px solid ${t.warn}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>🔍 İncele</button>
+                <button onClick={() => resolve(a.id)} style={{ background: `${t.success}15`, color: t.success, border: `1px solid ${t.success}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>✓ {tx('resolved')}</button>
+                <button style={{ background: `${t.warn}12`, color: t.warn, border: `1px solid ${t.warn}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>🔍 {tx('inspect')}</button>
               </div>
             )}
           </div>
@@ -204,7 +230,7 @@ function AnomalyPanel({ acik, toggle, t }) {
         {alerts.length === 0 && (
           <div style={{ textAlign: 'center', padding: 40, color: t.textDim, fontSize: 13, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={t.success} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Tüm anomaliler çözüldü
+            {tx('allResolved')}
           </div>
         )}
       </div>
@@ -213,13 +239,13 @@ function AnomalyPanel({ acik, toggle, t }) {
 }
 
 // ── God Mode Intervention Drawer ──
-function InterventionDrawer({ kurye, kapat, bildirimEkle, t }) {
+function InterventionDrawer({ kurye, kapat, bildirimEkle, t, lang, tx }) {
   if (!kurye) return null
   const partner = PARTNER_MAP[kurye.id % 8]
 
-  const reAssign = () => { bildirimEkle(`🔁 ${kurye.isim} yükü en yakın partner kuryeye aktarılıyor...`, 'uyari'); kapat() }
-  const redCode  = () => { bildirimEkle(`🛑 RED-CODE VIP: ${kurye.isim} teslimatı maksimum önceliğe alındı!`, 'basari'); kapat() }
-  const suspend  = () => { bildirimEkle(`⛔ ${partner.firma} — ${kurye.isim} ağ erişimi askıya alındı.`, 'uyari'); kapat() }
+  const reAssign = () => { bildirimEkle(lang === 'en' ? `🔁 ${kurye.isim} job is being reassigned to nearest partner courier...` : `🔁 ${kurye.isim} yükü en yakın partner kuryeye aktarılıyor...`, 'uyari'); kapat() }
+  const redCode  = () => { bildirimEkle(lang === 'en' ? `🛑 RED-CODE VIP: ${kurye.isim} delivery is now maximum priority!` : `🛑 RED-CODE VIP: ${kurye.isim} teslimatı maksimum önceliğe alındı!`, 'basari'); kapat() }
+  const suspend  = () => { bildirimEkle(lang === 'en' ? `⛔ ${partner.firma} — ${kurye.isim} network access suspended.` : `⛔ ${partner.firma} — ${kurye.isim} ağ erişimi askıya alındı.`, 'uyari'); kapat() }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }} onClick={kapat}>
@@ -227,7 +253,7 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t }) {
         {/* Header */}
         <div style={{ background: `linear-gradient(135deg, ${t.accent} 0%, ${t.accent2} 100%)`, padding: '22px 26px', position: 'relative' }}>
           <button onClick={kapat} style={{ position: 'absolute', top: 12, right: 14, background: 'rgba(0,0,0,0.2)', border: 'none', borderRadius: '50%', width: 28, height: 28, color: '#fff', fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>GOD MODE — Kurye Müdahale</div>
+          <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: 4 }}>{tx('godMode')}</div>
           <div style={{ fontSize: 20, fontWeight: 900, color: '#fff' }}>{kurye.isim}</div>
           <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>{partner.firma} — {partner.tip}</div>
         </div>
@@ -235,10 +261,10 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t }) {
         <div style={{ padding: '18px 26px 26px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 18 }}>
             {[
-              { label: 'DURUM', value: kurye.durum || 'yolda', color: kurye.online ? t.success : t.danger },
-              { label: 'HIZ', value: `${kurye.hiz || 0} km/s`, color: t.accent },
-              { label: 'KARGO', value: partner.kargoTuru, color: t.text },
-              { label: 'ETA', value: kurye.eta > 0 ? `~${kurye.eta} dk` : 'Teslim', color: t.warn },
+              { label: tx('status').toUpperCase(), value: durumEtiketi(kurye.durum, lang), color: kurye.online ? t.success : t.danger },
+              { label: tx('speed').toUpperCase(), value: `${kurye.hiz || 0} km/s`, color: t.accent },
+              { label: tx('cargo').toUpperCase(), value: partner.kargoTuru, color: t.text },
+              { label: tx('eta').toUpperCase(), value: kurye.eta > 0 ? `~${kurye.eta} ${lang === 'en' ? 'min' : 'dk'}` : (lang === 'en' ? 'Delivered' : 'Teslim'), color: t.warn },
             ].map(item => (
               <div key={item.label} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: '10px 12px' }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: t.textDim, letterSpacing: '0.06em', marginBottom: 3 }}>{item.label}</div>
@@ -248,9 +274,9 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t }) {
           </div>
           <div style={{ fontSize: 10, color: t.textDim, marginBottom: 14, fontFamily: 'monospace' }}>📍 {kurye.enlem?.toFixed(5)}, {kurye.boylam?.toFixed(5)}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            <button onClick={reAssign} style={{ ...actionBtn, background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}>🔁 Acil Yeniden Ata</button>
-            <button onClick={redCode} style={{ ...actionBtn, background: `${t.danger}15`, border: `1px solid ${t.danger}30`, color: t.danger }}>🛑 RED-CODE Tetikle</button>
-            <button onClick={suspend} style={{ ...actionBtn, background: `${t.warn}12`, border: `1px solid ${t.warn}25`, color: t.warn }}>⛔ Partneri Askıya Al</button>
+            <button onClick={reAssign} style={{ ...actionBtn, background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}>🔁 {tx('reAssign')}</button>
+            <button onClick={redCode} style={{ ...actionBtn, background: `${t.danger}15`, border: `1px solid ${t.danger}30`, color: t.danger }}>🛑 {tx('redCode')}</button>
+            <button onClick={suspend} style={{ ...actionBtn, background: `${t.warn}12`, border: `1px solid ${t.warn}25`, color: t.warn }}>⛔ {tx('suspend')}</button>
           </div>
         </div>
       </div>
@@ -268,7 +294,7 @@ export default function Uygulama() {
   const [bildirimler,  setBildirim] = useState([])
 
   // Theme + Language — from global SettingsContext
-  const { isDark: dark, toggleTheme, language: lang } = useSettings()
+  const { isDark: dark, toggleTheme, language: lang, t: tx } = useSettings()
   const t = tema(dark)
 
   // UI state
@@ -303,21 +329,21 @@ export default function Uygulama() {
   useEffect(() => {
     soket.on('kuryeleriGuncelle', setKuryeler)
     soket.on('siparisFisiGuncelle', setFis)
-    soket.on('teslimatBildirimi', ({ isim, zaman }) => bildirimEkle(`✅ ${isim} teslimatı tamamladı (${zaman})`, 'basari'))
+    soket.on('teslimatBildirimi', ({ isim, zaman }) => bildirimEkle(lang === 'en' ? `✅ ${isim} completed a delivery (${zaman})` : `✅ ${isim} teslimatı tamamladı (${zaman})`, 'basari'))
     return () => { soket.off('kuryeleriGuncelle'); soket.off('siparisFisiGuncelle'); soket.off('teslimatBildirimi') }
-  }, [bildirimEkle])
+  }, [bildirimEkle, lang])
 
   // ── Actions ──
-  const tumRotaYenile = () => { soket.emit('yeniRotaCiz'); bildirimEkle('🔄 Tüm rotalar yeniden hesaplanıyor...', 'bilgi') }
-  const tekRotaYenile = (k, e) => { e.stopPropagation(); soket.emit('tekKuryeRotaCiz', k.id); bildirimEkle(`🔄 ${k.isim} rotası optimize ediliyor...`, 'bilgi') }
-  const onlineDegistir = (k, e) => { e.stopPropagation(); soket.emit('kuryeOnlineDegistir', k.id); bildirimEkle(k.online ? `Deaktive: ${k.isim} çevrimdışı` : `Aktif: ${k.isim} çevrimiçi`, 'uyari') }
+  const tumRotaYenile = () => { soket.emit('yeniRotaCiz'); bildirimEkle(lang === 'en' ? '🔄 Recalculating all routes...' : '🔄 Tüm rotalar yeniden hesaplanıyor...', 'bilgi') }
+  const tekRotaYenile = (k, e) => { e.stopPropagation(); soket.emit('tekKuryeRotaCiz', k.id); bildirimEkle(lang === 'en' ? `🔄 Optimizing route for ${k.isim}...` : `🔄 ${k.isim} rotası optimize ediliyor...`, 'bilgi') }
+  const onlineDegistir = (k, e) => { e.stopPropagation(); soket.emit('kuryeOnlineDegistir', k.id); bildirimEkle(k.online ? (lang === 'en' ? `Deactivated: ${k.isim} is offline` : `Deaktive: ${k.isim} çevrimdışı`) : (lang === 'en' ? `Activated: ${k.isim} is online` : `Aktif: ${k.isim} çevrimiçi`), 'uyari') }
   const kuryeyiSec = (k) => { setSecilenId(k.id); setZoomHedef({ ...k, _ts: Date.now() }) }
 
   // Stats
   const toplam = kuryeListesi.length
-  const yolda  = kuryeListesi.filter(k => k.durum !== 'teslim edildi' && k.online).length
+  const yolda  = kuryeListesi.filter(k => !isDelivered(k.durum) && k.online).length
   const aktif  = kuryeListesi.filter(k => k.online).length
-  const teslim = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => k.durum === 'teslim edildi').length
+  const teslim = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => isDelivered(k.durum)).length
 
   // Sidebar width constant
   const SIDEBAR_W = 330
@@ -339,7 +365,7 @@ export default function Uygulama() {
       </div>
 
       {/* ═══ INTERVENTION DRAWER (modal overlay) ═══ */}
-      {interventionK && <InterventionDrawer kurye={interventionK} kapat={() => setIntervention(null)} bildirimEkle={bildirimEkle} t={t} />}
+      {interventionK && <InterventionDrawer kurye={interventionK} kapat={() => setIntervention(null)} bildirimEkle={bildirimEkle} t={t} lang={lang} tx={tx} />}
 
       {/* ═══ FULL-SCREEN MAP / RAPOR ═══ */}
       {raporAcik ? (
@@ -361,18 +387,18 @@ export default function Uygulama() {
                       <span style={{ color: '#00bcd4', fontWeight: 700 }}>{kurye.kargoTuru || PARTNER_MAP[kurye.id % 8]?.kargoTuru}</span><br />
                       {kurye.originHub && <><span style={{ color: '#888', fontSize: 11 }}>From: {kurye.originHub}</span><br /></>}
                       {kurye.destHub   && <><span style={{ color: '#888', fontSize: 11 }}>To: {kurye.destHub}</span><br /></>}
-                      <span>{kurye.durum} • {kurye.hiz} km/s</span>
-                      {kurye.eta > 0 && <><br /><span>ETA: ~{kurye.eta} dk</span></>}
+                      <span>{durumEtiketi(kurye.durum, lang)} • {kurye.hiz} km/s</span>
+                      {kurye.eta > 0 && <><br /><span>ETA: ~{kurye.eta} {lang === 'en' ? 'min' : 'dk'}</span></>}
                     </div>
                   </Popup>
                 </Marker>
-                {kurye.durum !== 'teslim edildi' && (
+                {!isDelivered(kurye.durum) && (
                   <Marker position={[kurye.hedefEnlem, kurye.hedefBoylam]} icon={hedefIkon}>
-                    <Popup><strong>{kurye.isim}</strong> — Hedef</Popup>
+                    <Popup><strong>{kurye.isim}</strong> — {lang === 'en' ? 'Destination' : 'Hedef'}</Popup>
                   </Marker>
                 )}
                 {kurye.rota?.length > 1 && (
-                  <Polyline positions={kurye.rota} color={rotaRengi(kurye)} weight={kurye.durum === 'teslim edildi' ? 2 : 4} opacity={kurye.online ? 0.8 : 0.3} dashArray={kurye.online ? '8 5' : '3 8'} />
+                  <Polyline positions={kurye.rota} color={rotaRengi(kurye)} weight={isDelivered(kurye.durum) ? 2 : 4} opacity={kurye.online ? 0.8 : 0.3} dashArray={kurye.online ? '8 5' : '3 8'} />
                 )}
               </Fragment>
             ))}
@@ -381,7 +407,7 @@ export default function Uygulama() {
       )}
 
       {/* ═══ ANOMALY PANEL (right side, inside map area) ═══ */}
-      {!raporAcik && <AnomalyPanel acik={anomalyAcik} toggle={() => setAnomalyAcik(false)} t={t} />}
+      {!raporAcik && <AnomalyPanel acik={anomalyAcik} toggle={() => setAnomalyAcik(false)} t={t} lang={lang} tx={tx} />}
 
       {/* ═══════════════════════════════════════════════════════
           LEFT SIDEBAR — SOLID, NO OVERLAP
@@ -404,11 +430,11 @@ export default function Uygulama() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 10, color: t.textDim, fontFamily: 'monospace', fontWeight: 600 }}>
-              {saat.toLocaleTimeString('tr-TR')}
+              {saat.toLocaleTimeString(lang === 'en' ? 'en-US' : 'tr-TR')}
             </span>
             <button
               onClick={toggleTheme}
-              title="Tema Değiştir"
+              title={lang === 'en' ? 'Toggle Theme' : 'Tema Değiştir'}
               style={{
                 width: 34, height: 20, borderRadius: 12, padding: 0, cursor: 'pointer',
                 border: `1px solid ${t.panelBorder}`,
@@ -432,7 +458,7 @@ export default function Uygulama() {
         <div style={{ padding: '10px 12px', borderBottom: `1px solid ${t.panelBorder}`, flexShrink: 0, maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
           <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: t.textDim, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: t.success, boxShadow: `0 0 6px ${t.success}` }} />
-            {lang === 'tr' ? 'FİNANSAL ÖZET — CANLI' : 'FINANCIAL SUMMARY — LIVE'}
+            {tx('financial').toUpperCase()}
           </div>
           <FinansHUD t={t} lang={lang} />
         </div>
@@ -440,10 +466,10 @@ export default function Uygulama() {
         {/* ── STATS ROW ── */}
         <div style={{ padding: '10px 14px', borderBottom: `1px solid ${t.panelBorder}`, display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap' }}>
           {[
-            { label: 'FİLO', val: toplam, color: t.accent },
-            { label: 'AKTİF', val: aktif, color: t.success },
-            { label: 'YOLDA', val: yolda, color: t.warn },
-            { label: 'TESLİM', val: teslim, color: '#a55eea' },
+            { label: tx('fleet').toUpperCase(), val: toplam, color: t.accent },
+            { label: tx('active').toUpperCase(), val: aktif, color: t.success },
+            { label: tx('onRoute').toUpperCase(), val: yolda, color: t.warn },
+            { label: tx('delivered').toUpperCase(), val: teslim, color: '#a55eea' },
           ].map(s => (
             <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 5, background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 8, padding: '5px 10px' }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.color }} />
@@ -455,23 +481,23 @@ export default function Uygulama() {
 
         <div style={{ padding: '10px 14px', borderBottom: `1px solid ${t.panelBorder}`, display: 'flex', gap: 6, flexShrink: 0 }}>
           <button onClick={tumRotaYenile} style={{ ...actionBtn, flex: 1, background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent, fontSize: 11 }}>
-            Rotaları Yenile
+            {tx('refreshRoutes')}
           </button>
           <button onClick={() => setAnomalyAcik(p => !p)} style={{
             ...actionBtn, background: anomalyAcik ? `${t.danger}15` : t.cardBg,
             border: `1px solid ${anomalyAcik ? `${t.danger}30` : t.cardBorder}`,
             color: anomalyAcik ? t.danger : t.textMuted, fontSize: 11, minWidth: 90, display: 'flex', alignItems: 'center'
           }}>
-            {SVG_Alert} Anomali <span style={{ background: t.danger, color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 8, marginLeft: 4 }}>6</span>
+            {SVG_Alert} {tx('anomaly')} <span style={{ background: t.danger, color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 8, marginLeft: 4 }}>6</span>
           </button>
         </div>
 
         {/* ── TAB BAR — ALWAYS VISIBLE ── */}
         <div style={{ display: 'flex', borderBottom: `1px solid ${t.panelBorder}`, flexShrink: 0 }}>
           {[
-            { key: 'kuryeler',   label: `Filo (${aktif}/${toplam})` },
-            { key: 'log',        label: 'Geçmiş' },
-            { key: 'istatistik', label: 'Rapor' },
+            { key: 'kuryeler',   label: `${tx('fleet')} (${aktif}/${toplam})` },
+            { key: 'log',        label: tx('history') },
+            { key: 'istatistik', label: tx('report') },
           ].map(tab => (
             <button key={tab.key} onClick={() => setSekme(tab.key)} style={{
               background: aktifSekme === tab.key ? `${t.accent}10` : 'transparent',
@@ -509,22 +535,22 @@ export default function Uygulama() {
                     borderRadius: 6, padding: '2px 8px', fontSize: 9, fontWeight: 700,
                     color: kurye.online ? t.success : t.textDim, cursor: 'pointer', fontFamily: FF,
                   }}>
-                    {kurye.online ? 'AKTİF' : 'PASİF'}
+                    {kurye.online ? tx('active').toUpperCase() : (lang === 'en' ? 'OFFLINE' : 'PASİF')}
                   </button>
                 </div>
                 <div style={{ fontSize: 10, color: t.textDim, marginBottom: 3 }}>{partner.firma} — {partner.kargoTuru}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-                  <span style={{ color: t.textMuted }}>{kurye.durum}</span>
+                  <span style={{ color: t.textMuted }}>{durumEtiketi(kurye.durum, lang)}</span>
                   <span style={{ color: t.textDim }}>•</span>
                   <span style={{ color: t.accent, fontWeight: 600 }}>{kurye.hiz} km/s</span>
                   {kurye.eta > 0 && <>
                     <span style={{ color: t.textDim }}>•</span>
-                    <span style={{ color: t.warn, fontWeight: 600 }}>~{kurye.eta}dk</span>
+                    <span style={{ color: t.warn, fontWeight: 600 }}>~{kurye.eta}{lang === 'en' ? 'm' : 'dk'}</span>
                   </>}
                 </div>
-                {kurye.online && kurye.durum !== 'teslim edildi' && (
+                {kurye.online && !isDelivered(kurye.durum) && (
                   <button onClick={e => tekRotaYenile(kurye, e)} style={{ marginTop: 6, background: `${t.accent}10`, border: `1px solid ${t.accent}20`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: t.accent, cursor: 'pointer', fontFamily: FF, width: '100%' }}>
-                    Rota Optimize Et
+                    {tx('optimizeRoute')}
                   </button>
                 )}
               </div>
@@ -533,9 +559,9 @@ export default function Uygulama() {
 
           {aktifSekme === 'log' && (
             <>
-              <div style={{ fontSize: 10, color: t.textDim, padding: '6px 4px', fontWeight: 700 }}>{siparisFisi.length} teslimat kaydı</div>
+              <div style={{ fontSize: 10, color: t.textDim, padding: '6px 4px', fontWeight: 700 }}>{siparisFisi.length} {lang === 'en' ? 'delivery records' : 'teslimat kaydı'}</div>
               {siparisFisi.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 30, color: t.textDim, fontSize: 12 }}>Henüz teslim edilen sipariş yok</div>
+                <div style={{ textAlign: 'center', padding: 30, color: t.textDim, fontSize: 12 }}>{lang === 'en' ? 'No delivered orders yet' : 'Henüz teslim edilen sipariş yok'}</div>
               ) : siparisFisi.map(log => (
                 <div key={log.id} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: '10px 12px', marginBottom: 5 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -549,7 +575,7 @@ export default function Uygulama() {
           )}
 
           {aktifSekme === 'istatistik' && (
-            <div style={{ textAlign: 'center', padding: 30, color: t.textMuted, fontSize: 12 }}>📊 Rapor paneli sağ tarafta açıldı</div>
+            <div style={{ textAlign: 'center', padding: 30, color: t.textMuted, fontSize: 12 }}>{lang === 'en' ? '📊 Report panel is open on the right side' : '📊 Rapor paneli sağ tarafta açıldı'}</div>
           )}
         </div>
       </aside>

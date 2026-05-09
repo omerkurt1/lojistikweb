@@ -5,8 +5,64 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet'
 import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
+import { useSettings } from '../context/SettingsContext'
 
 const BACKEND = 'https://lojistikweb-backend.onrender.com'
+
+const COPY = {
+  tr: {
+    title: 'Lojistik Sipariş Takip',
+    trackNo: 'Sipariş Takip Numarası',
+    trackPlaceholder: 'Örn: 1, 2, 3...',
+    searching: 'Aranıyor...',
+    trackBtn: '🔍  Siparişimi Takip Et',
+    helper: "Takip numaranızı sipariş onay SMS'inizde veya e-postanızda bulabilirsiniz.",
+    required: 'Lütfen bir takip numarası girin.',
+    invalidNo: 'Geçersiz numara. Örnek: 1, 2, 3',
+    notFound: 'numaralı sipariş bulunamadı.',
+    notFoundCheck: 'numaralı sipariş bulunamadı. Takip numaranızı kontrol edin.',
+    noLocation: 'Kurye konum bilgisi alınamadı. Lütfen tekrar deneyin.',
+    serverError: 'Sunucuya bağlanılamadı. Lütfen tekrar deneyin.',
+    yourCourier: 'Kuryeniz',
+    eta: 'Tahmini Varış',
+    minute: 'dakika',
+    deliveredText: 'Teslimatınız başarıyla tamamlandı!',
+    orderDetails: 'Sipariş Detayları',
+    courier: 'Kurye',
+    status: 'Durum',
+    remaining: 'Kalan Süre',
+    trackOther: '← Farklı Sipariş Takip Et',
+    deliveryPoint: '📍 Teslimat Noktanız',
+    leftShort: 'kaldı',
+    loadingMap: 'Kurye konumu yükleniyor...'
+  },
+  en: {
+    title: 'Order Tracking',
+    trackNo: 'Tracking Number',
+    trackPlaceholder: 'Ex: 1, 2, 3...',
+    searching: 'Searching...',
+    trackBtn: '🔍  Track My Order',
+    helper: 'You can find your tracking number in your confirmation SMS or email.',
+    required: 'Please enter a tracking number.',
+    invalidNo: 'Invalid number. Example: 1, 2, 3',
+    notFound: 'order could not be found.',
+    notFoundCheck: 'order could not be found. Please check your tracking number.',
+    noLocation: 'Courier location is unavailable. Please try again.',
+    serverError: 'Cannot connect to the server. Please try again.',
+    yourCourier: 'Your courier',
+    eta: 'Estimated Arrival',
+    minute: 'minutes',
+    deliveredText: 'Your delivery has been completed successfully!',
+    orderDetails: 'Order Details',
+    courier: 'Courier',
+    status: 'Status',
+    remaining: 'Remaining Time',
+    trackOther: '← Track Another Order',
+    deliveryPoint: '📍 Your Delivery Point',
+    leftShort: 'left',
+    loadingMap: 'Loading courier location...'
+  }
+}
 
 /* ─── Kamyon SVG İkonu ────────────────────────────────────── */
 const KAMYON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="white">
@@ -51,22 +107,23 @@ function HaritaFokus({ hedef, zoom }) {
 }
 
 /* ─── Canlı saat ───────────────────────────────────────────── */
-function useCanliSaat() {
+function useCanliSaat(language) {
   const [saat, setSaat] = useState(new Date())
   useEffect(() => {
     const t = setInterval(() => setSaat(new Date()), 1000)
     return () => clearInterval(t)
   }, [])
-  return saat.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  return saat.toLocaleTimeString(language === 'en' ? 'en-US' : 'tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
 /* ─── Durum bilgisi ────────────────────────────────────────── */
-function durumBilgi(d) {
+function durumBilgi(d, language) {
+  const en = language === 'en'
   switch ((d || '').toLowerCase()) {
-    case 'teslim edildi': return { emoji: '✅', bg: '#d1fae5', txt: '#065f46', label: 'Teslim Edildi', aciklama: 'teslim etti' }
-    case 'paketi aldi':   return { emoji: '📦', bg: '#dbeafe', txt: '#1e40af', label: 'Paketi Aldı', aciklama: 'paketi aldı' }
-    case 'yolda':         return { emoji: '🚛', bg: '#fef3c7', txt: '#92400e', label: 'Yolda', aciklama: 'yolda' }
-    default:              return { emoji: '⏳', bg: '#f3f4f6', txt: '#6b7280', label: d || 'Hazırlanıyor', aciklama: 'hazırlanıyor' }
+    case 'teslim edildi': return { emoji: '✅', bg: '#d1fae5', txt: '#065f46', label: en ? 'Delivered' : 'Teslim Edildi', aciklama: en ? 'is delivered' : 'teslim etti' }
+    case 'paketi aldi':   return { emoji: '📦', bg: '#dbeafe', txt: '#1e40af', label: en ? 'Picked Up' : 'Paketi Aldı', aciklama: en ? 'picked up your package' : 'paketi aldı' }
+    case 'yolda':         return { emoji: '🚛', bg: '#fef3c7', txt: '#92400e', label: en ? 'On The Way' : 'Yolda', aciklama: en ? 'is on the way' : 'yolda' }
+    default:              return { emoji: '⏳', bg: '#f3f4f6', txt: '#6b7280', label: d || (en ? 'Preparing' : 'Hazırlanıyor'), aciklama: en ? 'is preparing your order' : 'hazırlanıyor' }
   }
 }
 
@@ -74,6 +131,8 @@ function durumBilgi(d) {
    ANA BİLEŞEN — Müşteri Takip
 ══════════════════════════════════════════════════════════════ */
 export default function MusteriTakip() {
+  const { language } = useSettings()
+  const c = COPY[language === 'en' ? 'en' : 'tr']
   // ── Faz durumu ──
   const [faz, setFaz] = useState('giris') // 'giris' | 'takip'
   const [takipNo, setTakipNo] = useState('')
@@ -86,7 +145,7 @@ export default function MusteriTakip() {
   const [haritaHedef, setHaritaHedef] = useState(null)
 
   const soketRef = useRef(null)
-  const saat = useCanliSaat()
+  const saat = useCanliSaat(language)
 
   // URL'den takip numarasını al (eğer varsa)
   useEffect(() => {
@@ -133,13 +192,13 @@ export default function MusteriTakip() {
   const siparisAra = useCallback(async () => {
     const temiz = takipNo.trim().toUpperCase().replace('LOOP-', '').trim()
     if (!temiz) {
-      setHata('Lütfen bir takip numarası girin.')
+      setHata(c.required)
       return
     }
 
     const kuryeId = parseInt(temiz, 10)
     if (isNaN(kuryeId) || kuryeId <= 0) {
-      setHata('Geçersiz numara. Örnek: 1, 2, 3')
+      setHata(c.invalidNo)
       return
     }
 
@@ -156,7 +215,7 @@ export default function MusteriTakip() {
           veri = await res.json()
         } else if (res.status === 404) {
           const err = await res.json().catch(() => ({}))
-          setHata(err.hata || `LOOP-${kuryeId} numaralı sipariş bulunamadı.`)
+          setHata(err.hata || `LOOP-${kuryeId} ${c.notFound}`)
           return
         } else {
           throw new Error('non-ok')
@@ -165,14 +224,14 @@ export default function MusteriTakip() {
         // Fallback: mevcut kurye endpoint'i (her zaman çalışıyor)
         const res2 = await fetch(`${BACKEND}/api/kurye/${kuryeId}/konum`)
         if (!res2.ok) {
-          setHata(`LOOP-${kuryeId} numaralı sipariş bulunamadı. Takip numaranızı kontrol edin.`)
+          setHata(`LOOP-${kuryeId} ${c.notFoundCheck}`)
           return
         }
         veri = await res2.json()
       }
 
       if (!veri || !veri.enlem) {
-        setHata('Kurye konum bilgisi alınamadı. Lütfen tekrar deneyin.')
+        setHata(c.noLocation)
         return
       }
 
@@ -186,7 +245,7 @@ export default function MusteriTakip() {
 
       setFaz('takip')
     } catch (err) {
-      setHata('Sunucuya bağlanılamadı. Lütfen tekrar deneyin.')
+      setHata(c.serverError)
     } finally {
       setYukleniyor(false)
     }
@@ -225,18 +284,18 @@ export default function MusteriTakip() {
               <span style={{ fontSize: 32 }}>🚛</span>
             </div>
             <h1 style={s.girisBaslik}>LOOP</h1>
-            <p style={s.girisAltBaslik}>Lojistik Sipariş Takip</p>
+            <p style={s.girisAltBaslik}>{c.title}</p>
           </div>
 
           {/* Takip formu */}
           <div style={s.girisFormAlani}>
-            <label style={s.girisLabel}>Sipariş Takip Numarası</label>
+            <label style={s.girisLabel}>{c.trackNo}</label>
             <div style={s.girisInputKutu}>
               <span style={s.girisInputPrefix}>LOOP-</span>
               <input
                 id="tracking-input"
                 type="text"
-                placeholder="Örn: 1, 2, 3..."
+                placeholder={c.trackPlaceholder}
                 value={takipNo}
                 onChange={(e) => { setTakipNo(e.target.value); setHata('') }}
                 onKeyDown={handleKeyDown}
@@ -264,17 +323,17 @@ export default function MusteriTakip() {
             >
               {yukleniyor ? (
                 <span style={s.girisSpinnerSatir}>
-                  <span style={s.girisSpinner} /> Aranıyor...
+                  <span style={s.girisSpinner} /> {c.searching}
                 </span>
               ) : (
-                '🔍  Siparişimi Takip Et'
+                c.trackBtn
               )}
             </button>
           </div>
 
           {/* Alt bilgi */}
           <p style={s.girisNot}>
-            Takip numaranızı sipariş onay SMS'inizde veya e-postanızda bulabilirsiniz.
+            {c.helper}
           </p>
         </div>
 
@@ -306,7 +365,7 @@ export default function MusteriTakip() {
   /* ════════════════════════════════════════════════════════════
      FAZ 2 — TAKİP GÖRÜNÜMÜ (Tek Kurye Haritası)
   ════════════════════════════════════════════════════════════ */
-  const di = kurye ? durumBilgi(kurye.durum) : null
+  const di = kurye ? durumBilgi(kurye.durum, language) : null
   const kuryeRenk = '#0062ff'
 
   return (
@@ -339,7 +398,7 @@ export default function MusteriTakip() {
             <div>
               <h2 style={s.kuryeIsim}>{kurye.isim}</h2>
               <p style={s.kuryeAciklama}>
-                Kuryeniz <strong>{kurye.isim}</strong> {di?.aciklama}
+                {c.yourCourier} <strong>{kurye.isim}</strong> {di?.aciklama}
               </p>
             </div>
           </div>
@@ -361,8 +420,8 @@ export default function MusteriTakip() {
             {kurye.durum !== 'teslim edildi' && kurye.eta > 0 && (
               <div style={s.etaAlani}>
                 <div style={s.etaBaslik}>
-                  <span style={s.etaLabel}>Tahmini Varış</span>
-                  <span style={s.etaDeger}>~{kurye.eta} dakika</span>
+                  <span style={s.etaLabel}>{c.eta}</span>
+                  <span style={s.etaDeger}>~{kurye.eta} {c.minute}</span>
                 </div>
                 <div style={s.etaBarArka}>
                   <div style={{
@@ -377,7 +436,7 @@ export default function MusteriTakip() {
             {kurye.durum === 'teslim edildi' && (
               <div style={s.teslimAlani}>
                 <div style={s.teslimIcon}>✅</div>
-                <p style={s.teslimText}>Teslimatınız başarıyla tamamlandı!</p>
+                <p style={s.teslimText}>{c.deliveredText}</p>
               </div>
             )}
           </div>
@@ -386,23 +445,23 @@ export default function MusteriTakip() {
         {/* Sipariş detay kartı */}
         {kurye && (
           <div style={s.detayKart}>
-            <h3 style={s.detayBaslik}>Sipariş Detayları</h3>
+            <h3 style={s.detayBaslik}>{c.orderDetails}</h3>
             <div style={s.detaySatir}>
               <span style={s.detayEtiket}>Takip No</span>
               <span style={s.detayDeger}>LOOP-{kurye.id}</span>
             </div>
             <div style={s.detaySatir}>
-              <span style={s.detayEtiket}>Kurye</span>
+              <span style={s.detayEtiket}>{c.courier}</span>
               <span style={s.detayDeger}>{kurye.isim}</span>
             </div>
             <div style={s.detaySatir}>
-              <span style={s.detayEtiket}>Durum</span>
+              <span style={s.detayEtiket}>{c.status}</span>
               <span style={{ ...s.detayDeger, color: di?.txt }}>{di?.label}</span>
             </div>
             {kurye.eta > 0 && kurye.durum !== 'teslim edildi' && (
               <div style={s.detaySatir}>
-                <span style={s.detayEtiket}>Kalan Süre</span>
-                <span style={s.detayDeger}>~{kurye.eta} dk</span>
+                <span style={s.detayEtiket}>{c.remaining}</span>
+                <span style={s.detayDeger}>~{kurye.eta} {c.minute}</span>
               </div>
             )}
           </div>
@@ -410,7 +469,7 @@ export default function MusteriTakip() {
 
         {/* Yeniden ara butonu */}
         <button style={s.geriBtn} onClick={geriDon}>
-          ← Farklı Sipariş Takip Et
+          {c.trackOther}
         </button>
       </aside>
 
@@ -444,7 +503,7 @@ export default function MusteriTakip() {
                   </div>
                   {kurye.eta > 0 && (
                     <div style={{ fontSize: 12, marginTop: 4 }}>
-                      ⏱ <strong>~{kurye.eta} dk</strong> kaldı
+                      ⏱ <strong>~{kurye.eta} {c.minute}</strong> {c.leftShort}
                     </div>
                   )}
                 </div>
@@ -459,7 +518,7 @@ export default function MusteriTakip() {
               >
                 <Popup>
                   <div style={{ fontSize: 12 }}>
-                    <strong>📍 Teslimat Noktanız</strong>
+                    <strong>{c.deliveryPoint}</strong>
                   </div>
                 </Popup>
               </Marker>
@@ -480,7 +539,7 @@ export default function MusteriTakip() {
           <div style={s.yukleniyor}>
             <div style={s.yukleniyorSpinner} />
             <p style={{ marginTop: 16, color: '#9ca3af', fontSize: 14 }}>
-              Kurye konumu yükleniyor...
+              {c.loadingMap}
             </p>
           </div>
         )}
@@ -492,7 +551,7 @@ export default function MusteriTakip() {
           </span>
           {kurye?.eta > 0 && kurye?.durum !== 'teslim edildi' && (
             <span style={s.haritaInfoItem}>
-              ⏱ ~{kurye.eta} dk
+              ⏱ ~{kurye.eta} {c.minute}
             </span>
           )}
         </div>

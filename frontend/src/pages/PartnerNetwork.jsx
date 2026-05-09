@@ -106,6 +106,39 @@ const PARTNERLER = [
   },
 ]
 
+const PARTNER_EN = {
+  1: {
+    kisa: 'International Cargo & Logistics',
+    aciklama: 'Comprehensive international cargo services across Europe and Asia corridors. Customs consulting, multimodal transport and live shipment tracking in one platform.',
+    uzmanlik: ['International Transport', 'Customs Advisory', 'Multimodal']
+  },
+  2: {
+    kisa: 'Urban Instant Delivery',
+    aciklama: 'Same-day delivery across 12 major cities, especially Istanbul, Ankara and Izmir. Carbon-neutral logistics with bike couriers, EVs and drone delivery options.',
+    uzmanlik: ['Same-Day Delivery', 'Micro-Fulfillment', 'Drone Pilot']
+  },
+  3: {
+    kisa: 'Cold Chain & Controlled Storage',
+    aciklama: 'Continuous temperature-controlled storage, transport and distribution for pharma, food and biomedical products between -25°C and +25°C. FDA & ISO 9001 certified.',
+    uzmanlik: ['Pharma Cold Chain', 'ISO 9001', 'Reefer Truck']
+  },
+  4: {
+    kisa: 'Air Cargo & Express Flights',
+    aciklama: 'Daily charter and scheduled flights to all Turkish airports and 60+ countries. Door-to-door air cargo solutions for valuable goods, e-commerce parcels and urgent shipments.',
+    uzmanlik: ['Air Freight', 'Charter Flights', 'Valuable Cargo']
+  },
+  5: {
+    kisa: 'Maritime Container Shipping',
+    aciklama: 'FCL/LCL container solutions from Izmir Aliağa, Mersin and Istanbul ports to Mediterranean, Black Sea and Gulf routes with real-time vessel tracking integration.',
+    uzmanlik: ['FCL / LCL', 'Port Agency', 'AIS Tracking']
+  },
+  6: {
+    kisa: 'Road Partial & Full Truckload',
+    aciklama: 'Partial and full-load services to all cities in Turkey and 40+ countries on TIR routes with a 2,000+ vehicle fleet including TIR, reefer and lowbed trucks.',
+    uzmanlik: ['FTL / LTL', 'TIR Corridor', 'ADR Dangerous Goods']
+  }
+}
+
 const COPY = {
   tr: {
     back: "← Dashboard'a Dön",
@@ -169,6 +202,18 @@ function Toast({ mesaj, kapat }) {
       <button onClick={kapat} style={toastKapatStyle}>✕</button>
     </div>
   )
+}
+
+function localizePartner(partner, language) {
+  if (language !== 'en') return partner
+  const alt = PARTNER_EN[partner.id]
+  if (!alt) return partner
+  return {
+    ...partner,
+    kisa: alt.kisa,
+    aciklama: alt.aciklama,
+    uzmanlik: alt.uzmanlik
+  }
 }
 
 // ─── Partner Detay Modalı ─────────────────────────────────────────────────────
@@ -329,7 +374,9 @@ export default function PartnerNetwork() {
       {/* ── Partner Grid ── */}
       <div style={gridWrapStyle}>
         <div style={gridStyle}>
-          {PARTNERLER.map(p => (
+          {PARTNERLER.map(rawPartner => {
+            const p = localizePartner(rawPartner, language)
+            return (
             <div key={p.id} style={kartStyle} className="partner-kart">
 
               {/* Kart üst şerit */}
@@ -375,7 +422,7 @@ export default function PartnerNetwork() {
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 
