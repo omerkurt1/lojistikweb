@@ -12,6 +12,18 @@ function tokenUret(userId) {
   return jwt.sign({ id: userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES })
 }
 
+async function kullaniciyiTokenIleGetir(req) {
+  const authHeader = req.headers.authorization
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return { hata: 'Token bulunamadı.', code: 401 }
+  }
+  const token = authHeader.split(' ')[1]
+  const decoded = jwt.verify(token, JWT_SECRET)
+  const kullanici = await User.findById(decoded.id)
+  if (!kullanici) return { hata: 'Kullanıcı bulunamadı.', code: 401 }
+  return { kullanici }
+}
+
 // ─── POST /api/auth/kayit ────────────────────────────────
 router.post('/kayit', async (req, res) => {
   try {
@@ -98,17 +110,56 @@ router.post('/giris', async (req, res) => {
 // ─── GET /api/auth/ben  (token doğrulama) ───────────────
 router.get('/ben', async (req, res) => {
   try {
-    const authHeader = req.headers.authorization
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ hata: 'Token bulunamadı.' })
-    }
-    const token = authHeader.split(' ')[1]
-    const decoded = jwt.verify(token, JWT_SECRET)
-    const kullanici = await User.findById(decoded.id)
-    if (!kullanici) return res.status(401).json({ hata: 'Kullanıcı bulunamadı.' })
+    const sonuc = await kullaniciyiTokenIleGetir(req)
+    if (sonuc.hata) return res.status(sonuc.code).json({ hata: sonuc.hata })
+    const { kullanici } = sonuc
     res.json({ kullanici })
   } catch {
     res.status(401).json({ hata: 'Geçersiz veya süresi dolmuş token.' })
+  }
+})
+
+// ─── GET /api/auth/preferences ───────────────────────────
+router.get('/preferences', async (req, res) => {
+  try {
+    const sonuc = await kullaniciyiTokenIleGetir(req)
+    if (sonuc.hata) return res.status(sonuc.code).json({ hata: sonuc.hata })
+    const { kullanici } = sonuc
+    return res.json({
+      preferences: {
+        language: kullanici.language || 'tr'
+      }
+    })
+  } catch {
+    return res.status(401).json({ hata: 'Geçersiz veya süresi dolmuş token.' })
+  }
+})
+
+// ─── PUT /api/auth/preferences ───────────────────────────
+router.put('/preferences', async (req, res) => {
+  try {
+    const sonuc = await kullaniciyiTokenIleGetir(req)
+    if (sonuc.hata) return res.status(sonuc.code).json({ hata: sonuc.hata })
+    const { kullanici } = sonuc
+
+    const dil = req.body?.language
+    if (dil && !['tr', 'en'].includes(dil)) {
+      return res.status(400).json({ hata: 'Geçersiz dil değeri. Sadece tr veya en kullanılabilir.' })
+    }
+    if (dil) {
+      kullanici.language = dil
+      await kullanici.save()
+    }
+
+    return res.json({
+      mesaj: 'Tercihler güncellendi.',
+      preferences: {
+        language: kullanici.language || 'tr'
+      }
+    })
+  } catch (err) {
+    console.error('[Auth/preferences]', err.message)
+    return res.status(500).json({ hata: 'Tercihler güncellenirken bir hata oluştu.' })
   }
 })
 

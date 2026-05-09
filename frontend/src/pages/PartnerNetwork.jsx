@@ -1,6 +1,7 @@
 // src/pages/PartnerNetwork.jsx
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSettings } from '../context/SettingsContext'
 
 // ─── Profession SVG Icons ────────────────────────────────────────────────────
 const SVG_Plane = <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21.5 4c0 0-2 .5-3.5 2L14.5 9.5 6.3 7.7l-1.6 1.6 6.3 3.6-4.6 4.6-2.8-.7L2 17.8l4.4 1.1L7.5 22l1.6-1.6-.7-2.8 4.6-4.6 3.6 6.3z"/></svg>;
@@ -105,6 +106,61 @@ const PARTNERLER = [
   },
 ]
 
+const COPY = {
+  tr: {
+    back: "← Dashboard'a Dön",
+    badge: 'B2B Lojistik Ekosistemi',
+    titleSuffix: 'Ağı',
+    subtitle: "Türkiye'nin ve dünyanın önde gelen lojistik operatörleriyle tek API üzerinden entegre olun. Kara, hava, deniz ve soğuk zincir çözümlerini LOOP platformundan yönetin.",
+    stat1: 'Aktif Partner',
+    stat2: 'Ülke Ağı',
+    stat3: 'Araç Filosu',
+    stat4: 'API Erişimi',
+    contact: 'İletişim Bilgileri',
+    quote: 'Teklif Al',
+    ctaTitle: 'Özel Entegrasyon mu İstiyorsunuz?',
+    ctaSub: 'Mevcut partnerlerimizin dışında özel bir taşıyıcıyla entegrasyon için çözüm ekibimizle görüşün.',
+    ctaBtn: 'Özel Çözüm Talep Et',
+    toastMeeting: ' ile görüşme talebiniz iletildi!',
+    toastSpecial: 'Çözüm ekibimiz en kısa sürede sizinle iletişime geçecek!',
+    toastQuoteDone: ' ekibine özel teklif talebiniz iletildi!',
+    apiType: 'API Türü',
+    supportEmail: 'Destek E-Posta',
+    phone: 'Telefon',
+    apiDocs: 'API Dokümantasyon',
+    openDocs: 'Dokümana Git →',
+    apiDocsBtn: 'API Dökümanları',
+    specialQuote: 'Özel Teklif İste',
+    sent: 'Talep Gönderildi'
+  },
+  en: {
+    back: '← Back to Dashboard',
+    badge: 'B2B Logistics Ecosystem',
+    titleSuffix: 'Network',
+    subtitle: 'Integrate with top logistics operators in Turkey and worldwide through one API. Manage road, air, maritime and cold-chain solutions from LOOP.',
+    stat1: 'Active Partners',
+    stat2: 'Country Network',
+    stat3: 'Vehicle Fleet',
+    stat4: 'API Access',
+    contact: 'Contact Info',
+    quote: 'Get Quote',
+    ctaTitle: 'Need a Custom Integration?',
+    ctaSub: 'Talk to our solution team to integrate a custom carrier outside our current partner network.',
+    ctaBtn: 'Request Custom Solution',
+    toastMeeting: ' meeting request has been submitted!',
+    toastSpecial: 'Our solution team will contact you shortly!',
+    toastQuoteDone: ' custom quote request has been sent!',
+    apiType: 'API Type',
+    supportEmail: 'Support Email',
+    phone: 'Phone',
+    apiDocs: 'API Documentation',
+    openDocs: 'Open Docs →',
+    apiDocsBtn: 'API Docs',
+    specialQuote: 'Request Special Quote',
+    sent: 'Request Sent'
+  }
+}
+
 // ─── Toast Bileşeni ───────────────────────────────────────────────────────────
 function Toast({ mesaj, kapat }) {
   return (
@@ -116,14 +172,14 @@ function Toast({ mesaj, kapat }) {
 }
 
 // ─── Partner Detay Modalı ─────────────────────────────────────────────────────
-function PartnerModal({ partner, kapat, toastGoster }) {
+function PartnerModal({ partner, kapat, toastGoster, c }) {
   const [gonderildi, setGonderildi] = useState(false)
 
   const teklifIste = () => {
     setGonderildi(true)
     setTimeout(() => {
       kapat()
-      toastGoster(`${partner.isim} ekibine özel teklif talebiniz iletildi!`)
+      toastGoster(`${partner.isim}${c.toastQuoteDone}`)
     }, 600)
   }
 
@@ -155,28 +211,28 @@ function PartnerModal({ partner, kapat, toastGoster }) {
           {/* Entegrasyon bilgileri */}
           <div style={bilgiGridStyle}>
             <div style={bilgiKartStyle}>
-              <div style={bilgiEtiketStyle}>API Türü</div>
+              <div style={bilgiEtiketStyle}>{c.apiType}</div>
               <div style={bilgiDegerStyle}>{partner.entType}</div>
             </div>
             <div style={bilgiKartStyle}>
-              <div style={bilgiEtiketStyle}>Destek E-Posta</div>
+              <div style={bilgiEtiketStyle}>{c.supportEmail}</div>
               <a href={`mailto:${partner.email}`} style={{ ...bilgiDegerStyle, color: partner.renk, textDecoration: 'none' }}>
                 {partner.email}
               </a>
             </div>
             <div style={bilgiKartStyle}>
-              <div style={bilgiEtiketStyle}>Telefon</div>
+              <div style={bilgiEtiketStyle}>{c.phone}</div>
               <div style={bilgiDegerStyle}>{partner.telefon}</div>
             </div>
             <div style={bilgiKartStyle}>
-              <div style={bilgiEtiketStyle}>API Dokümantasyon</div>
+              <div style={bilgiEtiketStyle}>{c.apiDocs}</div>
               <a
                 href={partner.api}
                 target="_blank"
                 rel="noreferrer"
                 style={{ ...bilgiDegerStyle, color: partner.renk, textDecoration: 'none' }}
               >
-                Dokümana Git →
+                {c.openDocs}
               </a>
             </div>
           </div>
@@ -192,7 +248,7 @@ function PartnerModal({ partner, kapat, toastGoster }) {
                 background: `linear-gradient(135deg, ${partner.renk}, ${partner.renk2})`,
               }}
             >
-              API Dökümanları
+              {c.apiDocsBtn}
             </a>
             <button
               onClick={teklifIste}
@@ -204,7 +260,7 @@ function PartnerModal({ partner, kapat, toastGoster }) {
                 cursor: gonderildi ? 'default' : 'pointer',
               }}
             >
-              {gonderildi ? 'Talep Gönderildi' : 'Özel Teklif İste'}
+              {gonderildi ? c.sent : c.specialQuote}
             </button>
           </div>
 
@@ -216,9 +272,11 @@ function PartnerModal({ partner, kapat, toastGoster }) {
 
 // ─── Ana Bileşen ──────────────────────────────────────────────────────────────
 export default function PartnerNetwork() {
+  const { language } = useSettings()
   const navigate = useNavigate()
   const [secilenPartner, setSecilen] = useState(null)
   const [toast, setToast]           = useState('')
+  const c = COPY[language === 'en' ? 'en' : 'tr']
 
   const toastGoster = useCallback((mesaj) => {
     setToast(mesaj)
@@ -237,28 +295,28 @@ export default function PartnerNetwork() {
           partner={secilenPartner}
           kapat={() => setSecilen(null)}
           toastGoster={toastGoster}
+          c={c}
         />
       )}
 
       {/* ── Header ── */}
       <div style={headerStyle}>
-        <button style={geriBtn} onClick={() => navigate(-1)}>← Dashboard'a Dön</button>
+        <button style={geriBtn} onClick={() => navigate(-1)}>{c.back}</button>
         <div style={headerIcStyle}>
-          <div style={headerBadgeStyle}>B2B Lojistik Ekosistemi</div>
-          <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#2f6f62' }}>Ağı</span></h1>
+          <div style={headerBadgeStyle}>{c.badge}</div>
+          <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#2f6f62' }}>{c.titleSuffix}</span></h1>
           <p style={headerAltStyle}>
-            Türkiye'nin ve dünyanın önde gelen lojistik operatörleriyle tek API üzerinden entegre olun.
-            Kara, hava, deniz ve soğuk zincir çözümlerini LOOP platformundan yönetin.
+            {c.subtitle}
           </p>
         </div>
 
         {/* İstatistik satırı */}
         <div style={statSatirStyle}>
           {[
-            { deger: '6+',    etiket: 'Aktif Partner' },
-            { deger: '40+',   etiket: 'Ülke Ağı'      },
-            { deger: '2.000+',etiket: 'Araç Filosu'   },
-            { deger: '7/24',  etiket: 'API Erişimi'   },
+            { deger: '6+',    etiket: c.stat1 },
+            { deger: '40+',   etiket: c.stat2 },
+            { deger: '2.000+',etiket: c.stat3 },
+            { deger: '7/24',  etiket: c.stat4 },
           ].map(s => (
             <div key={s.etiket} style={statKartStyle}>
               <div style={statDegerStyle}>{s.deger}</div>
@@ -302,18 +360,18 @@ export default function PartnerNetwork() {
                   onClick={() => setSecilen(p)}
                   style={iletisimBtnStyle}
                 >
-                  İletişim Bilgileri
+                  {c.contact}
                 </button>
                 <button
                   onClick={() => {
                     setSecilen(p)
                     setTimeout(() => {
-                      toastGoster(`${p.isim} ile görüşme talebiniz iletildi!`)
+                      toastGoster(`${p.isim}${c.toastMeeting}`)
                     }, 200)
                   }}
                   style={{ ...entegreBtnStyle, background: `linear-gradient(135deg, ${p.renk}, ${p.renk2})` }}
                 >
-                  Teklif Al
+                  {c.quote}
                 </button>
               </div>
             </div>
@@ -324,16 +382,16 @@ export default function PartnerNetwork() {
       {/* ── CTA Banner ── */}
       <div style={ctaBannerStyle}>
         <div>
-          <div style={ctaBaslikStyle}>Özel Entegrasyon mı İstiyorsunuz?</div>
+          <div style={ctaBaslikStyle}>{c.ctaTitle}</div>
           <div style={ctaAltStyle}>
-            Mevcut partnerlerimizin dışında özel bir taşıyıcıyla entegrasyon için çözüm ekibimizle görüşün.
+            {c.ctaSub}
           </div>
         </div>
         <button
           style={ctaBtnStyle}
-          onClick={() => toastGoster('Çözüm ekibimiz en kısa sürede sizinle iletişime geçecek!')}
+          onClick={() => toastGoster(c.toastSpecial)}
         >
-          Özel Çözüm Talep Et
+          {c.ctaBtn}
         </button>
       </div>
 

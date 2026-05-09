@@ -2,11 +2,61 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useSettings } from '../context/SettingsContext'
+
+const COPY = {
+  tr: {
+    passMismatch: 'Şifreler eşleşmiyor.',
+    loginOk: 'Giriş başarılı! Yönlendiriliyorsunuz...',
+    registerOk: 'Hesabınız oluşturuldu! Yönlendiriliyorsunuz...',
+    tabLogin: 'Giriş Yap',
+    tabRegister: 'Kayıt Ol',
+    fullName: 'Ad Soyad',
+    email: 'E-Posta',
+    pass: 'Şifre',
+    passAgain: 'Şifre Tekrar',
+    loadingLogin: 'Giriş yapılıyor...',
+    loadingRegister: 'Hesap oluşturuluyor...',
+    submitLogin: 'Giriş Yap →',
+    submitRegister: 'Hesap Oluştur →',
+    noAccount: 'Hesabınız yok mu? ',
+    registerNow: 'Kayıt olun',
+    hasAccount: 'Zaten üye misiniz? ',
+    loginNow: 'Giriş yapın',
+    or: 'veya',
+    liveTrack: '📍  Canlı Takip Et →',
+    slogan: 'Akıllı Lojistik Yönetim Sistemi'
+  },
+  en: {
+    passMismatch: 'Passwords do not match.',
+    loginOk: 'Login successful! Redirecting...',
+    registerOk: 'Account created! Redirecting...',
+    tabLogin: 'Sign In',
+    tabRegister: 'Sign Up',
+    fullName: 'Full Name',
+    email: 'Email',
+    pass: 'Password',
+    passAgain: 'Confirm Password',
+    loadingLogin: 'Signing in...',
+    loadingRegister: 'Creating account...',
+    submitLogin: 'Sign In →',
+    submitRegister: 'Create Account →',
+    noAccount: "Don't have an account? ",
+    registerNow: 'Sign up',
+    hasAccount: 'Already have an account? ',
+    loginNow: 'Sign in',
+    or: 'or',
+    liveTrack: '📍  Track Live →',
+    slogan: 'Smart Logistics Management Platform'
+  }
+}
 
 export default function Login() {
   const { giris, kayit } = useAuth()
+  const { language } = useSettings()
   const navigate = useNavigate()
   const vitrinUrl = 'https://lojistikweb-vitrin.vercel.app/#teknoloji'
+  const c = COPY[language === 'en' ? 'en' : 'tr']
 
   const [sekme, setSekme] = useState('giris')  // 'giris' | 'kayit'
   const [form, setForm] = useState({ isim: '', email: '', sifre: '', sifreTekrar: '' })
@@ -22,7 +72,7 @@ export default function Login() {
     setHata(''); setBasari('')
 
     if (sekme === 'kayit' && form.sifre !== form.sifreTekrar) {
-      return setHata('Şifreler eşleşmiyor.')
+      return setHata(c.passMismatch)
     }
 
     setYuk(true)
@@ -34,7 +84,7 @@ export default function Login() {
           (kullanici?.email || '').toLowerCase() === 'patron@loop.com' ||
           (kullanici?.rol || '').toLowerCase() === 'admin'
 
-        setBasari('Giriş başarılı! Yönlendiriliyorsunuz...')
+        setBasari(c.loginOk)
         if (isAdmin) {
           window.open('https://lojistikweb1.vercel.app/dashboard', '_blank', 'noopener,noreferrer')
         }
@@ -42,7 +92,7 @@ export default function Login() {
 
       } else {
         await kayit({ isim: form.isim, email: form.email, sifre: form.sifre })
-        setBasari('Hesabınız oluşturuldu! Yönlendiriliyorsunuz...')
+        setBasari(c.registerOk)
         window.location.replace(vitrinUrl)
       }
     } catch (err) {
@@ -65,7 +115,7 @@ export default function Login() {
           <span style={styles.logoIcon}>🚚</span>
           <span style={styles.logoText}>LOOP</span>
         </div>
-        <p style={styles.logoAlt}>Akıllı Lojistik Yönetim Sistemi</p>
+        <p style={styles.logoAlt}>{c.slogan}</p>
 
         {/* Sekmeler */}
         <div style={styles.sekmeSarici}>
@@ -73,13 +123,13 @@ export default function Login() {
             style={{ ...styles.sekme, ...(sekme === 'giris' ? styles.sekmeAktif : {}) }}
             onClick={() => { setSekme('giris'); setHata('') }}
           >
-            Giriş Yap
+            {c.tabLogin}
           </button>
           <button
             style={{ ...styles.sekme, ...(sekme === 'kayit' ? styles.sekmeAktif : {}) }}
             onClick={() => { setSekme('kayit'); setHata('') }}
           >
-            Kayıt Ol
+            {c.tabRegister}
           </button>
         </div>
 
@@ -87,7 +137,7 @@ export default function Login() {
         <form onSubmit={gonder} style={styles.form}>
           {sekme === 'kayit' && (
             <div style={styles.grup}>
-              <label style={styles.etiket}>Ad Soyad</label>
+              <label style={styles.etiket}>{c.fullName}</label>
               <input
                 name="isim"
                 value={form.isim}
@@ -100,7 +150,7 @@ export default function Login() {
           )}
 
           <div style={styles.grup}>
-            <label style={styles.etiket}>E-Posta</label>
+            <label style={styles.etiket}>{c.email}</label>
             <input
               name="email"
               type="email"
@@ -113,7 +163,7 @@ export default function Login() {
           </div>
 
           <div style={styles.grup}>
-            <label style={styles.etiket}>Şifre</label>
+            <label style={styles.etiket}>{c.pass}</label>
             <input
               name="sifre"
               type="password"
@@ -128,7 +178,7 @@ export default function Login() {
 
           {sekme === 'kayit' && (
             <div style={styles.grup}>
-              <label style={styles.etiket}>Şifre Tekrar</label>
+              <label style={styles.etiket}>{c.passAgain}</label>
               <input
                 name="sifreTekrar"
                 type="password"
@@ -150,28 +200,28 @@ export default function Login() {
             cursor: yukleniyor ? 'not-allowed' : 'pointer'
           }}>
             {yukleniyor
-              ? (sekme === 'giris' ? 'Giriş yapılıyor...' : 'Hesap oluşturuluyor...')
-              : (sekme === 'giris' ? 'Giriş Yap →' : 'Hesap Oluştur →')}
+              ? (sekme === 'giris' ? c.loadingLogin : c.loadingRegister)
+              : (sekme === 'giris' ? c.submitLogin : c.submitRegister)}
           </button>
         </form>
 
         {/* Alt link */}
         <p style={styles.altMetin}>
           {sekme === 'giris'
-            ? <><span>Hesabınız yok mu? </span><button style={styles.linkBtn} onClick={() => setSekme('kayit')}>Kayıt olun</button></>
-            : <><span>Zaten üye misiniz? </span><button style={styles.linkBtn} onClick={() => setSekme('giris')}>Giriş yapın</button></>
+            ? <><span>{c.noAccount}</span><button style={styles.linkBtn} onClick={() => setSekme('kayit')}>{c.registerNow}</button></>
+            : <><span>{c.hasAccount}</span><button style={styles.linkBtn} onClick={() => setSekme('giris')}>{c.loginNow}</button></>
           }
         </p>
 
         <div style={styles.ayirac}>
           <span style={styles.ayiracCizgi} />
-          <span style={styles.ayiracMetin}>veya</span>
+          <span style={styles.ayiracMetin}>{c.or}</span>
           <span style={styles.ayiracCizgi} />
         </div>
 
         {/* Canlı takip sayfasına hızlı erişim */}
         <button id="btn-canli-takip" style={styles.takipBtn} onClick={() => navigate('/takip')}>
-          📍  Canlı Takip Et →
+          {c.liveTrack}
         </button>
       </div>
     </div>

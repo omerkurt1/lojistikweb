@@ -24,6 +24,11 @@ const UserSchema = new mongoose.Schema({
     aktif: {
         type: Boolean,
         default: true
+    },
+    language: {
+        type: String,
+        enum: ['tr', 'en'],
+        default: 'tr'
     }
 }, { timestamps: true });
 

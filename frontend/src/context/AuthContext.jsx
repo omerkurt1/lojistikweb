@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
     const tokenFromUrl = params.get('loop_token')
     if (tokenFromUrl) {
       localStorage.setItem('loop_token', tokenFromUrl)
+      window.dispatchEvent(new Event('loop-auth-changed'))
       params.delete('loop_token')
       const newSearch = params.toString()
       const cleanUrl = `${window.location.pathname}${newSearch ? `?${newSearch}` : ''}${window.location.hash}`
@@ -50,6 +51,7 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(veri.hata || 'Kayıt başarısız.')
     localStorage.setItem('loop_token', veri.token)
     setKullanici(veri.kullanici)
+    window.dispatchEvent(new Event('loop-auth-changed'))
     return veri
   }, [])
 
@@ -71,12 +73,14 @@ export function AuthProvider({ children }) {
     if (!res.ok) throw new Error(veri.hata || 'Giriş başarısız.')
     localStorage.setItem('loop_token', veri.token)
     setKullanici(veri.kullanici)
+    window.dispatchEvent(new Event('loop-auth-changed'))
     return veri
   }, [])
 
   const cikis = useCallback(() => {
     localStorage.removeItem('loop_token')
     setKullanici(null)
+    window.dispatchEvent(new Event('loop-auth-changed'))
   }, [])
 
   const token = localStorage.getItem('loop_token')
