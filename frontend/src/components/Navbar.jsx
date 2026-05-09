@@ -96,7 +96,7 @@ export default function Navbar() {
       </div>
 
       {/* ── RIGHT: Auth-aware CTA ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
         {kullanici ? (
           /* ══ LOGGED IN: Avatar pill linking to /profil ══ */
@@ -104,7 +104,7 @@ export default function Navbar() {
             to="/profil"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 10,
-              padding: '7px 16px 7px 7px', borderRadius: 40,
+              padding: '7px 14px 7px 7px', borderRadius: 40,
               background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(0,212,255,0.06)',
               border: `1.5px solid ${CYAN}40`,
               textDecoration: 'none', cursor: 'pointer',
@@ -132,7 +132,7 @@ export default function Navbar() {
             </div>
           </Link>
         ) : (
-          /* ══ LOGGED OUT: Login + Get Started ══ */
+          /* ══ LOGGED OUT: Login ══ */
           <>
             <Link
               to="/giris"
@@ -148,22 +148,24 @@ export default function Navbar() {
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: CYAN, boxShadow: `0 0 6px ${CYAN}`, flexShrink: 0 }} />
               {t('login')}
             </Link>
-
-            <button
-              onClick={() => navigate('/partnerler')}
-              style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                padding: '9px 22px', borderRadius: 8,
-                background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
-                border: 'none', color: NAVY, fontFamily: FF,
-                fontSize: 13, fontWeight: 800, letterSpacing: '0.04em',
-                cursor: 'pointer', boxShadow: `0 4px 16px ${CYAN}40`,
-              }}
-            >
-              {t('getStarted')}
-            </button>
           </>
         )}
+
+        <button
+          onClick={() => navigate('/partnerler')}
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            padding: kullanici ? '8px 16px' : '9px 22px',
+            borderRadius: 8,
+            background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
+            border: 'none', color: NAVY, fontFamily: FF,
+            fontSize: 13, fontWeight: 800, letterSpacing: '0.04em',
+            cursor: 'pointer', boxShadow: `0 4px 16px ${CYAN}40`,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {t('getStarted')}
+        </button>
       </div>
     </nav>
   )
