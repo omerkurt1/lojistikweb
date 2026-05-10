@@ -9,7 +9,10 @@ import { useSettings } from '../context/SettingsContext'
 
 const FF   = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
 const FFH  = "'Space Grotesk','Inter',sans-serif"
-const CYAN = '#00d4ff'
+const CYAN = '#2F6F73'
+const ACCENT_SECONDARY = '#4B8A8F'
+const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
+const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
 const NAVY = '#060c1a'
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -49,9 +52,9 @@ function tk(isDark) {
     textDim:   '#849495',
     border:    'rgba(255,255,255,0.06)',
     borderV:   '#3a494b',
-    accent:    '#00f2ff',
-    accentDim: 'rgba(0,242,255,0.12)',
-    accentBg:  'rgba(0,219,231,0.08)',
+    accent:    '#2F6F73',
+    accentDim: 'rgba(47,111,115,0.14)',
+    accentBg:  'rgba(47,111,115,0.08)',
     teal:      '#2dd4bf',
     tealBg:    'rgba(45,212,191,0.10)',
     tealBorder:'rgba(45,212,191,0.20)',
@@ -63,7 +66,7 @@ function tk(isDark) {
     sidebarBg: 'rgba(15,23,42,0.40)',
     glassBg:   'rgba(30,41,59,0.40)',
     glassBorder: 'rgba(255,255,255,0.05)',
-    glassGlow: '0 0 12px rgba(0,242,255,0.2)',
+    glassGlow: '0 0 10px rgba(47,111,115,0.22)',
     inputBg:   '#0d1515',
   }
   return {
@@ -77,9 +80,9 @@ function tk(isDark) {
     textDim:   '#8a9abc',
     border:    'rgba(0,0,0,0.08)',
     borderV:   '#e8ecf8',
-    accent:    '#0062ff',
-    accentDim: 'rgba(0,98,255,0.10)',
-    accentBg:  'rgba(0,98,255,0.06)',
+    accent:    '#2F6F73',
+    accentDim: 'rgba(47,111,115,0.10)',
+    accentBg:  'rgba(47,111,115,0.06)',
     teal:      '#0d9488',
     tealBg:    'rgba(13,148,136,0.08)',
     tealBorder:'rgba(13,148,136,0.20)',
@@ -91,7 +94,7 @@ function tk(isDark) {
     sidebarBg: 'rgba(248,250,255,0.95)',
     glassBg:   'rgba(255,255,255,0.80)',
     glassBorder: 'rgba(0,0,0,0.06)',
-    glassGlow: '0 0 12px rgba(0,98,255,0.1)',
+    glassGlow: '0 0 10px rgba(47,111,115,0.16)',
     inputBg:   '#ffffff',
   }
 }
@@ -126,7 +129,7 @@ export default function ProfilePage() {
           <div style={{ color: c.accent, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{ICO.shield}</div>
           <div style={{ fontSize: 18, fontWeight: 800, color: c.text, marginBottom: 8 }}>{t('signInRequired')}</div>
           <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 24 }}>{t('signInMsg')}</div>
-          <Link to="/giris" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, color: NAVY, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px rgba(0,212,255,0.3)` }}>{t('signIn')}</Link>
+          <Link to="/giris" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, ${ACCENT_SECONDARY})`, color: ACCENT_TEXT_ON_SOLID, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px ${ACCENT_SHADOW}` }}>{t('signIn')}</Link>
         </div>
       </div>
     )
@@ -168,7 +171,7 @@ export default function ProfilePage() {
           <button style={iconBtnStyle(c)} title="Help">{ICO.help}</button>
           <button style={iconBtnStyle(c)} title="Settings">{ICO.settings}</button>
           {/* Avatar */}
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${c.accent}, #0062ff)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#fff', cursor: 'pointer', border: `2px solid ${c.borderV}` }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${c.accent}, ${ACCENT_SECONDARY})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 900, color: '#fff', cursor: 'pointer', border: `2px solid ${c.borderV}` }}>
             {initials(kullanici.isim)}
           </div>
         </div>
@@ -251,7 +254,7 @@ export default function ProfilePage() {
                 {/* Avatar */}
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <div style={{ width: 96, height: 96, borderRadius: '50%', border: `2px solid ${c.accent}`, padding: 4, background: c.surfaceC, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: `linear-gradient(135deg, ${c.accent}, #0062ff)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: '#fff' }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: `linear-gradient(135deg, ${c.accent}, ${ACCENT_SECONDARY})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, color: '#fff' }}>
                       {initials(kullanici.isim)}
                     </div>
                   </div>
@@ -443,7 +446,7 @@ export default function ProfilePage() {
                     </div>
                   ))}
                 </div>
-                <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, #0062ff)`, color: NAVY, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px rgba(0,212,255,0.3)` }}>
+          <Link to="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, ${ACCENT_SECONDARY})`, color: ACCENT_TEXT_ON_SOLID, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px ${ACCENT_SHADOW}` }}>
                   {t('goToDashboard')}
                 </Link>
               </section>

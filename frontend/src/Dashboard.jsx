@@ -27,12 +27,12 @@ const TILE_FIXED  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 const TILE_ATTR   = '© OpenStreetMap contributors'
 
 // Unified courier color — corporate cyan
-const KURYE_RENK = '#00bcd4'
+const KURYE_RENK = '#2F6F73'
 const KURYE_RENK_OFF = '#6b7280'
 
 // Route color — single professional tone, dimmed for offline
 function rotaRengi(k) {
-  return k.online ? '#00bcd4' : '#555'
+  return k.online ? '#2F6F73' : '#555'
 }
 
 function normalizeDurum(durum = '') {
@@ -132,7 +132,7 @@ function tema(dark) {
   if (dark) return {
     bg: '#0b1120', panelBg: 'rgba(11,17,32,0.92)', panelBorder: 'rgba(255,255,255,0.07)',
     text: '#e8f0ff', textMuted: '#6a7fa8', textDim: 'rgba(255,255,255,0.35)',
-    accent: '#00bcd4', accent2: '#0062ff', danger: '#ff4757', warn: '#ff9f1c', success: '#2ed573',
+    accent: '#2F6F73', accent2: '#4B8A8F', danger: '#ff4757', warn: '#ff9f1c', success: '#2ed573',
     cardBg: 'rgba(255,255,255,0.03)', cardBorder: 'rgba(255,255,255,0.06)',
     inputBg: 'rgba(255,255,255,0.04)',
     shadow: '0 8px 32px rgba(0,0,0,0.4)',
@@ -141,7 +141,7 @@ function tema(dark) {
   return {
     bg: '#f0f4ff', panelBg: 'rgba(255,255,255,0.95)', panelBorder: 'rgba(0,0,0,0.08)',
     text: '#0a1628', textMuted: '#5a6a8a', textDim: 'rgba(0,0,0,0.35)',
-    accent: '#0056b3', accent2: '#00bcd4', danger: '#dc3545', warn: '#e67e22', success: '#27ae60',
+    accent: '#2F6F73', accent2: '#4B8A8F', danger: '#dc3545', warn: '#e67e22', success: '#27ae60',
     cardBg: '#f5f7ff', cardBorder: '#e8ecf8',
     inputBg: '#f0f2f8',
     shadow: '0 4px 20px rgba(0,0,0,0.08)',
@@ -219,8 +219,8 @@ function AnomalyPanel({ acik, toggle, t, lang, tx }) {
             <div style={{ fontSize: 11, color: t.textMuted, lineHeight: 1.5, marginBottom: 8 }}>{a.detail}</div>
             {!resolved.has(a.id) && (
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => resolve(a.id)} style={{ background: `${t.success}15`, color: t.success, border: `1px solid ${t.success}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>✓ {tx('resolved')}</button>
-                <button style={{ background: `${t.warn}12`, color: t.warn, border: `1px solid ${t.warn}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>🔍 {tx('inspect')}</button>
+                <button onClick={() => resolve(a.id)} style={{ background: `${t.success}15`, color: t.success, border: `1px solid ${t.success}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>{tx('resolved')}</button>
+                <button style={{ background: `${t.warn}12`, color: t.warn, border: `1px solid ${t.warn}30`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 700, cursor: 'pointer', fontFamily: FF }}>{tx('inspect')}</button>
               </div>
             )}
           </div>
@@ -241,9 +241,9 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t, lang, tx }) {
   if (!kurye) return null
   const partner = PARTNER_MAP[kurye.id % 8]
 
-  const reAssign = () => { bildirimEkle(lang === 'en' ? `🔁 ${kurye.isim} job is being reassigned to nearest partner courier...` : `🔁 ${kurye.isim} yükü en yakın partner kuryeye aktarılıyor...`, 'uyari'); kapat() }
-  const redCode  = () => { bildirimEkle(lang === 'en' ? `🛑 RED-CODE VIP: ${kurye.isim} delivery is now maximum priority!` : `🛑 RED-CODE VIP: ${kurye.isim} teslimatı maksimum önceliğe alındı!`, 'basari'); kapat() }
-  const suspend  = () => { bildirimEkle(lang === 'en' ? `⛔ ${partner.firma} — ${kurye.isim} network access suspended.` : `⛔ ${partner.firma} — ${kurye.isim} ağ erişimi askıya alındı.`, 'uyari'); kapat() }
+  const reAssign = () => { bildirimEkle(lang === 'en' ? `${kurye.isim} job is being reassigned to nearest partner courier...` : `${kurye.isim} yükü en yakın partner kuryeye aktarılıyor...`, 'uyari'); kapat() }
+  const redCode  = () => { bildirimEkle(lang === 'en' ? `RED-CODE VIP: ${kurye.isim} delivery is now maximum priority!` : `RED-CODE VIP: ${kurye.isim} teslimatı maksimum önceliğe alındı!`, 'basari'); kapat() }
+  const suspend  = () => { bildirimEkle(lang === 'en' ? `${partner.firma} — ${kurye.isim} network access suspended.` : `${partner.firma} — ${kurye.isim} ağ erişimi askıya alındı.`, 'uyari'); kapat() }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }} onClick={kapat}>
@@ -270,11 +270,11 @@ function InterventionDrawer({ kurye, kapat, bildirimEkle, t, lang, tx }) {
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 10, color: t.textDim, marginBottom: 14, fontFamily: 'monospace' }}>📍 {kurye.enlem?.toFixed(5)}, {kurye.boylam?.toFixed(5)}</div>
+          <div style={{ fontSize: 10, color: t.textDim, marginBottom: 14, fontFamily: 'monospace' }}>{kurye.enlem?.toFixed(5)}, {kurye.boylam?.toFixed(5)}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-            <button onClick={reAssign} style={{ ...actionBtn, background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}>🔁 {tx('reAssign')}</button>
-            <button onClick={redCode} style={{ ...actionBtn, background: `${t.danger}15`, border: `1px solid ${t.danger}30`, color: t.danger }}>🛑 {tx('redCode')}</button>
-            <button onClick={suspend} style={{ ...actionBtn, background: `${t.warn}12`, border: `1px solid ${t.warn}25`, color: t.warn }}>⛔ {tx('suspend')}</button>
+            <button onClick={reAssign} style={{ ...actionBtn, background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}>{tx('reAssign')}</button>
+            <button onClick={redCode} style={{ ...actionBtn, background: `${t.danger}15`, border: `1px solid ${t.danger}30`, color: t.danger }}>{tx('redCode')}</button>
+            <button onClick={suspend} style={{ ...actionBtn, background: `${t.warn}12`, border: `1px solid ${t.warn}25`, color: t.warn }}>{tx('suspend')}</button>
           </div>
         </div>
       </div>
@@ -327,13 +327,13 @@ export default function Uygulama() {
   useEffect(() => {
     soket.on('kuryeleriGuncelle', setKuryeler)
     soket.on('siparisFisiGuncelle', setFis)
-    soket.on('teslimatBildirimi', ({ isim, zaman }) => bildirimEkle(lang === 'en' ? `✅ ${isim} completed a delivery (${zaman})` : `✅ ${isim} teslimatı tamamladı (${zaman})`, 'basari'))
+    soket.on('teslimatBildirimi', ({ isim, zaman }) => bildirimEkle(lang === 'en' ? `${isim} completed a delivery (${zaman})` : `${isim} teslimatı tamamladı (${zaman})`, 'basari'))
     return () => { soket.off('kuryeleriGuncelle'); soket.off('siparisFisiGuncelle'); soket.off('teslimatBildirimi') }
   }, [bildirimEkle, lang])
 
   // ── Actions ──
-  const tumRotaYenile = () => { soket.emit('yeniRotaCiz'); bildirimEkle(lang === 'en' ? '🔄 Recalculating all routes...' : '🔄 Tüm rotalar yeniden hesaplanıyor...', 'bilgi') }
-  const tekRotaYenile = (k, e) => { e.stopPropagation(); soket.emit('tekKuryeRotaCiz', k.id); bildirimEkle(lang === 'en' ? `🔄 Optimizing route for ${k.isim}...` : `🔄 ${k.isim} rotası optimize ediliyor...`, 'bilgi') }
+  const tumRotaYenile = () => { soket.emit('yeniRotaCiz'); bildirimEkle(lang === 'en' ? 'Recalculating all routes...' : 'Tüm rotalar yeniden hesaplanıyor...', 'bilgi') }
+  const tekRotaYenile = (k, e) => { e.stopPropagation(); soket.emit('tekKuryeRotaCiz', k.id); bildirimEkle(lang === 'en' ? `Optimizing route for ${k.isim}...` : `${k.isim} rotası optimize ediliyor...`, 'bilgi') }
   const onlineDegistir = (k, e) => { e.stopPropagation(); soket.emit('kuryeOnlineDegistir', k.id); bildirimEkle(k.online ? (lang === 'en' ? `Deactivated: ${k.isim} is offline` : `Deaktive: ${k.isim} çevrimdışı`) : (lang === 'en' ? `Activated: ${k.isim} is online` : `Aktif: ${k.isim} çevrimiçi`), 'uyari') }
   const kuryeyiSec = (k) => { setSecilenId(k.id); setZoomHedef({ ...k, _ts: Date.now() }) }
 
@@ -382,7 +382,7 @@ export default function Uygulama() {
                     <div style={{ fontFamily: FF, fontSize: 12, minWidth: 180 }}>
                       <strong style={{ fontSize: 13 }}>{kurye.isim}</strong><br />
                       <span style={{ color: '#6a7fa8' }}>{PARTNER_MAP[kurye.id % 8]?.firma}</span><br />
-                      <span style={{ color: '#00bcd4', fontWeight: 700 }}>{kurye.kargoTuru || PARTNER_MAP[kurye.id % 8]?.kargoTuru}</span><br />
+                      <span style={{ color: '#2F6F73', fontWeight: 700 }}>{kurye.kargoTuru || PARTNER_MAP[kurye.id % 8]?.kargoTuru}</span><br />
                       {kurye.originHub && <><span style={{ color: '#888', fontSize: 11 }}>From: {kurye.originHub}</span><br /></>}
                       {kurye.destHub   && <><span style={{ color: '#888', fontSize: 11 }}>To: {kurye.destHub}</span><br /></>}
                       <span>{durumEtiketi(kurye.durum, lang)} • {kurye.hiz} km/s</span>
@@ -436,7 +436,7 @@ export default function Uygulama() {
               style={{
                 width: 34, height: 20, borderRadius: 12, padding: 0, cursor: 'pointer',
                 border: `1px solid ${t.panelBorder}`,
-                background: dark ? 'rgba(0,188,212,0.2)' : '#ccc',
+                background: dark ? 'rgba(47,111,115,0.2)' : '#ccc',
                 position: 'relative', transition: 'background 0.3s',
               }}
             >
@@ -563,17 +563,17 @@ export default function Uygulama() {
               ) : siparisFisi.map(log => (
                 <div key={log.id} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: '10px 12px', marginBottom: 5 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                    <span style={{ color: t.success, fontWeight: 700 }}>✅ {log.kuryeIsim}</span>
+                    <span style={{ color: t.success, fontWeight: 700 }}>{log.kuryeIsim}</span>
                     <span style={{ color: t.textDim, fontSize: 10 }}>{log.zaman}</span>
                   </div>
-                  <div style={{ fontSize: 10, color: t.textDim, marginTop: 3, fontFamily: 'monospace' }}>📍 {log.hedefEnlem?.toFixed(4)}, {log.hedefBoylam?.toFixed(4)}</div>
+                  <div style={{ fontSize: 10, color: t.textDim, marginTop: 3, fontFamily: 'monospace' }}>{log.hedefEnlem?.toFixed(4)}, {log.hedefBoylam?.toFixed(4)}</div>
                 </div>
               ))}
             </>
           )}
 
           {aktifSekme === 'istatistik' && (
-            <div style={{ textAlign: 'center', padding: 30, color: t.textMuted, fontSize: 12 }}>{lang === 'en' ? '📊 Report panel is open on the right side' : '📊 Rapor paneli sağ tarafta açıldı'}</div>
+            <div style={{ textAlign: 'center', padding: 30, color: t.textMuted, fontSize: 12 }}>{lang === 'en' ? 'Report panel is open on the right side' : 'Rapor paneli sağ tarafta açıldı'}</div>
           )}
         </div>
       </aside>

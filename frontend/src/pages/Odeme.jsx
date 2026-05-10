@@ -5,6 +5,10 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const API = 'https://lojistikweb-backend.onrender.com/api'
+const ACCENT_PRIMARY = '#2F6F73'
+const ACCENT_SECONDARY = '#4B8A8F'
+const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
+const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
 
 // ── Mini konfeti ──────────────────────────────────────────
 function Konfeti({ aktif }) {
@@ -23,7 +27,7 @@ function Konfeti({ aktif }) {
       y: Math.random() * -canvas.height,
       w: 6 + Math.random() * 8,
       h: 10 + Math.random() * 6,
-      renk: ['#0062ff','#00c853','#ffab00','#ff5252','#aa00ff','#00bcd4'][Math.floor(Math.random()*6)],
+      renk: ['#4B8A8F','#00c853','#ffab00','#ff5252','#aa00ff','#2F6F73'][Math.floor(Math.random()*6)],
       hiz: 2 + Math.random() * 4,
       sallanma: (Math.random() - 0.5) * 3,
       aci: Math.random() * 360,
@@ -125,7 +129,6 @@ export default function Odeme() {
         <Konfeti aktif={konfeti} />
         <div style={styles.basariSayfa}>
           <div style={styles.basariKart}>
-            <div style={styles.basariEmoji}>🎉</div>
             <h2 style={styles.basariBaslik}>Siparişiniz Alındı!</h2>
             <p style={styles.basariAlt}>Ödemeniz başarıyla işlendi. Takip ekranına yönlendiriliyorsunuz...</p>
             <div style={styles.basariLoader}>
@@ -162,13 +165,13 @@ export default function Odeme() {
             <div style={styles.ayirac} />
             <div style={{ ...styles.siparisRow, marginTop: 8 }}>
               <span style={{ ...styles.siparisEtiket, fontWeight: 700, color: '#0a1628', fontSize: 15 }}>Toplam</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: '#0062ff' }}>₺49,99</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: ACCENT_PRIMARY }}>₺49,99</span>
             </div>
           </div>
 
           {/* Güvenlik rozetleri */}
           <div style={styles.guvenlikSatir}>
-            {['🔒 SSL Şifreleme', '🛡 Güvenli Ödeme', '↩ İade Garantisi'].map(g => (
+            {['SSL Şifreleme', 'Güvenli Ödeme', 'İade Garantisi'].map(g => (
               <span key={g} style={styles.guvenlikBadge}>{g}</span>
             ))}
           </div>
@@ -239,7 +242,7 @@ export default function Odeme() {
                   placeholder="0000 0000 0000 0000" required maxLength={19}
                   style={{ ...styles.fInput, paddingRight: 50, letterSpacing: '0.08em' }}
                   onFocus={() => setOnYuz(true)} />
-                <span style={styles.kartNoIkon}>💳</span>
+                <span style={styles.kartNoIkon}>•••</span>
               </div>
             </div>
 
@@ -258,7 +261,7 @@ export default function Odeme() {
               </div>
             </div>
 
-            {hata && <div style={styles.hataMesaj}>⚠️ {hata}</div>}
+            {hata && <div style={styles.hataMesaj}>{hata}</div>}
 
             <button type="submit" disabled={yukleniyor} style={{
               ...styles.odemeBtn,
@@ -267,11 +270,11 @@ export default function Odeme() {
             }}>
               {yukleniyor
                 ? <><span style={styles.btnSpinner} /> Ödeme İşleniyor...</>
-                : '🔒  ₺49,99 Öde ve Siparişi Tamamla'}
+                : '₺49,99 Öde ve Siparişi Tamamla'}
             </button>
 
             <p style={styles.testNotu}>
-              🧪 Test: <code>4242 4242 4242 4242</code> · SKT: herhangi · CVV: herhangi
+              Test: <code>4242 4242 4242 4242</code> · SKT: herhangi · CVV: herhangi
             </p>
           </form>
         </div>
@@ -312,7 +315,7 @@ const styles = {
     WebkitBackfaceVisibility: 'hidden',
   },
   kartOn: {
-    background: 'linear-gradient(135deg, #0a1628 0%, #0062ff 100%)',
+    background: `linear-gradient(135deg, #0a1628 0%, ${ACCENT_PRIMARY} 100%)`,
     display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
   },
   kartArka: {
@@ -347,9 +350,9 @@ const styles = {
     color: '#c62828', borderRadius: 8, padding: '10px 14px', fontSize: 13,
   },
   odemeBtn: {
-    padding: '15px', background: '#0062ff', color: '#fff',
+    padding: '15px', background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`, color: ACCENT_TEXT_ON_SOLID,
     border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 800,
-    boxShadow: '0 4px 20px rgba(0,98,255,0.3)',
+    boxShadow: `0 4px 20px ${ACCENT_SHADOW}`,
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
     transition: 'transform 0.15s',
   },
@@ -369,12 +372,11 @@ const styles = {
     maxWidth: 420, width: '100%', textAlign: 'center',
     boxShadow: '0 8px 48px rgba(0,0,50,0.12)',
   },
-  basariEmoji: { fontSize: 64, marginBottom: 16 },
   basariBaslik: { fontSize: 26, fontWeight: 800, color: '#0a1628', marginBottom: 12 },
   basariAlt: { fontSize: 15, color: '#8a9abc', lineHeight: 1.6, marginBottom: 28 },
   basariLoader: { height: 4, background: '#e8ecf8', borderRadius: 2, overflow: 'hidden' },
   loaderCizgi: {
-    height: '100%', background: '#0062ff', borderRadius: 2,
+    height: '100%', background: ACCENT_PRIMARY, borderRadius: 2,
     animation: 'loaderAnim 4s linear forwards',
     width: '0%',
   },

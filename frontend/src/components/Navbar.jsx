@@ -9,7 +9,12 @@ import { useSettings } from '../context/SettingsContext'
 const FF  = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
 const FFD = "'Bebas Neue', sans-serif"
 const NAVY = '#060c1a'
-const CYAN = '#00d4ff'
+const ACCENT_PRIMARY = '#2F6F73'
+const ACCENT_SECONDARY = '#4B8A8F'
+const ACCENT_SOFT = 'rgba(47, 111, 115, 0.14)'
+const ACCENT_BORDER = 'rgba(47, 111, 115, 0.42)'
+const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
+const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
 
 function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -48,7 +53,7 @@ export default function Navbar() {
         boxSizing: 'border-box',
       }}>
         <Link to="/" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
-          LOOP<span style={{ color: CYAN }}>.</span>
+          LOOP<span style={{ color: ACCENT_PRIMARY }}>.</span>
         </Link>
       </nav>
     )
@@ -70,7 +75,7 @@ export default function Navbar() {
       {/* ── LEFT: Logo + links ── */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 40 }}>
         <Link to="/" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
-          LOOP<span style={{ color: CYAN }}>.</span>
+          LOOP<span style={{ color: ACCENT_PRIMARY }}>.</span>
         </Link>
         <ul style={{ display: 'flex', gap: 32, listStyle: 'none', margin: 0, padding: 0 }}>
           {navLinks.map(item => (
@@ -105,8 +110,8 @@ export default function Navbar() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 10,
               padding: '7px 14px 7px 7px', borderRadius: 40,
-              background: isDark ? 'rgba(0,212,255,0.08)' : 'rgba(0,212,255,0.06)',
-              border: `1.5px solid ${CYAN}40`,
+              background: ACCENT_SOFT,
+              border: `1.5px solid ${ACCENT_BORDER}`,
               textDecoration: 'none', cursor: 'pointer',
               transition: 'all 0.2s',
             }}
@@ -114,10 +119,10 @@ export default function Navbar() {
             {/* Avatar circle */}
             <div style={{
               width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-              background: `linear-gradient(135deg, ${CYAN}, #0062ff)`,
+              background: `linear-gradient(135deg, ${ACCENT_PRIMARY}, ${ACCENT_SECONDARY})`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 900, color: NAVY,
-              boxShadow: `0 0 12px ${CYAN}50`,
+              fontSize: 13, fontWeight: 900, color: ACCENT_TEXT_ON_SOLID,
+              boxShadow: `0 0 8px ${ACCENT_SHADOW}`,
             }}>
               {initials(kullanici.isim)}
             </div>
@@ -126,7 +131,7 @@ export default function Navbar() {
               <div style={{ fontSize: 13, fontWeight: 700, color: isDark ? '#e8f0ff' : '#0a1628', lineHeight: 1.2 }}>
                 {kullanici.isim}
               </div>
-              <div style={{ fontSize: 11, color: CYAN, fontWeight: 600, marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: ACCENT_PRIMARY, fontWeight: 600, marginTop: 1 }}>
                 {t('profile')} &rarr;
               </div>
             </div>
@@ -140,12 +145,12 @@ export default function Navbar() {
                 display: 'inline-flex', alignItems: 'center', gap: 7,
                 padding: '8px 16px', borderRadius: 8,
                 background: 'transparent',
-                border: `1px solid ${CYAN}40`,
-                color: CYAN, fontFamily: FF, fontSize: 12, fontWeight: 700,
+                border: `1px solid ${ACCENT_BORDER}`,
+                color: ACCENT_PRIMARY, fontFamily: FF, fontSize: 12, fontWeight: 700,
                 letterSpacing: '0.05em', textDecoration: 'none',
               }}
             >
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: CYAN, boxShadow: `0 0 6px ${CYAN}`, flexShrink: 0 }} />
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT_PRIMARY, boxShadow: `0 0 6px ${ACCENT_SHADOW}`, flexShrink: 0 }} />
               {t('login')}
             </Link>
           </>
@@ -157,10 +162,10 @@ export default function Navbar() {
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             padding: kullanici ? '8px 16px' : '9px 22px',
             borderRadius: 8,
-            background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
-            border: 'none', color: NAVY, fontFamily: FF,
+            background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`,
+            border: 'none', color: ACCENT_TEXT_ON_SOLID, fontFamily: FF,
             fontSize: 13, fontWeight: 800, letterSpacing: '0.04em',
-            cursor: 'pointer', boxShadow: `0 4px 16px ${CYAN}40`,
+            cursor: 'pointer', boxShadow: `0 4px 16px ${ACCENT_SHADOW}`,
             whiteSpace: 'nowrap',
           }}
         >

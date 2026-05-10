@@ -4,6 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
 
+const ACCENT_PRIMARY = '#2F6F73'
+const ACCENT_SECONDARY = '#4B8A8F'
+const ACCENT_SOFT = 'rgba(47, 111, 115, 0.14)'
+const ACCENT_BORDER = 'rgba(47, 111, 115, 0.42)'
+const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
+const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
+
 const COPY = {
   tr: {
     passMismatch: 'Şifreler eşleşmiyor.',
@@ -24,7 +31,7 @@ const COPY = {
     hasAccount: 'Zaten üye misiniz? ',
     loginNow: 'Giriş yapın',
     or: 'veya',
-    liveTrack: '📍  Canlı Takip Et →',
+    liveTrack: 'Canlı Takip Et →',
     slogan: 'Akıllı Lojistik Yönetim Sistemi'
   },
   en: {
@@ -46,7 +53,7 @@ const COPY = {
     hasAccount: 'Already have an account? ',
     loginNow: 'Sign in',
     or: 'or',
-    liveTrack: '📍  Track Live →',
+    liveTrack: 'Track Live →',
     slogan: 'Smart Logistics Management Platform'
   }
 }
@@ -244,12 +251,12 @@ const styles = {
   bgBlob1: {
     position: 'absolute', top: -120, left: -100,
     width: 400, height: 400, borderRadius: '50%',
-    background: 'rgba(0, 120, 255, 0.07)', filter: 'blur(60px)', pointerEvents: 'none',
+    background: ACCENT_SOFT, filter: 'blur(60px)', pointerEvents: 'none',
   },
   bgBlob2: {
     position: 'absolute', bottom: -100, right: -80,
     width: 350, height: 350, borderRadius: '50%',
-    background: 'rgba(0, 200, 180, 0.07)', filter: 'blur(60px)', pointerEvents: 'none',
+    background: 'rgba(75, 138, 143, 0.10)', filter: 'blur(60px)', pointerEvents: 'none',
   },
   kart: {
     background: '#fff',
@@ -298,11 +305,11 @@ const styles = {
     background: '#fafbff',
   },
   buton: {
-    padding: '14px', background: '#0062ff',
-    color: '#fff', border: 'none', borderRadius: 10,
+    padding: '14px', background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`,
+    color: ACCENT_TEXT_ON_SOLID, border: 'none', borderRadius: 10,
     fontSize: 15, fontWeight: 700, cursor: 'pointer',
     marginTop: 4, transition: 'transform 0.15s, box-shadow 0.15s',
-    boxShadow: '0 4px 16px rgba(0,98,255,0.28)',
+    boxShadow: `0 4px 16px ${ACCENT_SHADOW}`,
   },
   hataMesaj: {
     background: '#fff0f0', border: '1px solid #ffcdd2',
@@ -316,7 +323,7 @@ const styles = {
   },
   altMetin: { textAlign: 'center', fontSize: 13, color: '#8a9abc', marginTop: 20 },
   linkBtn: {
-    background: 'none', border: 'none', color: '#0062ff',
+    background: 'none', border: 'none', color: ACCENT_PRIMARY,
     fontWeight: 700, cursor: 'pointer', fontSize: 13, padding: 0,
   },
   ayirac: {
@@ -326,11 +333,11 @@ const styles = {
   ayiracMetin: { fontSize: 12, color: '#b0bcd4' },
   takipBtn: {
     width: '100%', padding: '13px',
-    background: 'linear-gradient(135deg, #0062ff 0%, #00b4d8 100%)',
-    color: '#fff', border: 'none', borderRadius: 10,
+    background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`,
+    color: ACCENT_TEXT_ON_SOLID, border: 'none', borderRadius: 10,
     fontSize: 14, fontWeight: 700, cursor: 'pointer',
     marginTop: 10,
-    boxShadow: '0 4px 18px rgba(0,98,255,0.28)',
+    boxShadow: `0 4px 18px ${ACCENT_SHADOW}`,
     transition: 'transform 0.15s, box-shadow 0.15s',
     letterSpacing: '0.3px',
   },

@@ -15,7 +15,7 @@ const COPY = {
     trackNo: 'Sipariş Takip Numarası',
     trackPlaceholder: 'Örn: 1, 2, 3...',
     searching: 'Aranıyor...',
-    trackBtn: '🔍  Siparişimi Takip Et',
+    trackBtn: 'Siparişimi Takip Et',
     helper: "Takip numaranızı sipariş onay SMS'inizde veya e-postanızda bulabilirsiniz.",
     required: 'Lütfen bir takip numarası girin.',
     invalidNo: 'Geçersiz numara. Örnek: 1, 2, 3',
@@ -41,7 +41,7 @@ const COPY = {
     trackNo: 'Tracking Number',
     trackPlaceholder: 'Ex: 1, 2, 3...',
     searching: 'Searching...',
-    trackBtn: '🔍  Track My Order',
+    trackBtn: 'Track My Order',
     helper: 'You can find your tracking number in your confirmation SMS or email.',
     required: 'Please enter a tracking number.',
     invalidNo: 'Invalid number. Example: 1, 2, 3',
@@ -69,7 +69,7 @@ const KAMYON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" 
   <path d="M20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4zM6 18.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm13.5-9l1.96 2.5H17V9.5h2.5zm-1.5 9c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/>
 </svg>`
 
-function kamyonIkonu(renk = '#0062ff') {
+function kamyonIkonu(renk = '#2F6F73') {
   return new L.DivIcon({
     className: '',
     html: `<div style="
@@ -366,7 +366,7 @@ export default function MusteriTakip() {
      FAZ 2 — TAKİP GÖRÜNÜMÜ (Tek Kurye Haritası)
   ════════════════════════════════════════════════════════════ */
   const di = kurye ? durumBilgi(kurye.durum, language) : null
-  const kuryeRenk = '#0062ff'
+  const kuryeRenk = '#2F6F73'
 
   return (
     <div style={s.takipSayfa}>
@@ -621,7 +621,7 @@ const s = {
   },
   girisLogoCircle: {
     width: 72, height: 72, borderRadius: '50%',
-    background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+    background: 'linear-gradient(135deg, #2F6F73, #4B8A8F)',
     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
     boxShadow: '0 8px 32px rgba(59,130,246,0.4)',
     marginBottom: 16,
@@ -662,7 +662,7 @@ const s = {
   },
   girisBtn: {
     width: '100%', padding: '15px 20px',
-    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    background: 'linear-gradient(135deg, #2F6F73, #4B8A8F)',
     border: 'none', borderRadius: 14,
     color: '#fff', fontSize: 15, fontWeight: 700,
     cursor: 'pointer', transition: 'all 0.2s',
@@ -752,7 +752,7 @@ const s = {
   },
   kuryeAvatar: {
     width: 52, height: 52, borderRadius: '50%',
-    background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+    background: 'linear-gradient(135deg, #2F6F73, #4B8A8F)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     boxShadow: '0 4px 14px rgba(59,130,246,0.3)',
     flexShrink: 0,
@@ -805,7 +805,7 @@ const s = {
   },
   etaBarOn: {
     height: '100%', borderRadius: 6,
-    background: 'linear-gradient(90deg, #3b82f6, #2563eb)',
+    background: 'linear-gradient(90deg, #2F6F73, #4B8A8F)',
     transition: 'width 0.8s ease',
   },
 
@@ -864,7 +864,7 @@ const s = {
   yukleniyorSpinner: {
     width: 40, height: 40,
     border: '3.5px solid #e2e8f0',
-    borderTopColor: '#3b82f6',
+    borderTopColor: '#2F6F73',
     borderRadius: '50%',
     animation: 'spin 0.75s linear infinite',
   },

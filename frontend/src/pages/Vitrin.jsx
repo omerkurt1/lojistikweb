@@ -4,7 +4,12 @@ import { useSettings } from '../context/SettingsContext'
 
 const FF = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
 const FFH = "'Bebas Neue','Impact',sans-serif"
-const CYAN = '#00d4ff'
+const ACCENT_PRIMARY = '#2F6F73'
+const ACCENT_SECONDARY = '#4B8A8F'
+const ACCENT_SOFT = 'rgba(47, 111, 115, 0.14)'
+const ACCENT_BORDER = 'rgba(47, 111, 115, 0.42)'
+const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
+const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
 
 const COPY = {
   tr: {
@@ -159,7 +164,7 @@ export default function Vitrin() {
               background: isDark
                 ? 'linear-gradient(135deg, #07132a 0%, #081a3a 50%, #07132a 100%)'
                 : 'linear-gradient(135deg, #f6f9ff 0%, #ecf3ff 100%)',
-              border: isDark ? '1px solid rgba(0,212,255,0.20)' : '1px solid rgba(20,40,90,0.16)',
+              border: isDark ? '1px solid rgba(47, 111, 115, 0.20)' : '1px solid rgba(20,40,90,0.16)',
               boxShadow: isDark ? '0 28px 80px rgba(0,0,0,0.62)' : '0 24px 70px rgba(40,66,118,0.28)',
             }}
           >
@@ -174,8 +179,8 @@ export default function Vitrin() {
                 <div style={{
                   width: 42, height: 42, borderRadius: 12,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: `linear-gradient(135deg, ${CYAN}, #0f79ff)`,
-                  color: '#051022', fontWeight: 900,
+                  background: `linear-gradient(135deg, ${ACCENT_PRIMARY}, ${ACCENT_SECONDARY})`,
+                  color: ACCENT_TEXT_ON_SOLID, fontWeight: 900,
                 }}>L</div>
                 <div>
                   <div style={{ fontSize: 30, fontFamily: FFH, lineHeight: 1, letterSpacing: 1 }}>LOOP Onboarding</div>
@@ -206,12 +211,12 @@ export default function Vitrin() {
                     <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{
                         width: 34, height: 34, borderRadius: '50%',
-                        border: active ? `2px solid ${CYAN}` : (isDark ? '2px solid rgba(255,255,255,0.16)' : '2px solid rgba(30,50,90,0.20)'),
-                        color: active ? CYAN : muted,
+                        border: active ? `2px solid ${ACCENT_PRIMARY}` : (isDark ? '2px solid rgba(255,255,255,0.16)' : '2px solid rgba(30,50,90,0.20)'),
+                        color: active ? ACCENT_PRIMARY : muted,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontWeight: 900,
                       }}>{i + 1}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: active ? CYAN : muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: active ? ACCENT_PRIMARY : muted, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
                     </div>
                   )
                 })}
@@ -299,8 +304,8 @@ export default function Vitrin() {
                   padding: '12px 26px',
                   borderRadius: 12,
                   border: 'none',
-                  background: `linear-gradient(135deg, ${CYAN}, #0f79ff)`,
-                  color: '#051022',
+                  background: `linear-gradient(135deg, ${ACCENT_PRIMARY}, ${ACCENT_SECONDARY})`,
+                  color: ACCENT_TEXT_ON_SOLID,
                   fontFamily: FF,
                   fontWeight: 800,
                   fontSize: 22,
@@ -329,37 +334,37 @@ export default function Vitrin() {
           background: heroBg,
         }}
       >
-        <div style={{ position: 'absolute', top: -180, left: -180, width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, ${CYAN}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -180, right: -180, width: 450, height: 450, borderRadius: '50%', background: 'radial-gradient(circle, #0062ff12 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', top: -180, left: -180, width: 500, height: 500, borderRadius: '50%', background: `radial-gradient(circle, ${ACCENT_PRIMARY}15 0%, transparent 70%)`, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -180, right: -180, width: 450, height: 450, borderRadius: '50%', background: `radial-gradient(circle, ${ACCENT_SECONDARY}12 0%, transparent 70%)`, pointerEvents: 'none' }} />
 
         <div
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            background: isDark ? `${CYAN}12` : `${CYAN}15`,
-            border: `1.5px solid ${CYAN}40`,
+            background: ACCENT_SOFT,
+            border: `1.5px solid ${ACCENT_BORDER}`,
             borderRadius: 30,
             padding: '8px 22px',
             marginBottom: 36,
             fontSize: 11,
             fontWeight: 800,
-            color: CYAN,
+            color: ACCENT_PRIMARY,
             letterSpacing: '0.12em',
             textTransform: 'uppercase',
           }}
         >
-          <span style={{ width: 7, height: 7, borderRadius: '50%', background: CYAN, boxShadow: `0 0 10px ${CYAN}` }} />
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: ACCENT_PRIMARY, boxShadow: `0 0 8px ${ACCENT_SHADOW}` }} />
           {c.badge}
         </div>
 
         <h1 style={{ fontFamily: FFH, lineHeight: 0.95, margin: '0 0 14px', maxWidth: 900, letterSpacing: 3 }}>
           <span style={{ display: 'block', fontSize: 'clamp(48px, 8vw, 96px)', color: headlineColor }}>{c.heroTitle1}</span>
-          <span style={{ display: 'block', fontSize: 'clamp(52px, 9vw, 110px)', color: CYAN, textShadow: isDark ? `0 0 40px ${CYAN}30` : 'none' }}>{c.heroHighlight}</span>
+          <span style={{ display: 'block', fontSize: 'clamp(52px, 9vw, 110px)', color: ACCENT_PRIMARY, textShadow: isDark ? `0 0 40px ${ACCENT_PRIMARY}30` : 'none' }}>{c.heroHighlight}</span>
           <span style={{ display: 'block', fontSize: 'clamp(48px, 8vw, 96px)', color: headlineColor }}>{c.heroTitle2}</span>
         </h1>
 
-        <p style={{ margin: '0 0 12px', color: CYAN, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 11 }}>
+        <p style={{ margin: '0 0 12px', color: ACCENT_PRIMARY, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: 11 }}>
           {c.heroSub}
         </p>
         <p style={{ maxWidth: 620, fontSize: 16, lineHeight: 1.75, color: muted, margin: '0 0 44px', fontWeight: 400 }}>
@@ -374,17 +379,17 @@ export default function Vitrin() {
                 width: 52,
                 height: 52,
                 borderRadius: '50%',
-                border: `2px solid ${CYAN}50`,
+                border: `2px solid ${ACCENT_PRIMARY}50`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 20,
                 fontWeight: 900,
-                color: CYAN,
+                color: ACCENT_PRIMARY,
                 fontFamily: FFH,
                 letterSpacing: 1,
-                background: isDark ? `${CYAN}08` : `${CYAN}06`,
-                boxShadow: i === 2 ? `0 0 20px ${CYAN}30` : 'none',
+                background: isDark ? `${ACCENT_PRIMARY}08` : `${ACCENT_PRIMARY}06`,
+                boxShadow: i === 2 ? `0 0 20px ${ACCENT_PRIMARY}30` : 'none',
               }}
             >
               {num}
@@ -398,14 +403,14 @@ export default function Vitrin() {
             style={{
               padding: '16px 38px',
               borderRadius: 12,
-              background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
+              background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`,
               border: 'none',
-              color: '#060c1a',
+              color: ACCENT_TEXT_ON_SOLID,
               fontFamily: FF,
               fontSize: 15,
               fontWeight: 800,
               cursor: 'pointer',
-              boxShadow: `0 8px 32px ${CYAN}35`,
+              boxShadow: `0 8px 28px ${ACCENT_SHADOW}`,
             }}
           >
             {c.getStarted} →
@@ -416,15 +421,15 @@ export default function Vitrin() {
               padding: '16px 32px',
               borderRadius: 12,
               background: 'transparent',
-              border: `2px solid ${CYAN}45`,
-              color: CYAN,
+              border: `2px solid ${ACCENT_BORDER}`,
+              color: ACCENT_PRIMARY,
               fontFamily: FF,
               fontSize: 14,
               fontWeight: 700,
               cursor: 'pointer',
             }}
           >
-            📍 {c.liveTrack}
+            {c.liveTrack}
           </button>
         </div>
       </section>
@@ -432,7 +437,7 @@ export default function Vitrin() {
       <section id="features" style={{ padding: '100px 24px', background: sectionAlt }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{c.featuresLabel}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: ACCENT_PRIMARY, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{c.featuresLabel}</span>
             <h2 style={{ fontFamily: FFH, fontSize: 'clamp(32px, 5vw, 52px)', letterSpacing: 2, margin: '14px 0 0', color: headlineColor }}>
               {c.featuresTitle}
             </h2>
@@ -444,11 +449,11 @@ export default function Vitrin() {
                 style={{ background: cardBg, border: `1px solid ${cardBrd}`, borderRadius: 18, padding: '32px 28px', cursor: 'default' }}
                 hoverStyle={{
                   transform: 'translateY(-4px)',
-                  boxShadow: isDark ? '0 12px 40px rgba(0,212,255,0.08)' : '0 12px 40px rgba(0,0,80,0.08)',
-                  borderColor: `${CYAN}40`,
+                  boxShadow: isDark ? '0 12px 40px rgba(47, 111, 115, 0.08)' : '0 12px 40px rgba(0,0,80,0.08)',
+                  borderColor: ACCENT_BORDER,
                 }}
               >
-                <div style={{ fontSize: 36, marginBottom: 16, width: 56, height: 56, borderRadius: 14, background: isDark ? `${CYAN}10` : `${CYAN}08`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ fontSize: 36, marginBottom: 16, width: 56, height: 56, borderRadius: 14, background: isDark ? `${ACCENT_PRIMARY}10` : `${ACCENT_PRIMARY}08`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {f.icon}
                 </div>
                 <h3 style={{ fontSize: 17, fontWeight: 800, margin: '0 0 10px', color: headlineColor }}>{f.title}</h3>
@@ -462,7 +467,7 @@ export default function Vitrin() {
       <section id="operations" style={{ padding: '100px 24px', background: bg }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{c.operationsLabel}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: ACCENT_PRIMARY, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{c.operationsLabel}</span>
             <h2 style={{ fontFamily: FFH, fontSize: 'clamp(32px, 5vw, 52px)', letterSpacing: 2, margin: '14px 0 0', color: headlineColor }}>
               {c.operationsTitle}
             </h2>
@@ -472,7 +477,7 @@ export default function Vitrin() {
               <Hoverable
                 key={i}
                 style={{ display: 'flex', alignItems: 'flex-start', gap: 24, background: cardBg, border: `1px solid ${cardBrd}`, borderRadius: 18, padding: '28px 32px' }}
-                hoverStyle={{ transform: 'translateX(6px)', boxShadow: isDark ? '0 8px 32px rgba(0,212,255,0.06)' : '0 8px 32px rgba(0,0,80,0.06)' }}
+                hoverStyle={{ transform: 'translateX(6px)', boxShadow: isDark ? '0 8px 32px rgba(47, 111, 115, 0.06)' : '0 8px 32px rgba(0,0,80,0.06)' }}
               >
                 <div
                   style={{
@@ -480,14 +485,14 @@ export default function Vitrin() {
                     width: 54,
                     height: 54,
                     borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${CYAN}25, #0062ff18)`,
-                    border: `2px solid ${CYAN}35`,
+                    background: `linear-gradient(135deg, ${ACCENT_PRIMARY}25, ${ACCENT_SECONDARY}18)`,
+                    border: `2px solid ${ACCENT_BORDER}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 22,
                     fontWeight: 900,
-                    color: CYAN,
+                    color: ACCENT_PRIMARY,
                     fontFamily: FFH,
                   }}
                 >
@@ -505,16 +510,16 @@ export default function Vitrin() {
 
       <section id="why-us" style={{ padding: '100px 24px', background: sectionAlt }}>
         <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 800, color: CYAN, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{c.whyLabel}</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: ACCENT_PRIMARY, letterSpacing: '0.14em', textTransform: 'uppercase' }}>{c.whyLabel}</span>
           <h2 style={{ fontFamily: FFH, fontSize: 'clamp(32px, 5vw, 52px)', letterSpacing: 2, margin: '14px 0 56px', color: headlineColor }}>{c.whyTitle}</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20 }}>
             {c.stats.map((w, i) => (
               <Hoverable
                 key={i}
                 style={{ background: cardBg, border: `1px solid ${cardBrd}`, borderRadius: 18, padding: '36px 24px' }}
-                hoverStyle={{ transform: 'translateY(-4px)', boxShadow: isDark ? '0 8px 28px rgba(0,212,255,0.08)' : '0 8px 28px rgba(0,0,80,0.06)' }}
+                hoverStyle={{ transform: 'translateY(-4px)', boxShadow: isDark ? '0 8px 28px rgba(47, 111, 115, 0.08)' : '0 8px 28px rgba(0,0,80,0.06)' }}
               >
-                <div style={{ fontSize: 42, fontWeight: 900, color: CYAN, fontFamily: FFH, letterSpacing: 2, marginBottom: 10 }}>{w.stat}</div>
+                <div style={{ fontSize: 42, fontWeight: 900, color: ACCENT_PRIMARY, fontFamily: FFH, letterSpacing: 2, marginBottom: 10 }}>{w.stat}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: muted, letterSpacing: '0.03em' }}>{w.label}</div>
               </Hoverable>
             ))}
@@ -538,14 +543,14 @@ export default function Vitrin() {
           style={{
             padding: '17px 48px',
             borderRadius: 12,
-            background: `linear-gradient(135deg, ${CYAN} 0%, #0088cc 100%)`,
+            background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`,
             border: 'none',
-            color: '#060c1a',
+            color: ACCENT_TEXT_ON_SOLID,
             fontFamily: FF,
             fontSize: 16,
             fontWeight: 800,
             cursor: 'pointer',
-            boxShadow: `0 8px 32px ${CYAN}35`,
+            boxShadow: `0 8px 28px ${ACCENT_SHADOW}`,
             letterSpacing: '0.03em',
           }}
         >
