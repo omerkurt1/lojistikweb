@@ -1,14 +1,92 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSettings } from './context/SettingsContext'
 
 // ── Render'daki backend URL'i ──────────────────────────────
 const API = 'https://lojistikweb-backend.onrender.com/api'
+
+const I18N = {
+  tr: {
+    waitingData: 'Veri bekleniyor...',
+    noDeliveryToday: 'Bugün henüz teslimat yok',
+    totalDeliveries: 'teslimat',
+    avg: 'Ort.',
+    min: 'dk',
+    loading: 'Veriler yükleniyor...',
+    backendSleep: "Backend'e ulaşılamıyor. Render servisi uyku modunda olabilir, 30sn bekleyip yenile.",
+    retry: 'Tekrar Dene',
+    title: 'Raporlar ve İstatistikler',
+    refresh: 'Yenile',
+    summaryTotal: 'Toplam Teslimat',
+    summaryToday: 'Bugün Teslim',
+    summaryOnRoute: 'Şu An Yolda',
+    summaryAvg: 'Ort. Teslimat',
+    summaryActive: 'Aktif Kurye',
+    weekly: 'Haftalık Teslimat',
+    hourly: 'Saatlik Dağılım',
+    redNow: '(kırmızı = şu an)',
+    courierOfDay: 'Günün kuryesi',
+    ranking: 'Kurye Sıralaması',
+    clickDetail: 'detay için tıkla',
+    noSaved: "Henüz DB'ye kaydedilmiş teslimat yok.",
+    noSavedSub: 'Kuryeler teslimat tamamladıkça burası dolacak.',
+    noRecord: 'Kayıt yok',
+    loadingShort: 'Yükleniyor...',
+    detailFailed: 'Detay yüklenemedi',
+    lastDeliveries: 'Son Teslimatlar',
+    tableCourier: 'Kurye',
+    tableEnd: 'Bitiş Zamanı',
+    tableDuration: 'Süre',
+    tableOpt: 'Opt.',
+    tableTarget: 'Hedef Konum',
+    noWritten: "Henüz DB'ye yazılmış teslimat yok.",
+    noWrittenSub: 'Kuryeler hedefe ulaştıkça kayıtlar burada görünecek.',
+  },
+  en: {
+    waitingData: 'Waiting for data...',
+    noDeliveryToday: 'No deliveries yet today',
+    totalDeliveries: 'deliveries',
+    avg: 'Avg.',
+    min: 'min',
+    loading: 'Loading data...',
+    backendSleep: 'Unable to reach backend. Render service may be sleeping, wait 30s and retry.',
+    retry: 'Retry',
+    title: 'Reports & Statistics',
+    refresh: 'Refresh',
+    summaryTotal: 'Total Deliveries',
+    summaryToday: 'Delivered Today',
+    summaryOnRoute: 'Currently On Route',
+    summaryAvg: 'Avg. Delivery',
+    summaryActive: 'Active Couriers',
+    weekly: 'Weekly Deliveries',
+    hourly: 'Hourly Distribution',
+    redNow: '(red = now)',
+    courierOfDay: 'Courier of the day',
+    ranking: 'Courier Ranking',
+    clickDetail: 'click for details',
+    noSaved: 'No deliveries saved in DB yet.',
+    noSavedSub: 'This area will fill as couriers complete deliveries.',
+    noRecord: 'No records',
+    loadingShort: 'Loading...',
+    detailFailed: 'Failed to load details',
+    lastDeliveries: 'Latest Deliveries',
+    tableCourier: 'Courier',
+    tableEnd: 'Completed At',
+    tableDuration: 'Duration',
+    tableOpt: 'Opt.',
+    tableTarget: 'Target Location',
+    noWritten: 'No DB-written deliveries yet.',
+    noWrittenSub: 'Records will appear here as couriers reach destinations.',
+  }
+}
 
 // ═══════════════════════════════════════════════════════════
 //  SVG GRAFIKLER (harici kütüphane yok)
 // ═══════════════════════════════════════════════════════════
 
 function BarChart({ veriler = [], renk = '#3498db', etiketKey = '_id', degerKey = 'sayi', yukseklik = 130 }) {
-  if (!veriler.length) return <div className="ist-bos">Veri bekleniyor...</div>
+  const { language } = useSettings()
+  const c = I18N[language === 'en' ? 'en' : 'tr']
+  if (!veriler.length) return <div className="ist-bos">{c.waitingData}</div>
 
   const maks        = Math.max(...veriler.map(v => v[degerKey]), 1)
   const W           = 500
@@ -51,8 +129,10 @@ function BarChart({ veriler = [], renk = '#3498db', etiketKey = '_id', degerKey 
 }
 
 function SaatlikChart({ dagilim = [] }) {
+  const { language } = useSettings()
+  const c = I18N[language === 'en' ? 'en' : 'tr']
   const liste = dagilim.length === 24 ? dagilim : Array(24).fill(0)
-  if (liste.every(v => v === 0)) return <div className="ist-bos">Bugün henüz teslimat yok</div>
+  if (liste.every(v => v === 0)) return <div className="ist-bos">{c.noDeliveryToday}</div>
 
   const maks   = Math.max(...liste, 1)
   const W      = 500
@@ -92,6 +172,8 @@ function SaatlikChart({ dagilim = [] }) {
 //  KURYE LİDERLİK SATIRI
 // ═══════════════════════════════════════════════════════════
 function LiderSatir({ sira, profil, maks }) {
+  const { language } = useSettings()
+  const c = I18N[language === 'en' ? 'en' : 'tr']
   const yuzde  = maks > 0 ? Math.round((profil.toplamTeslimat / maks) * 100) : 0
   const renkler = ['#f39c12', '#95a5a6', '#cd7f32', '#3498db', '#2ecc71']
   const renk   = renkler[sira] ?? '#3498db'
@@ -101,13 +183,13 @@ function LiderSatir({ sira, profil, maks }) {
       <div className="lider-bilgi">
         <div className="lider-ust">
           <strong>{profil.isim}</strong>
-          <span className="lider-sayi">{profil.toplamTeslimat} teslimat</span>
+          <span className="lider-sayi">{profil.toplamTeslimat} {c.totalDeliveries}</span>
         </div>
         <div className="lider-bar-arka">
           <div className="lider-bar-on" style={{ width: `${yuzde}%`, background: renk }} />
         </div>
         <div className="lider-alt">
-          <span>Ort. {profil.ortalamaSure ?? 0} dk</span>
+          <span>{c.avg} {profil.ortalamaSure ?? 0} {c.min}</span>
           <span>Opt: {profil.optimizasyonSayisi ?? 0}×</span>
         </div>
       </div>
@@ -119,6 +201,9 @@ function LiderSatir({ sira, profil, maks }) {
 //  ANA PANEL
 // ═══════════════════════════════════════════════════════════
 export default function IstatistikPaneli() {
+  const { language } = useSettings()
+  const c = I18N[language === 'en' ? 'en' : 'tr']
+  const locale = language === 'en' ? 'en-US' : 'tr-TR'
   const [yukleniyor,  setYukleniyor] = useState(true)
   const [hata,        setHata]       = useState(null)
   const [genel,       setGenel]      = useState(null)
@@ -153,14 +238,14 @@ export default function IstatistikPaneli() {
 
       // Hepsi başarısız olduysa hata göster
       if (sonuclar.every(s => s.status === 'rejected')) {
-        setHata('Backend\'e ulaşılamıyor. Render servisi uyku modunda olabilir, 30sn bekleyip yenile.')
+        setHata(c.backendSleep)
       }
     } catch (err) {
       setHata(err.message)
     } finally {
       setYukleniyor(false)
     }
-  }, [])
+  }, [c.backendSleep])
 
   useEffect(() => {
     verileriCek()
@@ -183,7 +268,7 @@ export default function IstatistikPaneli() {
   if (yukleniyor) return (
     <div className="ist-yukleniyor">
       <div className="ist-spinner" />
-      <p>Veriler yükleniyor...</p>
+      <p>{c.loading}</p>
     </div>
   )
 
@@ -193,7 +278,7 @@ export default function IstatistikPaneli() {
       <div style={{ fontSize: 32 }}>⚠️</div>
       <p style={{ color: 'var(--metin-2)', textAlign: 'center', maxWidth: 320 }}>{hata}</p>
       <button className="btn btn-mavi" style={{ marginTop: 12 }} onClick={verileriCek}>
-        ↻ Tekrar Dene
+        ↻ {c.retry}
       </button>
     </div>
   )
@@ -205,7 +290,7 @@ export default function IstatistikPaneli() {
 
       {/* Başlık */}
       <div className="ist-baslik-satir">
-        <h2 className="ist-baslik">📊 Raporlar ve İstatistikler</h2>
+        <h2 className="ist-baslik">📊 {c.title}</h2>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {genel?.dbDurumu && (
             <span style={{
@@ -217,7 +302,7 @@ export default function IstatistikPaneli() {
               DB: {genel.dbDurumu}
             </span>
           )}
-          <button className="btn btn-kucuk btn-mavi" onClick={verileriCek}>↻ Yenile</button>
+          <button className="btn btn-kucuk btn-mavi" onClick={verileriCek}>↻ {c.refresh}</button>
         </div>
       </div>
 
@@ -227,27 +312,27 @@ export default function IstatistikPaneli() {
           <div className="ist-ozet-kart mavi">
             <span className="ist-ozet-ikon">📦</span>
             <span className="ist-ozet-deger">{genel.toplamTeslimat ?? 0}</span>
-            <span className="ist-ozet-etiket">Toplam Teslimat</span>
+            <span className="ist-ozet-etiket">{c.summaryTotal}</span>
           </div>
           <div className="ist-ozet-kart yesil">
             <span className="ist-ozet-ikon">✅</span>
             <span className="ist-ozet-deger">{genel.bugunTeslimat ?? 0}</span>
-            <span className="ist-ozet-etiket">Bugün Teslim</span>
+            <span className="ist-ozet-etiket">{c.summaryToday}</span>
           </div>
           <div className="ist-ozet-kart turuncu">
             <span className="ist-ozet-ikon">🛵</span>
             <span className="ist-ozet-deger">{genel.yoldakiSiparis ?? 0}</span>
-            <span className="ist-ozet-etiket">Şu An Yolda</span>
+            <span className="ist-ozet-etiket">{c.summaryOnRoute}</span>
           </div>
           <div className="ist-ozet-kart mor">
             <span className="ist-ozet-ikon">⏱</span>
-            <span className="ist-ozet-deger">{genel.genelOrtalamaSure ?? 0} dk</span>
-            <span className="ist-ozet-etiket">Ort. Teslimat</span>
+            <span className="ist-ozet-deger">{genel.genelOrtalamaSure ?? 0} {c.min}</span>
+            <span className="ist-ozet-etiket">{c.summaryAvg}</span>
           </div>
           <div className="ist-ozet-kart gri">
             <span className="ist-ozet-ikon">🟢</span>
             <span className="ist-ozet-deger">{genel.aktifKurye ?? 0}</span>
-            <span className="ist-ozet-etiket">Aktif Kurye</span>
+            <span className="ist-ozet-etiket">{c.summaryActive}</span>
           </div>
         </div>
       )}
@@ -255,18 +340,18 @@ export default function IstatistikPaneli() {
       {/* ── GRAFİKLER ── */}
       <div className="ist-grafik-grid">
         <div className="ist-kart">
-          <div className="ist-kart-baslik">📅 Haftalık Teslimat</div>
+          <div className="ist-kart-baslik">📅 {c.weekly}</div>
           <BarChart veriler={haftalik} renk="#3498db" etiketKey="_id" degerKey="sayi" />
         </div>
         <div className="ist-kart">
           <div className="ist-kart-baslik">
-            🕐 Saatlik Dağılım
-            <span className="ist-alt-baslik"> (kırmızı = şu an)</span>
+            🕐 {c.hourly}
+            <span className="ist-alt-baslik"> {c.redNow}</span>
           </div>
           <SaatlikChart dagilim={gunluk?.saatlikDagilim ?? []} />
           {gunluk?.enCokTeslimatKurye && (
             <div className="ist-vurgu">
-              🏆 Günün kuryesi: <strong>{gunluk.enCokTeslimatKurye}</strong>
+              🏆 {c.courierOfDay}: <strong>{gunluk.enCokTeslimatKurye}</strong>
             </div>
           )}
         </div>
@@ -275,13 +360,13 @@ export default function IstatistikPaneli() {
       {/* ── LİDERBOARD ── */}
       <div className="ist-kart">
         <div className="ist-kart-baslik">
-          🏅 Kurye Sıralaması
-          <span className="ist-alt-baslik"> — detay için tıkla</span>
+          🏅 {c.ranking}
+          <span className="ist-alt-baslik"> — {c.clickDetail}</span>
         </div>
         {profiller.length === 0 ? (
           <div className="ist-bos">
-            Henüz DB'ye kaydedilmiş teslimat yok.<br />
-            <small>Kuryeler teslimat tamamladıkça burası dolacak.</small>
+            {c.noSaved}<br />
+            <small>{c.noSavedSub}</small>
           </div>
         ) : (
           <div className="lider-liste">
@@ -293,27 +378,27 @@ export default function IstatistikPaneli() {
                 {secilenId === p.kuryeId && (
                   <div className="kurye-detay-kutu">
                     {detayYuk ? (
-                      <div className="ist-bos">Yükleniyor...</div>
+                      <div className="ist-bos">{c.loadingShort}</div>
                     ) : detay ? (
                       <>
                         <div className="detay-ozet">
-                          <span>📦 {detay.profil?.toplamTeslimat ?? 0} teslimat</span>
-                          <span>⏱ Ort. {detay.profil?.ortalamaSure ?? 0} dk</span>
+                          <span>📦 {detay.profil?.toplamTeslimat ?? 0} {c.totalDeliveries}</span>
+                          <span>⏱ {c.avg} {detay.profil?.ortalamaSure ?? 0} {c.min}</span>
                           <span>🔄 {detay.profil?.optimizasyonSayisi ?? 0} opt.</span>
                         </div>
-                        <div className="detay-baslik">Son Teslimatlar</div>
+                        <div className="detay-baslik">{c.lastDeliveries}</div>
                         <div className="detay-liste">
                           {!detay.gecmis?.length ? (
-                            <div className="ist-bos">Kayıt yok</div>
+                            <div className="ist-bos">{c.noRecord}</div>
                           ) : detay.gecmis.slice(0, 10).map((t, idx) => (
                             <div key={idx} className="detay-satir">
-                              <span>{new Date(t.bitisZamani).toLocaleString('tr-TR')}</span>
-                              <span className="detay-sure">{t.sureDakika} dk</span>
+                              <span>{new Date(t.bitisZamani).toLocaleString(locale)}</span>
+                              <span className="detay-sure">{t.sureDakika} {c.min}</span>
                             </div>
                           ))}
                         </div>
                       </>
-                    ) : <div className="ist-bos">Detay yüklenemedi</div>}
+                    ) : <div className="ist-bos">{c.detailFailed}</div>}
                   </div>
                 )}
               </div>
@@ -324,22 +409,22 @@ export default function IstatistikPaneli() {
 
       {/* ── SON TESLİMATLAR TABLOSU ── */}
       <div className="ist-kart">
-        <div className="ist-kart-baslik">📋 Son Teslimatlar</div>
+        <div className="ist-kart-baslik">📋 {c.lastDeliveries}</div>
         {teslimatlar.length === 0 ? (
           <div className="ist-bos">
-            Henüz DB'ye yazılmış teslimat yok.<br />
-            <small>Kuryeler hedefe ulaştıkça kayıtlar burada görünecek.</small>
+            {c.noWritten}<br />
+            <small>{c.noWrittenSub}</small>
           </div>
         ) : (
           <div className="tablo-sarici">
             <table className="tablo">
               <thead>
                 <tr>
-                  <th>Kurye</th>
-                  <th>Bitiş Zamanı</th>
-                  <th>Süre</th>
-                  <th>Opt.</th>
-                  <th>Hedef Konum</th>
+                  <th>{c.tableCourier}</th>
+                  <th>{c.tableEnd}</th>
+                  <th>{c.tableDuration}</th>
+                  <th>{c.tableOpt}</th>
+                  <th>{c.tableTarget}</th>
                 </tr>
               </thead>
               <tbody>
@@ -347,14 +432,14 @@ export default function IstatistikPaneli() {
                   <tr key={i}>
                     <td><strong>{t.kuryeIsim}</strong></td>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      {t.bitisZamani ? new Date(t.bitisZamani).toLocaleString('tr-TR') : '—'}
+                      {t.bitisZamani ? new Date(t.bitisZamani).toLocaleString(locale) : '—'}
                     </td>
                     <td>
                       <span className={`sure-badge ${
                         (t.sureDakika ?? 99) <= 10 ? 'hizli' :
                         (t.sureDakika ?? 99) <= 20 ? 'orta' : 'yavas'
                       }`}>
-                        {t.sureDakika ?? '?'} dk
+                        {t.sureDakika ?? '?'} {c.min}
                       </span>
                     </td>
                     <td>{t.rotaOptimize ? '✅' : '—'}</td>

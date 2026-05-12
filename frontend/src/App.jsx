@@ -3,7 +3,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect }        from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import { SettingsProvider }  from './context/SettingsContext'
+import { SettingsProvider, useSettings }  from './context/SettingsContext'
 import Navbar        from './components/Navbar'
 
 // Sayfalar
@@ -19,6 +19,14 @@ import Vitrin         from './pages/Vitrin'
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual'
+    }
+    const onPageShow = () => window.scrollTo(0, 0)
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
+  }, [])
+  useEffect(() => {
     window.scrollTo(0, 0)
   }, [pathname])
   return null
@@ -30,12 +38,13 @@ function ScrollToTop() {
 // Otherwise redirects to /giris.
 function ProtectedRoute({ children }) {
   const { kullanici, yukleniyor } = useAuth()
+  const { language } = useSettings()
 
   // While the token is being verified, show nothing (avoids flash of login page)
   if (yukleniyor) {
     return (
-      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b1120', color: '#6a7fa8', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
-        Doğrulanıyor...
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b1120', color: '#6a7fa8', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
+        {language === 'en' ? 'Verifying...' : 'Doğrulanıyor...'}
       </div>
     )
   }

@@ -73,15 +73,26 @@ const PARTNER_MAP = {
   7: { firma: 'NightOwl Express',       tip: 'Bonded Warehouse', kargoTuru: 'Bonded Warehouse Transfer'  },
 }
 
-// ── Anomaly seed data ──
-const ANOMALY_SEED = [
-  { id: 'A1', severity: 'critical', title: 'Sahte POD Tespiti',  detail: 'GPS-konum uyuşmazlığı — Teslimat #881, konumdan 2.4km sapma', time: '14:22', icon: SVG_Alert },
-  { id: 'A2', severity: 'warning',  title: 'Rota Sapması',       detail: 'CityLine Kurye #42 planlanan rotadan 3.2km sapmış', time: '13:58', icon: SVG_Warn },
-  { id: 'A3', severity: 'critical', title: 'SLA İhlali',          detail: 'ColdChain teslimat #556 — 45dk gecikme, soğuk zincir riski', time: '13:41', icon: SVG_Alert },
-  { id: 'A4', severity: 'info',     title: 'Hız Limiti Aşımı',    detail: 'Kurye Mehmet — Anlık hız 112km/s, limit: 90km/s', time: '13:15', icon: SVG_Radio },
-  { id: 'A5', severity: 'warning',  title: 'Uzun Mola Tespiti',   detail: 'Kurye Hasan — 47dk hareketsiz, planlı mola 15dk', time: '12:50', icon: SVG_Warn },
-  { id: 'A6', severity: 'info',     title: 'Araç Bakım Uyarısı',  detail: 'TerraFleet #TF-0812 — Motor sıcaklık sensörü uyarısı', time: '12:30', icon: SVG_Wrench },
-]
+function getAnomalySeed(lang = 'tr') {
+  if (lang === 'en') {
+    return [
+      { id: 'A1', severity: 'critical', title: 'Fake POD Detection', detail: 'GPS location mismatch — Delivery #881, deviated by 2.4km', time: '14:22', icon: SVG_Alert },
+      { id: 'A2', severity: 'warning', title: 'Route Deviation', detail: 'CityLine Courier #42 deviated 3.2km from planned route', time: '13:58', icon: SVG_Warn },
+      { id: 'A3', severity: 'critical', title: 'SLA Breach', detail: 'ColdChain delivery #556 — 45min delay, cold-chain risk', time: '13:41', icon: SVG_Alert },
+      { id: 'A4', severity: 'info', title: 'Speed Limit Exceeded', detail: 'Courier Mehmet — Current speed 112km/h, limit: 90km/h', time: '13:15', icon: SVG_Radio },
+      { id: 'A5', severity: 'warning', title: 'Extended Break Detected', detail: 'Courier Hasan — Idle for 47min, planned break 15min', time: '12:50', icon: SVG_Warn },
+      { id: 'A6', severity: 'info', title: 'Vehicle Maintenance Alert', detail: 'TerraFleet #TF-0812 — Engine temperature sensor warning', time: '12:30', icon: SVG_Wrench },
+    ]
+  }
+  return [
+    { id: 'A1', severity: 'critical', title: 'Sahte POD Tespiti', detail: 'GPS-konum uyuşmazlığı — Teslimat #881, konumdan 2.4km sapma', time: '14:22', icon: SVG_Alert },
+    { id: 'A2', severity: 'warning', title: 'Rota Sapması', detail: 'CityLine Kurye #42 planlanan rotadan 3.2km sapmış', time: '13:58', icon: SVG_Warn },
+    { id: 'A3', severity: 'critical', title: 'SLA İhlali', detail: 'ColdChain teslimat #556 — 45dk gecikme, soğuk zincir riski', time: '13:41', icon: SVG_Alert },
+    { id: 'A4', severity: 'info', title: 'Hız Limiti Aşımı', detail: 'Kurye Mehmet — Anlık hız 112km/s, limit: 90km/s', time: '13:15', icon: SVG_Radio },
+    { id: 'A5', severity: 'warning', title: 'Uzun Mola Tespiti', detail: 'Kurye Hasan — 47dk hareketsiz, planlı mola 15dk', time: '12:50', icon: SVG_Warn },
+    { id: 'A6', severity: 'info', title: 'Araç Bakım Uyarısı', detail: 'TerraFleet #TF-0812 — Motor sıcaklık sensörü uyarısı', time: '12:30', icon: SVG_Wrench },
+  ]
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MAP ICONS — UNIFIED CORPORATE STYLE
@@ -178,8 +189,13 @@ function FinansHUD({ t, lang }) {
 
 // ── Anomaly Panel ──
 function AnomalyPanel({ acik, toggle, t, lang, tx }) {
-  const [alerts, setAlerts] = useState(ANOMALY_SEED)
+  const [alerts, setAlerts] = useState(getAnomalySeed(lang))
   const [resolved, setResolved] = useState(new Set())
+
+  useEffect(() => {
+    setAlerts(getAnomalySeed(lang))
+    setResolved(new Set())
+  }, [lang])
 
   const resolve = (id) => {
     setResolved(prev => new Set([...prev, id]))

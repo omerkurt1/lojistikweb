@@ -3,6 +3,17 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 const API = 'https://lojistikweb-backend.onrender.com/api'
 
+function getAuthToken() {
+  const directToken = localStorage.getItem('loop_token')
+  if (directToken) return directToken
+  try {
+    const user = JSON.parse(localStorage.getItem('loop_user') || '{}')
+    return user?.token || ''
+  } catch {
+    return ''
+  }
+}
+
 // ─── Full Translation Dictionary ─────────────────────────────────────────────
 const TRANSLATIONS = {
   tr: {
@@ -278,13 +289,16 @@ export function SettingsProvider({ children }) {
   const [theme, setThemeState] = useState(() =>
     localStorage.getItem('loop_theme') || 'dark'
   )
-  const [language, setLanguageState] = useState(() =>
-    localStorage.getItem('loop_lang') || localStorage.getItem('loop_dil') || 'tr'
-  )
+  const [language, setLanguageState] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const langFromUrl = params.get('lang')
+    if (langFromUrl === 'en' || langFromUrl === 'tr') return langFromUrl
+    return localStorage.getItem('loop_lang') || localStorage.getItem('loop_dil') || 'tr'
+  })
   const [dbPrefsReady, setDbPrefsReady] = useState(false)
 
   const hydrateLanguageFromDb = useCallback(async () => {
-    const token = localStorage.getItem('loop_token')
+    const token = getAuthToken()
     if (!token) {
       setDbPrefsReady(true)
       return
@@ -334,7 +348,7 @@ export function SettingsProvider({ children }) {
   // Push language preference to DB whenever user changes it
   useEffect(() => {
     if (!dbPrefsReady) return
-    const token = localStorage.getItem('loop_token')
+    const token = getAuthToken()
     if (!token) return
 
     fetch(`${API}/auth/preferences`, {
@@ -350,13 +364,18 @@ export function SettingsProvider({ children }) {
   // Sync language across tabs/windows
   useEffect(() => {
     const onStorage = (e) => {
-      if (e.key !== 'loop_lang' && e.key !== 'loop_dil') return
-      const next = (e.newValue === 'en' ? 'en' : 'tr')
-      setLanguageState(next)
+      if (e.key === 'loop_lang' || e.key === 'loop_dil') {
+        const next = (e.newValue === 'en' ? 'en' : 'tr')
+        setLanguageState(next)
+      }
+      if (e.key === 'loop_user' || e.key === 'loop_token') {
+        setDbPrefsReady(false)
+        hydrateLanguageFromDb()
+      }
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [])
+  }, [hydrateLanguageFromDb])
 
   // Sync language after login/logout in the same tab
   useEffect(() => {
