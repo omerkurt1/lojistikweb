@@ -1,5 +1,5 @@
 // src/pages/PartnerNetwork.jsx
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettings } from '../context/SettingsContext'
 
@@ -195,9 +195,9 @@ const COPY = {
 }
 
 // ─── Toast Bileşeni ───────────────────────────────────────────────────────────
-function Toast({ mesaj, kapat }) {
+function Toast({ mesaj, kapat, isMobile }) {
   return (
-    <div style={toastStyle}>
+    <div style={{ ...toastStyle, ...(isMobile ? { left: 12, right: 12, bottom: 12, maxWidth: 'none' } : {}) }}>
       <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{SVG_Check} {mesaj}</span>
       <button onClick={kapat} style={toastKapatStyle}>✕</button>
     </div>
@@ -217,7 +217,7 @@ function localizePartner(partner, language) {
 }
 
 // ─── Partner Detay Modalı ─────────────────────────────────────────────────────
-function PartnerModal({ partner, kapat, toastGoster, c }) {
+function PartnerModal({ partner, kapat, toastGoster, c, isMobile }) {
   const [gonderildi, setGonderildi] = useState(false)
 
   const teklifIste = () => {
@@ -230,7 +230,7 @@ function PartnerModal({ partner, kapat, toastGoster, c }) {
 
   return (
     <div style={overlayStyle} onClick={kapat}>
-      <div style={modalStyle} onClick={e => e.stopPropagation()}>
+      <div style={{ ...modalStyle, ...(isMobile ? { maxHeight: '90vh', overflowY: 'auto' } : {}) }} onClick={e => e.stopPropagation()}>
 
         {/* Başlık */}
         <div style={{ ...modalHeaderStyle, background: `linear-gradient(135deg, ${partner.renk} 0%, ${partner.renk2} 100%)` }}>
@@ -254,7 +254,7 @@ function PartnerModal({ partner, kapat, toastGoster, c }) {
           </div>
 
           {/* Entegrasyon bilgileri */}
-          <div style={bilgiGridStyle}>
+          <div style={{ ...bilgiGridStyle, ...(isMobile ? { gridTemplateColumns: '1fr' } : {}) }}>
             <div style={bilgiKartStyle}>
               <div style={bilgiEtiketStyle}>{c.apiType}</div>
               <div style={bilgiDegerStyle}>{partner.entType}</div>
@@ -283,7 +283,7 @@ function PartnerModal({ partner, kapat, toastGoster, c }) {
           </div>
 
           {/* CTA Butonlar */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+          <div style={{ display: 'flex', gap: 12, marginTop: 8, flexDirection: isMobile ? 'column' : 'row' }}>
             <a
               href={partner.api}
               target="_blank"
@@ -321,7 +321,14 @@ export default function PartnerNetwork() {
   const navigate = useNavigate()
   const [secilenPartner, setSecilen] = useState(null)
   const [toast, setToast]           = useState('')
+  const [isMobile, setIsMobile]     = useState(() => window.innerWidth <= 900)
   const c = COPY[language === 'en' ? 'en' : 'tr']
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 900)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const toastGoster = useCallback((mesaj) => {
     setToast(mesaj)
@@ -332,7 +339,7 @@ export default function PartnerNetwork() {
     <div style={sayfaStyle}>
 
       {/* Toast */}
-      {toast && <Toast mesaj={toast} kapat={() => setToast('')} />}
+      {toast && <Toast mesaj={toast} kapat={() => setToast('')} isMobile={isMobile} />}
 
       {/* Partner Detay Modalı */}
       {secilenPartner && (
@@ -341,11 +348,12 @@ export default function PartnerNetwork() {
           kapat={() => setSecilen(null)}
           toastGoster={toastGoster}
           c={c}
+          isMobile={isMobile}
         />
       )}
 
       {/* ── Header ── */}
-      <div style={headerStyle}>
+      <div style={{ ...headerStyle, ...(isMobile ? { padding: '24px 16px 20px' } : {}) }}>
         <button style={geriBtn} onClick={() => navigate(-1)}>{c.back}</button>
         <div style={headerIcStyle}>
           <div style={headerBadgeStyle}>{c.badge}</div>
@@ -356,7 +364,7 @@ export default function PartnerNetwork() {
         </div>
 
         {/* İstatistik satırı */}
-        <div style={statSatirStyle}>
+        <div style={{ ...statSatirStyle, ...(isMobile ? { gap: 10 } : {}) }}>
           {[
             { deger: '6+',    etiket: c.stat1 },
             { deger: '40+',   etiket: c.stat2 },
@@ -372,8 +380,8 @@ export default function PartnerNetwork() {
       </div>
 
       {/* ── Partner Grid ── */}
-      <div style={gridWrapStyle}>
-        <div style={gridStyle}>
+      <div style={{ ...gridWrapStyle, ...(isMobile ? { padding: '18px 12px' } : {}) }}>
+        <div style={{ ...gridStyle, ...(isMobile ? { gridTemplateColumns: '1fr', gap: 14 } : {}) }}>
           {PARTNERLER.map(rawPartner => {
             const p = localizePartner(rawPartner, language)
             return (
@@ -427,7 +435,7 @@ export default function PartnerNetwork() {
       </div>
 
       {/* ── CTA Banner ── */}
-      <div style={ctaBannerStyle}>
+      <div style={{ ...ctaBannerStyle, ...(isMobile ? { margin: '0 12px 18px', padding: '20px 16px' } : {}) }}>
         <div>
           <div style={ctaBaslikStyle}>{c.ctaTitle}</div>
           <div style={ctaAltStyle}>

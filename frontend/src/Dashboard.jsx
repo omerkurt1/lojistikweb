@@ -188,7 +188,7 @@ function FinansHUD({ t, lang }) {
 }
 
 // ── Anomaly Panel ──
-function AnomalyPanel({ acik, toggle, t, lang, tx }) {
+function AnomalyPanel({ acik, toggle, t, lang, tx, isMobile = false }) {
   const [alerts, setAlerts] = useState(getAnomalySeed(lang))
   const [resolved, setResolved] = useState(new Set())
 
@@ -208,9 +208,19 @@ function AnomalyPanel({ acik, toggle, t, lang, tx }) {
 
   return (
     <div style={{
-      ...t.glass, position: 'absolute', top: 0, right: 0, bottom: 0,
-      width: 340, zIndex: 700, display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', fontFamily: FF, borderRadius: '0 0 0 14px',
+      ...t.glass,
+      position: 'absolute',
+      top: isMobile ? '45%' : 0,
+      right: 0,
+      left: isMobile ? 0 : 'auto',
+      bottom: 0,
+      width: isMobile ? '100%' : 340,
+      zIndex: 700,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      fontFamily: FF,
+      borderRadius: isMobile ? '14px 14px 0 0' : '0 0 0 14px',
     }}>
       <div style={{ padding: '16px 18px', borderBottom: `1px solid ${t.cardBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div>
@@ -317,6 +327,7 @@ export default function Uygulama() {
   const [zoomHedef,     setZoomHedef]    = useState(null)
   const [anomalyAcik,   setAnomalyAcik] = useState(false)
   const [interventionK, setIntervention] = useState(null)
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900)
 
   const raporAcik = aktifSekme === 'istatistik'
   // Continental/Eurasian center — shows Europe, Middle East, and western Asia in one view
@@ -325,6 +336,11 @@ export default function Uygulama() {
   // Clock
   const [saat, setSaat] = useState(new Date())
   useEffect(() => { const i = setInterval(() => setSaat(new Date()), 1000); return () => clearInterval(i) }, [])
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 900)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // ── Backend stats ──
   useEffect(() => {
@@ -361,12 +377,14 @@ export default function Uygulama() {
 
   // Sidebar width constant
   const SIDEBAR_W = 330
+  const mobilePanelHeight = isMobile ? Math.max(280, Math.round(window.innerHeight * 0.44)) : SIDEBAR_W
+  const panelBottomOffset = isMobile ? mobilePanelHeight : 0
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: t.bg, fontFamily: FF, color: t.text }}>
 
       {/* ═══ TOAST NOTIFICATIONS ═══ */}
-      <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 360 }}>
+      <div style={{ position: 'fixed', top: 16, right: isMobile ? 10 : 16, left: isMobile ? 10 : 'auto', zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8, maxWidth: isMobile ? 'none' : 360 }}>
         {bildirimler.map(b => (
           <div key={b.id} style={{
             ...t.glass, padding: '12px 16px', fontSize: 12, fontWeight: 600,
@@ -383,11 +401,11 @@ export default function Uygulama() {
 
       {/* ═══ FULL-SCREEN MAP / RAPOR ═══ */}
       {raporAcik ? (
-        <div style={{ position: 'absolute', top: 0, left: SIDEBAR_W, right: 0, bottom: 0, zIndex: 1, overflow: 'auto', background: t.bg }}>
+        <div style={{ position: 'absolute', top: 0, left: isMobile ? 0 : SIDEBAR_W, right: 0, bottom: panelBottomOffset, zIndex: 1, overflow: 'auto', background: t.bg }}>
           <IstatistikPaneli />
         </div>
       ) : (
-        <div style={{ position: 'absolute', top: 0, left: SIDEBAR_W, right: anomalyAcik ? 340 : 0, bottom: 0, zIndex: 1, transition: 'right 0.3s ease' }}>
+        <div style={{ position: 'absolute', top: 0, left: isMobile ? 0 : SIDEBAR_W, right: (anomalyAcik && !isMobile) ? 340 : 0, bottom: panelBottomOffset, zIndex: 1, transition: 'right 0.3s ease' }}>
           <MapContainer center={merkez} zoom={5} style={{ width: '100%', height: '100%' }} zoomControl={false}>
             <TileLayer url={TILE_FIXED} attribution={TILE_ATTR} />
             <HaritaKontrol hedef={zoomHedef} />
@@ -421,19 +439,28 @@ export default function Uygulama() {
       )}
 
       {/* ═══ ANOMALY PANEL (right side, inside map area) ═══ */}
-      {!raporAcik && <AnomalyPanel acik={anomalyAcik} toggle={() => setAnomalyAcik(false)} t={t} lang={lang} tx={tx} />}
+      {!raporAcik && <AnomalyPanel acik={anomalyAcik} toggle={() => setAnomalyAcik(false)} t={t} lang={lang} tx={tx} isMobile={isMobile} />}
 
       {/* ═══════════════════════════════════════════════════════
           LEFT SIDEBAR — SOLID, NO OVERLAP
       ═══════════════════════════════════════════════════════ */}
       <aside style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0,
-        width: SIDEBAR_W, zIndex: 800,
+        position: 'absolute',
+        left: 0,
+        right: isMobile ? 0 : 'auto',
+        top: isMobile ? 'auto' : 0,
+        bottom: 0,
+        width: isMobile ? '100%' : SIDEBAR_W,
+        height: isMobile ? mobilePanelHeight : 'auto',
+        zIndex: 800,
         background: t.panelBg,
-        borderRight: `1px solid ${t.panelBorder}`,
+        borderRight: isMobile ? 'none' : `1px solid ${t.panelBorder}`,
+        borderTop: isMobile ? `1px solid ${t.panelBorder}` : 'none',
         display: 'flex', flexDirection: 'column',
         fontFamily: FF,
-        boxShadow: dark ? '4px 0 24px rgba(0,0,0,0.3)' : '2px 0 12px rgba(0,0,0,0.06)',
+        boxShadow: isMobile
+          ? (dark ? '0 -10px 24px rgba(0,0,0,0.35)' : '0 -8px 20px rgba(0,0,0,0.10)')
+          : (dark ? '4px 0 24px rgba(0,0,0,0.3)' : '2px 0 12px rgba(0,0,0,0.06)'),
       }}>
 
         {/* ── HEADER: Logo + Theme Toggle ── */}

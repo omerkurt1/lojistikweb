@@ -133,6 +133,7 @@ function durumBilgi(d, language) {
 export default function MusteriTakip() {
   const { language } = useSettings()
   const c = COPY[language === 'en' ? 'en' : 'tr']
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900)
   // ── Faz durumu ──
   const [faz, setFaz] = useState('giris') // 'giris' | 'takip'
   const [takipNo, setTakipNo] = useState('')
@@ -146,6 +147,12 @@ export default function MusteriTakip() {
 
   const soketRef = useRef(null)
   const saat = useCanliSaat(language)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 900)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   // URL'den takip numarasını al (eğer varsa)
   useEffect(() => {
@@ -367,12 +374,42 @@ export default function MusteriTakip() {
   ════════════════════════════════════════════════════════════ */
   const di = kurye ? durumBilgi(kurye.durum, language) : null
   const kuryeRenk = '#2F6F73'
+  const takipSayfaStyle = isMobile
+    ? { ...s.takipSayfa, flexDirection: 'column' }
+    : s.takipSayfa
+  const takipPanelStyle = isMobile
+    ? {
+        ...s.takipPanel,
+        width: '100%',
+        minWidth: 0,
+        maxHeight: '46vh',
+        borderRight: 'none',
+        borderBottom: '1px solid #e5e7eb',
+      }
+    : s.takipPanel
+  const haritaAlaniStyle = isMobile
+    ? { ...s.haritaAlani, minHeight: '54vh' }
+    : s.haritaAlani
+  const haritaInfoBandStyle = isMobile
+    ? {
+        ...s.haritaInfoBand,
+        left: 12,
+        right: 12,
+        bottom: 12,
+        transform: 'none',
+        width: 'auto',
+        justifyContent: 'center',
+        gap: 12,
+        flexWrap: 'wrap',
+        padding: '10px 14px',
+      }
+    : s.haritaInfoBand
 
   return (
-    <div style={s.takipSayfa}>
+    <div style={takipSayfaStyle}>
 
       {/* ── SOL PANEL — Kişiselleştirilmiş Teslimat Bilgisi ── */}
-      <aside style={s.takipPanel}>
+      <aside style={takipPanelStyle}>
 
         {/* Marka başlık */}
         <div style={s.takipPanelUst}>
@@ -474,7 +511,7 @@ export default function MusteriTakip() {
       </aside>
 
       {/* ── HARİTA ── */}
-      <div style={s.haritaAlani}>
+      <div style={haritaAlaniStyle}>
         {kurye && kurye.enlem && kurye.boylam ? (
           <MapContainer
             center={[kurye.enlem, kurye.boylam]}
@@ -545,7 +582,7 @@ export default function MusteriTakip() {
         )}
 
         {/* Harita üstü bilgi bandı */}
-        <div style={s.haritaInfoBand}>
+        <div style={haritaInfoBandStyle}>
           <span style={s.haritaInfoItem}>
             🚛 Kuryeniz: <strong>{kurye?.isim}</strong>
           </span>
