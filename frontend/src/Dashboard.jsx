@@ -520,14 +520,27 @@ export default function Uygulama() {
           ))}
         </div>
 
-        <div style={{ padding: '10px 14px', borderBottom: `1px solid ${t.panelBorder}`, display: 'flex', gap: 6, flexShrink: 0 }}>
-          <button onClick={tumRotaYenile} style={{ ...actionBtn, flex: 1, background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent, fontSize: 11 }}>
+        <div style={{
+          padding: '10px 14px',
+          borderBottom: `1px solid ${t.panelBorder}`,
+          display: 'flex',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? 10 : 6,
+          flexShrink: 0,
+        }}>
+          <button onClick={tumRotaYenile} style={{ ...actionBtn, flex: 1, width: isMobile ? '100%' : 'auto', background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent, fontSize: 11 }}>
             {tx('refreshRoutes')}
           </button>
           <button onClick={() => setAnomalyAcik(p => !p)} style={{
             ...actionBtn, background: anomalyAcik ? `${t.danger}15` : t.cardBg,
             border: `1px solid ${anomalyAcik ? `${t.danger}30` : t.cardBorder}`,
-            color: anomalyAcik ? t.danger : t.textMuted, fontSize: 11, minWidth: 90, display: 'flex', alignItems: 'center'
+            color: anomalyAcik ? t.danger : t.textMuted,
+            fontSize: 11,
+            minWidth: isMobile ? 0 : 90,
+            width: isMobile ? '100%' : 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
             {SVG_Alert} {tx('anomaly')} <span style={{ background: t.danger, color: '#fff', fontSize: 8, fontWeight: 800, padding: '1px 5px', borderRadius: 8, marginLeft: 4 }}>6</span>
           </button>

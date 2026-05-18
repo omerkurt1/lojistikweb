@@ -2,6 +2,7 @@
 // Auth-aware top navigation bar — mounted via PublicLayout in App.jsx
 // DIRECTIVE 3: Partner Network relocated to primary nav with consistent styling.
 // All labels use t() translations from SettingsContext.
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth }     from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
@@ -25,8 +26,25 @@ export default function Navbar() {
   const { isDark, t } = useSettings()
   const navigate      = useNavigate()
   const { pathname }  = useLocation()
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   const partnerPageOnlyLogo = pathname === '/partnerler'
+
+  useEffect(() => {
+    const onResize = () => {
+      const nextMobile = window.innerWidth < 768
+      setIsMobile(nextMobile)
+      if (!nextMobile) setMenuOpen(false)
+    }
+
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
 
   // Standard link color — consistent across ALL nav items (Directive 3: no unique Partner styling)
   const linkColor = isDark ? '#6a7fa8' : '#5a6a8a'
@@ -45,7 +63,7 @@ export default function Navbar() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
         height: 72,
         display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-        padding: '0 32px',
+        padding: isMobile ? '0 18px' : '0 32px',
         background: isDark ? 'rgba(6,12,26,0.92)' : 'rgba(255,255,255,0.96)',
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
@@ -64,7 +82,7 @@ export default function Navbar() {
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
       height: 72,
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '0 48px',
+      padding: isMobile ? '0 16px' : '0 48px',
       background: isDark ? 'rgba(6,12,26,0.92)' : 'rgba(255,255,255,0.96)',
       backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
       borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
@@ -77,7 +95,7 @@ export default function Navbar() {
         <Link to="/" style={{ fontFamily: FFD, fontSize: 30, letterSpacing: 1, color: isDark ? '#e8f0ff' : '#0a1628', textDecoration: 'none', lineHeight: 1 }}>
           LOOP<span style={{ color: ACCENT_PRIMARY }}>.</span>
         </Link>
-        <ul style={{ display: 'flex', gap: 32, listStyle: 'none', margin: 0, padding: 0 }}>
+        <ul style={{ display: isMobile ? 'none' : 'flex', gap: 32, listStyle: 'none', margin: 0, padding: 0 }}>
           {navLinks.map(item => (
             <li key={item.href}>
               {item.scroll ? (
@@ -101,7 +119,7 @@ export default function Navbar() {
       </div>
 
       {/* ── RIGHT: Auth-aware CTA ── */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ display: isMobile ? 'none' : 'flex', alignItems: 'center', gap: 10 }}>
 
         {kullanici ? (
           /* ══ LOGGED IN: Avatar pill linking to /profil ══ */
@@ -172,6 +190,165 @@ export default function Navbar() {
           {t('getStarted')}
         </button>
       </div>
+
+      {isMobile && (
+        <>
+          <button
+            type="button"
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(open => !open)}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 8,
+              border: isDark ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(10,22,40,0.12)',
+              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(10,22,40,0.03)',
+              color: isDark ? '#e8f0ff' : '#0a1628',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 4,
+              cursor: 'pointer',
+            }}
+          >
+            <span style={{ width: 18, height: 2, borderRadius: 2, background: 'currentColor' }} />
+            <span style={{ width: 18, height: 2, borderRadius: 2, background: 'currentColor' }} />
+            <span style={{ width: 18, height: 2, borderRadius: 2, background: 'currentColor' }} />
+          </button>
+
+          {menuOpen && (
+            <div
+              style={{
+                position: 'fixed',
+                top: 72,
+                left: 0,
+                right: 0,
+                zIndex: 9998,
+                padding: '12px 16px 16px',
+                background: isDark ? 'rgba(6,12,26,0.98)' : 'rgba(255,255,255,0.98)',
+                borderBottom: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+                boxShadow: isDark ? '0 18px 32px rgba(0,0,0,0.32)' : '0 18px 32px rgba(10,22,40,0.10)',
+                fontFamily: FF,
+              }}
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {navLinks.map(item => (
+                  item.scroll ? (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      style={{
+                        color: isDark ? '#e8f0ff' : '#0a1628',
+                        textDecoration: 'none',
+                        fontSize: 15,
+                        fontWeight: 700,
+                        padding: '12px 10px',
+                        borderRadius: 8,
+                      }}
+                    >
+                      {item.label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={item.href}
+                      to={item.href}
+                      onClick={() => setMenuOpen(false)}
+                      style={{
+                        color: isDark ? '#e8f0ff' : '#0a1628',
+                        textDecoration: 'none',
+                        fontSize: 15,
+                        fontWeight: 700,
+                        padding: '12px 10px',
+                        borderRadius: 8,
+                      }}
+                    >
+                      {item.label}
+                    </Link>
+                  )
+                ))}
+
+                <div style={{ height: 1, background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(10,22,40,0.08)', margin: '4px 0' }} />
+
+                {kullanici ? (
+                  <Link
+                    to="/profil"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '11px 10px',
+                      borderRadius: 8,
+                      background: ACCENT_SOFT,
+                      border: `1px solid ${ACCENT_BORDER}`,
+                      textDecoration: 'none',
+                      color: isDark ? '#e8f0ff' : '#0a1628',
+                      fontWeight: 800,
+                    }}
+                  >
+                    <span style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${ACCENT_PRIMARY}, ${ACCENT_SECONDARY})`,
+                      color: ACCENT_TEXT_ON_SOLID,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                      fontWeight: 900,
+                    }}>
+                      {initials(kullanici.isim)}
+                    </span>
+                    {t('profile')}
+                  </Link>
+                ) : (
+                  <Link
+                    to="/giris"
+                    onClick={() => setMenuOpen(false)}
+                    style={{
+                      padding: '12px 10px',
+                      borderRadius: 8,
+                      border: `1px solid ${ACCENT_BORDER}`,
+                      color: ACCENT_PRIMARY,
+                      textDecoration: 'none',
+                      fontSize: 14,
+                      fontWeight: 800,
+                    }}
+                  >
+                    {t('login')}
+                  </Link>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false)
+                    navigate('/partnerler')
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '13px 12px',
+                    borderRadius: 8,
+                    background: `linear-gradient(135deg, ${ACCENT_PRIMARY} 0%, ${ACCENT_SECONDARY} 100%)`,
+                    border: 'none',
+                    color: ACCENT_TEXT_ON_SOLID,
+                    fontFamily: FF,
+                    fontSize: 14,
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {t('getStarted')}
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </nav>
   )
 }
