@@ -144,6 +144,7 @@ export default function MusteriTakip() {
   const [kurye, setKurye] = useState(null)
   const [baglanti, setBaglanti] = useState(false)
   const [haritaHedef, setHaritaHedef] = useState(null)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   const soketRef = useRef(null)
   const saat = useCanliSaat(language)
@@ -153,6 +154,10 @@ export default function MusteriTakip() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    if (!isMobile) setPanelOpen(false)
+  }, [isMobile])
 
   // URL'den takip numarasını al (eğer varsa)
   useEffect(() => {
@@ -251,6 +256,7 @@ export default function MusteriTakip() {
       }
 
       setFaz('takip')
+      setPanelOpen(false)
     } catch (err) {
       setHata(c.serverError)
     } finally {
@@ -375,20 +381,29 @@ export default function MusteriTakip() {
   const di = kurye ? durumBilgi(kurye.durum, language) : null
   const kuryeRenk = '#2F6F73'
   const takipSayfaStyle = isMobile
-    ? { ...s.takipSayfa, flexDirection: 'column' }
+    ? s.takipSayfa
     : s.takipSayfa
   const takipPanelStyle = isMobile
     ? {
         ...s.takipPanel,
-        width: '100%',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        width: 'min(88vw, 360px)',
         minWidth: 0,
-        maxHeight: '46vh',
-        borderRight: 'none',
-        borderBottom: '1px solid #e5e7eb',
+        height: '100%',
+        maxHeight: 'none',
+        borderRight: '1px solid #e5e7eb',
+        borderBottom: 'none',
+        zIndex: 1200,
+        boxShadow: '18px 0 36px rgba(15,23,42,0.22)',
+        transform: panelOpen ? 'translateX(0)' : 'translateX(-105%)',
+        transition: 'transform 0.28s ease',
       }
     : s.takipPanel
   const haritaAlaniStyle = isMobile
-    ? { ...s.haritaAlani, minHeight: '54vh' }
+    ? { ...s.haritaAlani, width: '100%', height: '100%' }
     : s.haritaAlani
   const haritaInfoBandStyle = isMobile
     ? {
@@ -407,6 +422,22 @@ export default function MusteriTakip() {
 
   return (
     <div style={takipSayfaStyle}>
+      {isMobile && (
+        <>
+          <button
+            type="button"
+            aria-label={panelOpen ? 'Close carrier panel' : 'Open carrier panel'}
+            aria-expanded={panelOpen}
+            onClick={() => setPanelOpen(open => !open)}
+            style={s.mobileDrawerBtn}
+          >
+            <span style={s.mobileDrawerLine} />
+            <span style={s.mobileDrawerLine} />
+            <span style={s.mobileDrawerLine} />
+          </button>
+          {panelOpen && <button type="button" aria-label="Close carrier panel overlay" onClick={() => setPanelOpen(false)} style={s.mobileDrawerBackdrop} />}
+        </>
+      )}
 
       {/* ── SOL PANEL — Kişiselleştirilmiş Teslimat Bilgisi ── */}
       <aside style={takipPanelStyle}>
@@ -420,6 +451,11 @@ export default function MusteriTakip() {
           <div style={s.takipSaatKutu}>
             <div style={{ ...s.bagDot, background: baglanti ? '#22c55e' : '#ef4444' }} />
             <span style={s.takipSaat}>{saat}</span>
+            {isMobile && (
+              <button type="button" onClick={() => setPanelOpen(false)} style={s.mobilePanelClose}>
+                ×
+              </button>
+            )}
           </div>
         </div>
 
@@ -517,7 +553,7 @@ export default function MusteriTakip() {
             center={[kurye.enlem, kurye.boylam]}
             zoom={15}
             style={{ width: '100%', height: '100%' }}
-            zoomControl={true}
+            zoomControl={!isMobile}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -917,4 +953,47 @@ const s = {
     boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
   },
   haritaInfoItem: { fontWeight: 600, whiteSpace: 'nowrap' },
+  mobileDrawerBtn: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    zIndex: 1300,
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    border: '1px solid rgba(15,23,42,0.14)',
+    background: 'rgba(255,255,255,0.94)',
+    boxShadow: '0 8px 24px rgba(15,23,42,0.18)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'column',
+    gap: 5,
+    cursor: 'pointer',
+  },
+  mobileDrawerLine: {
+    width: 19,
+    height: 2,
+    borderRadius: 3,
+    background: '#0f172a',
+  },
+  mobileDrawerBackdrop: {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 1100,
+    border: 'none',
+    background: 'rgba(15,23,42,0.28)',
+    cursor: 'pointer',
+  },
+  mobilePanelClose: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    border: '1px solid #e2e8f0',
+    background: '#fff',
+    color: '#64748b',
+    fontSize: 20,
+    lineHeight: '20px',
+    cursor: 'pointer',
+  },
 }

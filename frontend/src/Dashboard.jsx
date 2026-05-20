@@ -328,6 +328,7 @@ export default function Uygulama() {
   const [anomalyAcik,   setAnomalyAcik] = useState(false)
   const [interventionK, setIntervention] = useState(null)
   const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 900)
+  const [sidePanelOpen, setSidePanelOpen] = useState(false)
 
   const raporAcik = aktifSekme === 'istatistik'
   // Continental/Eurasian center — shows Europe, Middle East, and western Asia in one view
@@ -341,6 +342,10 @@ export default function Uygulama() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  useEffect(() => {
+    if (!isMobile) setSidePanelOpen(false)
+  }, [isMobile])
 
   // ── Backend stats ──
   useEffect(() => {
@@ -377,8 +382,7 @@ export default function Uygulama() {
 
   // Sidebar width constant
   const SIDEBAR_W = 330
-  const mobilePanelHeight = isMobile ? Math.max(280, Math.round(window.innerHeight * 0.44)) : SIDEBAR_W
-  const panelBottomOffset = isMobile ? mobilePanelHeight : 0
+  const panelBottomOffset = 0
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: t.bg, fontFamily: FF, color: t.text }}>
@@ -398,6 +402,56 @@ export default function Uygulama() {
 
       {/* ═══ INTERVENTION DRAWER (modal overlay) ═══ */}
       {interventionK && <InterventionDrawer kurye={interventionK} kapat={() => setIntervention(null)} bildirimEkle={bildirimEkle} t={t} lang={lang} tx={tx} />}
+
+      {isMobile && (
+        <>
+          <button
+            type="button"
+            aria-label={sidePanelOpen ? 'Close dashboard panel' : 'Open dashboard panel'}
+            aria-expanded={sidePanelOpen}
+            onClick={() => setSidePanelOpen(open => !open)}
+            style={{
+              position: 'absolute',
+              top: 14,
+              left: 14,
+              zIndex: 850,
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              border: `1px solid ${dark ? 'rgba(255,255,255,0.16)' : 'rgba(15,23,42,0.14)'}`,
+              background: dark ? 'rgba(11,17,32,0.92)' : 'rgba(255,255,255,0.94)',
+              color: t.text,
+              boxShadow: dark ? '0 10px 28px rgba(0,0,0,0.35)' : '0 8px 24px rgba(15,23,42,0.18)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexDirection: 'column',
+              gap: 5,
+              cursor: 'pointer',
+              fontFamily: FF,
+            }}
+          >
+            <span style={{ width: 19, height: 2, borderRadius: 3, background: 'currentColor' }} />
+            <span style={{ width: 19, height: 2, borderRadius: 3, background: 'currentColor' }} />
+            <span style={{ width: 19, height: 2, borderRadius: 3, background: 'currentColor' }} />
+          </button>
+          {sidePanelOpen && (
+            <button
+              type="button"
+              aria-label="Close dashboard panel overlay"
+              onClick={() => setSidePanelOpen(false)}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 790,
+                border: 'none',
+                background: 'rgba(0,0,0,0.28)',
+                cursor: 'pointer',
+              }}
+            />
+          )}
+        </>
+      )}
 
       {/* ═══ FULL-SCREEN MAP / RAPOR ═══ */}
       {raporAcik ? (
@@ -447,19 +501,21 @@ export default function Uygulama() {
       <aside style={{
         position: 'absolute',
         left: 0,
-        right: isMobile ? 0 : 'auto',
-        top: isMobile ? 'auto' : 0,
+        right: isMobile ? 'auto' : 'auto',
+        top: 0,
         bottom: 0,
-        width: isMobile ? '100%' : SIDEBAR_W,
-        height: isMobile ? mobilePanelHeight : 'auto',
+        width: isMobile ? 'min(88vw, 360px)' : SIDEBAR_W,
+        height: 'auto',
         zIndex: 800,
         background: t.panelBg,
-        borderRight: isMobile ? 'none' : `1px solid ${t.panelBorder}`,
-        borderTop: isMobile ? `1px solid ${t.panelBorder}` : 'none',
+        borderRight: `1px solid ${t.panelBorder}`,
+        borderTop: 'none',
         display: 'flex', flexDirection: 'column',
         fontFamily: FF,
+        transform: isMobile && !sidePanelOpen ? 'translateX(-105%)' : 'translateX(0)',
+        transition: isMobile ? 'transform 0.28s ease' : 'none',
         boxShadow: isMobile
-          ? (dark ? '0 -10px 24px rgba(0,0,0,0.35)' : '0 -8px 20px rgba(0,0,0,0.10)')
+          ? (dark ? '18px 0 36px rgba(0,0,0,0.42)' : '18px 0 36px rgba(15,23,42,0.20)')
           : (dark ? '4px 0 24px rgba(0,0,0,0.3)' : '2px 0 12px rgba(0,0,0,0.06)'),
       }}>
 
@@ -492,6 +548,26 @@ export default function Uygulama() {
                 boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
               }} />
             </button>
+            {isMobile && (
+              <button
+                type="button"
+                onClick={() => setSidePanelOpen(false)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  border: `1px solid ${t.cardBorder}`,
+                  background: t.cardBg,
+                  color: t.textMuted,
+                  fontSize: 18,
+                  lineHeight: '18px',
+                  cursor: 'pointer',
+                  fontFamily: FF,
+                }}
+              >
+                ×
+              </button>
+            )}
           </div>
         </div>
 
