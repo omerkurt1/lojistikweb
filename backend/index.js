@@ -27,6 +27,7 @@ const io = new Server(server, { cors: { origin: '*' } })
 const ORS_KEY = process.env.ORS_API_KEY
 const MONGO_URI = process.env.MONGO_URI
 const PORT = process.env.PORT || 5000
+const FIXED_COURIER_COUNT = 5
 
 // ════════════════════════════════════════════════════════════
 //  MONGOOSE MODELLERİ
@@ -131,11 +132,19 @@ function hubJitter(hub) {
   }
 }
 
-const BASLANGIC_KURYELER = [
-  { id: 1, isim: COURIER_NAMES[0], ...hubJitter(GLOBAL_HUBS[0]), ...{ hedefEnlem: hubJitter(GLOBAL_HUBS[1]).enlem, hedefBoylam: hubJitter(GLOBAL_HUBS[1]).boylam } },
-  { id: 2, isim: COURIER_NAMES[1], ...hubJitter(GLOBAL_HUBS[2]), ...{ hedefEnlem: hubJitter(GLOBAL_HUBS[3]).enlem, hedefBoylam: hubJitter(GLOBAL_HUBS[3]).boylam } },
-  { id: 3, isim: COURIER_NAMES[2], ...hubJitter(GLOBAL_HUBS[4]), ...{ hedefEnlem: hubJitter(GLOBAL_HUBS[5]).enlem, hedefBoylam: hubJitter(GLOBAL_HUBS[5]).boylam } },
-]
+const BASLANGIC_KURYELER = Array.from({ length: FIXED_COURIER_COUNT }, (_x, i) => {
+  const [basHub, hedefHub] = rastgeleHubCifti()
+  const bas = hubJitter(basHub)
+  const hedef = hubJitter(hedefHub)
+  return {
+    id: i + 1,
+    isim: `${COURIER_NAMES[i % COURIER_NAMES.length]} #${i + 1}`,
+    enlem: bas.enlem,
+    boylam: bas.boylam,
+    hedefEnlem: hedef.enlem,
+    hedefBoylam: hedef.boylam,
+  }
+})
 
 let kuryeler = BASLANGIC_KURYELER.map((k, i) => ({
   ...k, rota: [], hedefSira: 1,
@@ -170,6 +179,26 @@ async function gercekRotaCiz(basEnlem, basBoylam, bitisEnlem, bitisBoylam, opt) 
   } catch (e) {
     return [[basEnlem, basBoylam], [bitisEnlem, bitisBoylam]]
   }
+}
+
+async function kuryeYeniGoreveHazirla(kurye) {
+  const [basHub, hedefHub] = rastgeleHubCifti()
+  const bas = hubJitter(basHub)
+  const hedef = hubJitter(hedefHub)
+  kurye.enlem = bas.enlem
+  kurye.boylam = bas.boylam
+  kurye.hedefEnlem = hedef.enlem
+  kurye.hedefBoylam = hedef.boylam
+  kurye.rota = await gercekRotaCiz(bas.enlem, bas.boylam, hedef.enlem, hedef.boylam, false)
+  kurye.hedefSira = 1
+  kurye.durum = 'yolda'
+  kurye.hiz = 0
+  kurye.eta = etaHesapla(kurye)
+  kurye.online = true
+  kurye.baslangicZamani = new Date()
+  kurye.kargoTuru = CARGO_TYPES[Math.floor(Math.random() * CARGO_TYPES.length)]
+  kurye.originHub = basHub.isim
+  kurye.destHub = hedefHub.isim
 }
 
 async function teslimatKaydet(kurye) {
@@ -354,14 +383,7 @@ io.on('connection', socket => {
   })
 
   socket.on('yeniSiparisEkle', async () => {
-    const yeniId = kuryeler.length + 1
-    const bEn = 41.0000 + Math.random() * 0.08, bBo = 28.9200 + Math.random() * 0.10
-    const hEn = 41.0200 + Math.random() * 0.08, hBo = 28.9400 + Math.random() * 0.10
-    const rota = await gercekRotaCiz(bEn, bBo, hEn, hBo, false)
-    const yeniKurye = { id: yeniId, isim: 'Kurye ' + yeniId, enlem: bEn, boylam: bBo, hedefEnlem: hEn, hedefBoylam: hBo, rota, hedefSira: 1, durum: 'yolda', hiz: 0, optimizasyonSayisi: 0, online: true, eta: 0, baslangicZamani: new Date() }
-    if (dbBagli) await KuryeModel.findOneAndUpdate({ kuryeId: yeniId }, { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } }, { upsert: true }).catch(() => { })
-    kuryeler.push(yeniKurye)
-    io.emit('kuryeleriGuncelle', kuryeler)
+    socket.emit('hata', `Demo modunda kurye sayısı sabit ${FIXED_COURIER_COUNT}. Yeni kurye ekleme kapalıdır.`)
   })
 })
 
@@ -385,9 +407,7 @@ setInterval(() => {
         k.durum = 'yolda'
       } else { k.hedefSira++ }
       k.eta = etaHesapla(k)
-      if (dbBagli && donguSayac % 10 === 0) {
-        KonumModel.create({ kuryeId: k.id, kuryeIsim: k.isim, enlem: parseFloat(k.enlem.toFixed(5)), boylam: parseFloat(k.boylam.toFixed(5)), hiz: k.hiz }).catch(() => { })
-      }
+      // Demo günü için depolama büyümesini engellemek adına konum geçmişi DB'ye yazılmıyor.
       // Müşteri takip odasına push et
       io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
     } else if (k.durum !== 'teslim edildi') {
@@ -399,47 +419,23 @@ setInterval(() => {
       io.emit('teslimatBildirimi', { isim: k.isim, zaman: log.zaman })
       io.emit('siparisFisiGuncelle', siparisFisi)
       io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
+      kuryeYeniGoreveHazirla(k)
+        .then(() => {
+          io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
+          io.emit('kuryeleriGuncelle', kuryeler)
+        })
+        .catch((err) => console.error('[DEMO_RECYCLE]', err.message))
     }
   })
   io.emit('kuryeleriGuncelle', kuryeler)
 }, 1500)
 
 // ════════════════════════════════════════════════════════════
-//  OTOMATİK SİPARİŞ SİSTEMİ — Every 30s, hub-to-hub only
+//  OTOMATİK SİPARİŞ SİSTEMİ
+//  Demo modu: 30sn'de yeni kurye üretimi KALDIRILDI.
+//  Sistem sabit 5 kurye ile çalışır; teslim sonrası aynı kurye yeni rotaya atanır.
 // ════════════════════════════════════════════════════════════
-setInterval(async () => {
-  const yeniId = kuryeler.length + 1
-  const [basHub, hedefHub] = rastgeleHubCifti()
-  const bas   = hubJitter(basHub)
-  const hedef = hubJitter(hedefHub)
-  const courierName = COURIER_NAMES[(yeniId - 1) % COURIER_NAMES.length] + ' #' + yeniId
-  const kargoTuru = CARGO_TYPES[Math.floor(Math.random() * CARGO_TYPES.length)]
-
-  const rota = await gercekRotaCiz(bas.enlem, bas.boylam, hedef.enlem, hedef.boylam, false)
-  const yeniKurye = {
-    id: yeniId,
-    isim: courierName,
-    enlem: bas.enlem,  boylam: bas.boylam,
-    hedefEnlem: hedef.enlem, hedefBoylam: hedef.boylam,
-    rota, hedefSira: 1,
-    durum: 'yolda', hiz: 0,
-    optimizasyonSayisi: 0, online: true,
-    eta: 0, baslangicZamani: new Date(),
-    kargoTuru,
-    originHub: basHub.isim,
-    destHub:   hedefHub.isim,
-  }
-  if (dbBagli) {
-    await KuryeModel.findOneAndUpdate(
-      { kuryeId: yeniId },
-      { $setOnInsert: { kuryeId: yeniId, isim: yeniKurye.isim } },
-      { upsert: true }
-    ).catch(() => { })
-  }
-  kuryeler.push(yeniKurye)
-  io.emit('kuryeleriGuncelle', kuryeler)
-  console.log(`📦 Global shipment #${yeniId}: ${basHub.isim} → ${hedefHub.isim} (${kargoTuru})`)
-}, 30000)
+console.log(`🧪 Demo modu aktif: sabit ${FIXED_COURIER_COUNT} kurye, teslim sonrası otomatik yeniden rota.`)
 
 // ════════════════════════════════════════════════════════════
 //  BAŞLAT — Bulletproof Production Startup
