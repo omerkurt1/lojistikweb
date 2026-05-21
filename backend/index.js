@@ -412,7 +412,7 @@ setInterval(() => {
       io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
     } else if (k.durum !== 'teslim edildi') {
       k.durum = 'teslim edildi'; k.hiz = 0; k.eta = 0
-      teslimatKaydet(k)
+      // Demo günü için DB büyümesini minimumda tutmak adına teslimat geçmişi DB'ye yazılmıyor.
       const log = { id: Date.now() + k.id, kuryeIsim: k.isim, zaman: new Date().toLocaleTimeString('tr-TR'), hedefEnlem: k.hedefEnlem, hedefBoylam: k.hedefBoylam }
       siparisFisi.unshift(log)
       if (siparisFisi.length > 100) siparisFisi.pop()
