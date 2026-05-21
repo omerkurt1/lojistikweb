@@ -115,6 +115,7 @@ const COURIER_NAMES = [
   'Ahmet Çelik', 'Mehmet Demir', 'Ayşe Kaya', 'Fatma Şahin',
   'Ali Yıldız',  'Hasan Arslan', 'Elif Güneş', 'Okan Doğan',
 ]
+let demoAtamaSayaci = 0
 
 // Pick two different hubs at random — guarantees land-to-land only
 function rastgeleHubCifti() {
@@ -162,6 +163,17 @@ function etaHesapla(k) {
 }
 function bugunTarih() { return new Date().toISOString().split('T')[0] }
 
+function basitRotaOlustur(basEn, basBo, bitEn, bitBo, adim = 22) {
+  const rota = []
+  for (let i = 0; i <= adim; i++) {
+    const t = i / adim
+    const en = basEn + (bitEn - basEn) * t
+    const bo = basBo + (bitBo - basBo) * t
+    rota.push([en, bo])
+  }
+  return rota
+}
+
 async function gercekRotaCiz(basEnlem, basBoylam, bitisEnlem, bitisBoylam, opt) {
   try {
     let duraklar = [[basBoylam, basEnlem], [bitisBoylam, bitisEnlem]]
@@ -182,14 +194,20 @@ async function gercekRotaCiz(basEnlem, basBoylam, bitisEnlem, bitisBoylam, opt) 
 }
 
 async function kuryeYeniGoreveHazirla(kurye) {
-  const [basHub, hedefHub] = rastgeleHubCifti()
+  // Demo gününde kurye kümelenmesini azaltmak için atamayı dağıtarak yap.
+  const startIndex = (kurye.id + demoAtamaSayaci) % GLOBAL_HUBS.length
+  const endIndex = (startIndex + 3 + (demoAtamaSayaci % (GLOBAL_HUBS.length - 1))) % GLOBAL_HUBS.length
+  const basHub = GLOBAL_HUBS[startIndex]
+  const hedefHub = GLOBAL_HUBS[endIndex === startIndex ? (endIndex + 1) % GLOBAL_HUBS.length : endIndex]
+  demoAtamaSayaci++
   const bas = hubJitter(basHub)
   const hedef = hubJitter(hedefHub)
   kurye.enlem = bas.enlem
   kurye.boylam = bas.boylam
   kurye.hedefEnlem = hedef.enlem
   kurye.hedefBoylam = hedef.boylam
-  kurye.rota = await gercekRotaCiz(bas.enlem, bas.boylam, hedef.enlem, hedef.boylam, false)
+  // Teslim sonrası yeni göreve geçişte dış API beklemeden anında rota üret.
+  kurye.rota = basitRotaOlustur(bas.enlem, bas.boylam, hedef.enlem, hedef.boylam)
   kurye.hedefSira = 1
   kurye.durum = 'yolda'
   kurye.hiz = 0
@@ -392,10 +410,10 @@ io.on('connection', socket => {
 // ════════════════════════════════════════════════════════════
 let donguSayac = 0
 
-setInterval(() => {
+setInterval(async () => {
   donguSayac++
-  kuryeler.forEach(k => {
-    if (!k.online) return
+  for (const k of kuryeler) {
+    if (!k.online) continue
     if (k.rota && k.hedefSira < k.rota.length) {
       const [hEn, hBo] = k.rota[k.hedefSira]
       const dEn = hEn - k.enlem, dBo = hBo - k.boylam
@@ -419,14 +437,14 @@ setInterval(() => {
       io.emit('teslimatBildirimi', { isim: k.isim, zaman: log.zaman })
       io.emit('siparisFisiGuncelle', siparisFisi)
       io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
-      kuryeYeniGoreveHazirla(k)
-        .then(() => {
-          io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
-          io.emit('kuryeleriGuncelle', kuryeler)
-        })
-        .catch((err) => console.error('[DEMO_RECYCLE]', err.message))
+      try {
+        await kuryeYeniGoreveHazirla(k)
+        io.to(`kurye_${k.id}`).emit('tekKuryeGuncelle', k)
+      } catch (err) {
+        console.error('[DEMO_RECYCLE]', err.message)
+      }
     }
-  })
+  }
   io.emit('kuryeleriGuncelle', kuryeler)
 }, 1500)
 
