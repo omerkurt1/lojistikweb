@@ -141,7 +141,7 @@ const PARTNER_EN = {
 
 const COPY = {
   tr: {
-    back: "← Dashboard'a Dön",
+    back: '← Anasayfaya dön',
     badge: 'B2B Lojistik Ekosistemi',
     titleSuffix: 'Ağı',
     subtitle: "Türkiye'nin ve dünyanın önde gelen lojistik operatörleriyle tek API üzerinden entegre olun. Kara, hava, deniz ve soğuk zincir çözümlerini LOOP platformundan yönetin.",
@@ -167,7 +167,7 @@ const COPY = {
     sent: 'Talep Gönderildi'
   },
   en: {
-    back: '← Back to Dashboard',
+    back: '← Return to homepage',
     badge: 'B2B Logistics Ecosystem',
     titleSuffix: 'Network',
     subtitle: 'Integrate with top logistics operators in Turkey and worldwide through one API. Manage road, air, maritime and cold-chain solutions from LOOP.',
@@ -354,7 +354,7 @@ export default function PartnerNetwork() {
 
       {/* ── Header ── */}
       <div style={{ ...headerStyle, ...(isMobile ? { padding: '24px 16px 20px' } : {}) }}>
-        <button style={geriBtn} onClick={() => navigate(-1)}>{c.back}</button>
+        <button style={geriBtn} onClick={() => navigate('/')}>{c.back}</button>
         <div style={headerIcStyle}>
           <div style={headerBadgeStyle}>{c.badge}</div>
           <h1 style={headerBaslikStyle}>Partner <span style={{ color: '#2f6f62' }}>{c.titleSuffix}</span></h1>
