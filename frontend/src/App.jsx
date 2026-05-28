@@ -12,7 +12,8 @@ import Login          from './pages/Login'
 import Takip          from './pages/Takip'
 import PartnerNetwork from './pages/PartnerNetwork'
 import ProfilePage    from './pages/ProfilePage'
-import Vitrin         from './pages/Vitrin'
+
+const VITRIN_HOMEPAGE = 'https://lojistikweb-vitrin.vercel.app/'
 
 // ─── DIRECTIVE 4: ScrollToTop ────────────────────────────────────────────────
 // Forces window.scrollTo(0,0) on every route change so users always see the top.
@@ -73,6 +74,18 @@ function PublicLayout({ children }) {
   )
 }
 
+function ExternalHomepageRedirect() {
+  useEffect(() => {
+    window.location.replace(VITRIN_HOMEPAGE)
+  }, [])
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#060c1a', color: '#e8f0ff', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
+      Redirecting to LOOP homepage...
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <SettingsProvider>
@@ -80,8 +93,8 @@ export default function App() {
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
-            {/* Public Vitrin landing page — "/" */}
-            <Route path="/"      element={<PublicLayout><Vitrin /></PublicLayout>} />
+            {/* The only homepage lives on the standalone Vitrin deployment. */}
+            <Route path="/"      element={<ExternalHomepageRedirect />} />
 
             {/* Full-screen — own header, no shared Navbar */}
             {/* DIRECTIVE 2: Dashboard is admin-only, now at /dashboard */}
