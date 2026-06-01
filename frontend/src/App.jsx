@@ -11,6 +11,7 @@ import Dashboard      from './Dashboard'
 import Takip          from './pages/Takip'
 import PartnerNetwork from './pages/PartnerNetwork'
 import ProfilePage    from './pages/ProfilePage'
+import Odeme          from './pages/Odeme'
 
 const VITRIN_HOMEPAGE = 'https://lojistikweb-vitrin.vercel.app/'
 const VITRIN_LOGIN = 'https://lojistikweb-vitrin.vercel.app/#giris'
@@ -62,6 +63,23 @@ function ProtectedRoute({ children }) {
   return children
 }
 
+function AuthenticatedRoute({ children }) {
+  const { kullanici, yukleniyor } = useAuth()
+  const { language } = useSettings()
+
+  if (yukleniyor) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0b1120', color: '#6a7fa8', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
+        {language === 'en' ? 'Verifying...' : 'Doğrulanıyor...'}
+      </div>
+    )
+  }
+
+  if (!kullanici) return <ExternalRedirect to={VITRIN_LOGIN} message="Redirecting to LOOP sign in..." />
+
+  return children
+}
+
 // ─── PublicLayout ─────────────────────────────────────────────────────────────
 // Renders the shared Navbar above every public-facing page.
 // Dashboard and Takip are full-screen experiences — they handle their own headers.
@@ -109,9 +127,9 @@ export default function App() {
             <Route path="/giris"      element={<ExternalRedirect to={VITRIN_LOGIN} message="Redirecting to LOOP sign in..." />} />
             <Route path="/partnerler" element={<PublicLayout><PartnerNetwork /></PublicLayout>} />
             <Route path="/profil"     element={<PublicLayout><ProfilePage /></PublicLayout>} />
+            <Route path="/odeme"      element={<PublicLayout><AuthenticatedRoute><Odeme /></AuthenticatedRoute></PublicLayout>} />
 
             {/* Redirects */}
-            <Route path="/odeme" element={<Navigate to="/partnerler" replace />} />
             <Route path="*"      element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>

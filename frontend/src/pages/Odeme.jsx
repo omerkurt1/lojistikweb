@@ -4,11 +4,98 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../config/api'
+import { useSettings } from '../context/SettingsContext'
 
 const ACCENT_PRIMARY = '#2F6F73'
 const ACCENT_SECONDARY = '#4B8A8F'
 const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
 const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
+
+const COPY = {
+  tr: {
+    back: 'Geri',
+    summary: 'Sipariş Özeti',
+    service: 'Hizmet',
+    serviceValue: 'LOOP Express Teslimat',
+    eta: 'Teslimat Süresi',
+    liveTracking: 'Kurye Takibi',
+    liveTrackingValue: 'Canlı Takip',
+    total: 'Toplam',
+    secureA: 'SSL Şifreleme',
+    secureB: 'Güvenli Ödeme',
+    secureC: 'İade Garantisi',
+    shipmentDetails: 'Teslimat Bilgileri',
+    pickup: 'Alış Adresi',
+    delivery: 'Teslim Adresi',
+    distance: 'Mesafe (km)',
+    note: 'Müşteri Notu',
+    notePlaceholder: 'Kurye için kısa not',
+    cardName: 'Kart Üzerindeki İsim',
+    cardNumber: 'Kart Numarası',
+    expiry: 'Son Kullanma (AA/YY)',
+    payProcessing: 'Ödeme İşleniyor...',
+    payButton: 'Öde ve Siparişi Tamamla',
+    successTitle: 'Siparişiniz Alındı!',
+    successText: 'Ödemeniz başarıyla işlendi. Takip ekranına yönlendiriliyorsunuz...',
+    cardNumberError: 'Kart numarası 16 haneli olmalıdır.',
+    expiryError: 'SKT formatı: AA/YY',
+    cvvError: 'CVV 3-4 haneli olmalıdır.',
+    addressError: 'Alış ve teslim adresleri zorunludur.',
+    distanceError: 'Mesafe 0 km üzerinde olmalıdır.',
+    testNote: 'Test kartı',
+  },
+  en: {
+    back: 'Back',
+    summary: 'Order Summary',
+    service: 'Service',
+    serviceValue: 'LOOP Express Delivery',
+    eta: 'Delivery Time',
+    liveTracking: 'Courier Tracking',
+    liveTrackingValue: 'Live Tracking',
+    total: 'Total',
+    secureA: 'SSL Encryption',
+    secureB: 'Secure Payment',
+    secureC: 'Refund Guarantee',
+    shipmentDetails: 'Delivery Details',
+    pickup: 'Pickup Address',
+    delivery: 'Delivery Address',
+    distance: 'Distance (km)',
+    note: 'Customer Note',
+    notePlaceholder: 'Short note for the courier',
+    cardName: 'Name on Card',
+    cardNumber: 'Card Number',
+    expiry: 'Expiry (MM/YY)',
+    payProcessing: 'Processing Payment...',
+    payButton: 'Pay and Complete Order',
+    successTitle: 'Your Order Is Confirmed',
+    successText: 'Your payment was processed successfully. Redirecting to tracking...',
+    cardNumberError: 'Card number must be 16 digits.',
+    expiryError: 'Expiry format: MM/YY',
+    cvvError: 'CVV must be 3-4 digits.',
+    addressError: 'Pickup and delivery addresses are required.',
+    distanceError: 'Distance must be greater than 0 km.',
+    testNote: 'Test card',
+  },
+}
+
+const DEFAULT_ORDER = {
+  pickup_address: 'LOOP Istanbul Operations Hub',
+  pickup_latitude: 41.0082,
+  pickup_longitude: 28.9784,
+  delivery_address: 'Customer Delivery Point, Istanbul',
+  delivery_latitude: 41.0456,
+  delivery_longitude: 29.0334,
+  distance_km: 12.5,
+  customer_note: '',
+}
+
+function money(value, locale = 'tr-TR') {
+  return Number(value || 0).toLocaleString(locale, { style: 'currency', currency: 'TRY' })
+}
+
+function estimatePrice(distanceKm) {
+  return Math.max(49.99, Math.round(Number(distanceKm || 0) * 12 * 100) / 100)
+}
 
 // ── Mini konfeti ──────────────────────────────────────────
 function Konfeti({ aktif }) {
@@ -70,14 +157,20 @@ function maskeleKart(val) {
 
 export default function Odeme() {
   const { kullanici } = useAuth()
+  const { language } = useSettings()
   const navigate = useNavigate()
+  const c = COPY[language === 'en' ? 'en' : 'tr']
+  const locale = language === 'en' ? 'en-US' : 'tr-TR'
 
   const [form, setForm] = useState({ kartSahibi: kullanici?.isim || '', kartNo: '', skt: '', cvv: '' })
+  const [orderForm, setOrderForm] = useState(DEFAULT_ORDER)
+  const [createdOrder, setCreatedOrder] = useState(null)
   const [yukleniyor, setYuk] = useState(false)
   const [hata,       setHata]  = useState('')
   const [basarili,   setBasarili] = useState(false)
   const [konfeti,    setKonfeti]  = useState(false)
   const [onYuz,      setOnYuz]    = useState(true) // kart flip
+  const estimatedTotal = createdOrder?.price || estimatePrice(orderForm.distance_km)
 
   const guncelle = e => {
     let { name, value } = e.target
@@ -87,32 +180,80 @@ export default function Odeme() {
     setForm(p => ({ ...p, [name]: value }))
   }
 
+  const orderGuncelle = e => {
+    const { name, value } = e.target
+    setOrderForm(prev => ({
+      ...prev,
+      [name]: name === 'distance_km' ? value.replace(',', '.') : value,
+    }))
+  }
+
+  async function ensureOrder() {
+    const params = new URLSearchParams(window.location.search)
+    const existingOrderId = Number(params.get('order_id') || 0)
+    if (existingOrderId) {
+      return {
+        id: existingOrderId,
+        tracking_code: params.get('tracking_code') || `LOOP-${existingOrderId}`,
+        price: Number(params.get('amount') || estimatedTotal),
+      }
+    }
+
+    if (!orderForm.pickup_address.trim() || !orderForm.delivery_address.trim()) {
+      throw new Error(c.addressError)
+    }
+    if (!(Number(orderForm.distance_km) > 0)) {
+      throw new Error(c.distanceError)
+    }
+
+    const payload = {
+      pickup_address: orderForm.pickup_address.trim(),
+      pickup_latitude: Number(orderForm.pickup_latitude),
+      pickup_longitude: Number(orderForm.pickup_longitude),
+      delivery_address: orderForm.delivery_address.trim(),
+      delivery_latitude: Number(orderForm.delivery_latitude),
+      delivery_longitude: Number(orderForm.delivery_longitude),
+      distance_km: Number(orderForm.distance_km),
+      customer_note: orderForm.customer_note?.trim() || null,
+      supplier_code: 'LOOP-WEB',
+    }
+    const order = await apiFetch('/orders/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    setCreatedOrder(order)
+    return order
+  }
+
   const gonder = async e => {
     e.preventDefault()
     setHata('')
     const kartSayisal = form.kartNo.replace(/\s/g,'')
-    if (kartSayisal.length < 16) return setHata('Kart numarası 16 haneli olmalıdır.')
-    if (!form.skt.includes('/'))  return setHata('SKT formatı: AA/YY')
-    if (form.cvv.length < 3)      return setHata('CVV 3-4 haneli olmalıdır.')
+    if (kartSayisal.length < 16) return setHata(c.cardNumberError)
+    if (!form.skt.includes('/'))  return setHata(c.expiryError)
+    if (form.cvv.length < 3)      return setHata(c.cvvError)
 
     setYuk(true)
     try {
-      const orderId = Number(new URLSearchParams(window.location.search).get('order_id') || 1)
+      const order = await ensureOrder()
+      const orderId = Number(order.id)
+      const amount = Number(order.price || estimatePrice(orderForm.distance_km))
       await apiFetch('/payments/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           order_id: orderId,
-          amount: 49.99,
+          amount,
           currency: 'TRY',
           payment_method_id: `card_${kartSayisal.slice(-4)}`,
         })
       })
 
-      // Başarı!
+      const trackingCode = order.tracking_code || `LOOP-${orderId}`
       setBasarili(true)
       setKonfeti(true)
-      setTimeout(() => navigate('/takip?id=1'), 4000)
+      setTimeout(() => navigate(`/takip?code=${encodeURIComponent(trackingCode)}&auto=1`), 4000)
     } catch (err) {
       setHata(err.message)
     } finally {
@@ -127,8 +268,8 @@ export default function Odeme() {
         <Konfeti aktif={konfeti} />
         <div style={styles.basariSayfa}>
           <div style={styles.basariKart}>
-            <h2 style={styles.basariBaslik}>Siparişiniz Alındı!</h2>
-            <p style={styles.basariAlt}>Ödemeniz başarıyla işlendi. Takip ekranına yönlendiriliyorsunuz...</p>
+            <h2 style={styles.basariBaslik}>{c.successTitle}</h2>
+            <p style={styles.basariAlt}>{c.successText}</p>
             <div style={styles.basariLoader}>
               <div style={styles.loaderCizgi} />
             </div>
@@ -144,32 +285,44 @@ export default function Odeme() {
 
         {/* Sol: Sipariş özeti */}
         <div style={styles.siparisSarici}>
-          <button style={styles.geriBtn} onClick={() => navigate(-1)}>← Geri</button>
-          <h2 style={styles.solBaslik}>Sipariş Özeti</h2>
+          <button style={styles.geriBtn} onClick={() => navigate(-1)}>← {c.back}</button>
+          <h2 style={styles.solBaslik}>{c.summary}</h2>
 
           <div style={styles.siparisKart}>
             <div style={styles.siparisRow}>
-              <span style={styles.siparisEtiket}>Hizmet</span>
-              <span style={styles.siparisValue}>LOOP Express Teslimat</span>
+              <span style={styles.siparisEtiket}>{c.service}</span>
+              <span style={styles.siparisValue}>{c.serviceValue}</span>
             </div>
             <div style={styles.siparisRow}>
-              <span style={styles.siparisEtiket}>Teslimat Süresi</span>
+              <span style={styles.siparisEtiket}>{c.eta}</span>
               <span style={styles.siparisValue}>~30 dk</span>
             </div>
             <div style={styles.siparisRow}>
-              <span style={styles.siparisEtiket}>Kurye Takibi</span>
-              <span style={{ ...styles.siparisValue, color: '#00c853', fontWeight: 700 }}>✓ Canlı Takip</span>
+              <span style={styles.siparisEtiket}>{c.liveTracking}</span>
+              <span style={{ ...styles.siparisValue, color: ACCENT_PRIMARY, fontWeight: 700 }}>✓ {c.liveTrackingValue}</span>
             </div>
             <div style={styles.ayirac} />
             <div style={{ ...styles.siparisRow, marginTop: 8 }}>
-              <span style={{ ...styles.siparisEtiket, fontWeight: 700, color: '#0a1628', fontSize: 15 }}>Toplam</span>
-              <span style={{ fontSize: 22, fontWeight: 800, color: ACCENT_PRIMARY }}>₺49,99</span>
+              <span style={{ ...styles.siparisEtiket, fontWeight: 700, color: '#0a1628', fontSize: 15 }}>{c.total}</span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: ACCENT_PRIMARY }}>{money(estimatedTotal, locale)}</span>
             </div>
+          </div>
+
+          <div style={styles.siparisKart}>
+            <h3 style={styles.detayBaslik}>{c.shipmentDetails}</h3>
+            <label style={styles.fEtiket}>{c.pickup}</label>
+            <input name="pickup_address" value={orderForm.pickup_address} onChange={orderGuncelle} style={styles.fInput} />
+            <label style={styles.fEtiket}>{c.delivery}</label>
+            <input name="delivery_address" value={orderForm.delivery_address} onChange={orderGuncelle} style={styles.fInput} />
+            <label style={styles.fEtiket}>{c.distance}</label>
+            <input name="distance_km" value={orderForm.distance_km} onChange={orderGuncelle} inputMode="decimal" style={styles.fInput} />
+            <label style={styles.fEtiket}>{c.note}</label>
+            <textarea name="customer_note" value={orderForm.customer_note} onChange={orderGuncelle} placeholder={c.notePlaceholder} style={{ ...styles.fInput, minHeight: 74, resize: 'vertical' }} />
           </div>
 
           {/* Güvenlik rozetleri */}
           <div style={styles.guvenlikSatir}>
-            {['SSL Şifreleme', 'Güvenli Ödeme', 'İade Garantisi'].map(g => (
+            {[c.secureA, c.secureB, c.secureC].map(g => (
               <span key={g} style={styles.guvenlikBadge}>{g}</span>
             ))}
           </div>
@@ -227,14 +380,14 @@ export default function Odeme() {
           {/* Form */}
           <form onSubmit={gonder} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={styles.fGrup}>
-              <label style={styles.fEtiket}>Kart Üzerindeki İsim</label>
+              <label style={styles.fEtiket}>{c.cardName}</label>
               <input name="kartSahibi" value={form.kartSahibi} onChange={guncelle}
                 placeholder="AHMET YILMAZ" required style={styles.fInput}
                 onFocus={() => setOnYuz(true)}/>
             </div>
 
             <div style={styles.fGrup}>
-              <label style={styles.fEtiket}>Kart Numarası</label>
+              <label style={styles.fEtiket}>{c.cardNumber}</label>
               <div style={styles.kartNoSarici}>
                 <input name="kartNo" value={form.kartNo} onChange={guncelle}
                   placeholder="0000 0000 0000 0000" required maxLength={19}
@@ -246,7 +399,7 @@ export default function Odeme() {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               <div style={styles.fGrup}>
-                <label style={styles.fEtiket}>Son Kullanma (AA/YY)</label>
+                <label style={styles.fEtiket}>{c.expiry}</label>
                 <input name="skt" value={form.skt} onChange={guncelle}
                   placeholder="12/26" required maxLength={5}
                   style={styles.fInput} onFocus={() => setOnYuz(true)} />
@@ -267,12 +420,12 @@ export default function Odeme() {
               cursor: yukleniyor ? 'not-allowed' : 'pointer',
             }}>
               {yukleniyor
-                ? <><span style={styles.btnSpinner} /> Ödeme İşleniyor...</>
-                : '₺49,99 Öde ve Siparişi Tamamla'}
+                ? <><span style={styles.btnSpinner} /> {c.payProcessing}</>
+                : `${money(estimatedTotal, locale)} ${c.payButton}`}
             </button>
 
             <p style={styles.testNotu}>
-              Test: <code>4242 4242 4242 4242</code> · SKT: herhangi · CVV: herhangi
+              {c.testNote}: <code>4242 4242 4242 4242</code>
             </p>
           </form>
         </div>
@@ -299,6 +452,7 @@ const styles = {
   siparisRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 12 },
   siparisEtiket: { fontSize: 13, color: '#8a9abc' },
   siparisValue: { fontSize: 14, fontWeight: 600, color: '#0a1628' },
+  detayBaslik: { margin: '0 0 14px', fontSize: 16, fontWeight: 800, color: '#0a1628' },
   ayirac: { height: 1, background: '#e8ecf8', margin: '4px 0 8px' },
   guvenlikSatir: { display: 'flex', gap: 8, flexWrap: 'wrap' },
   guvenlikBadge: { background: '#fff', border: '1px solid #e8ecf8', borderRadius: 20, padding: '5px 12px', fontSize: 11, fontWeight: 600, color: '#6b7fa8' },

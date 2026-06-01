@@ -252,6 +252,7 @@ export default function MusteriTakip() {
   const [baglanti, setBaglanti] = useState(false)
   const [haritaHedef, setHaritaHedef] = useState(null)
   const [panelOpen, setPanelOpen] = useState(false)
+  const [autoTrackPending, setAutoTrackPending] = useState(false)
 
   const saat = useCanliSaat(language)
 
@@ -268,10 +269,10 @@ export default function MusteriTakip() {
   // URL'den takip numarasını al (eğer varsa)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const id = params.get('id')
-    if (id) {
-      setTakipNo(id.toUpperCase().replace('LOOP-', ''))
-      // Otomatik sorgulama yapma — kullanıcı butona bassın
+    const code = params.get('code') || params.get('tracking_code') || params.get('id')
+    if (code) {
+      setTakipNo(code.toUpperCase().replace('LOOP-', ''))
+      setAutoTrackPending(params.get('auto') === '1')
     }
   }, [])
 
@@ -323,6 +324,12 @@ export default function MusteriTakip() {
       setYukleniyor(false)
     }
   }, [takipNo, c])
+
+  useEffect(() => {
+    if (!autoTrackPending || !takipNo.trim()) return
+    setAutoTrackPending(false)
+    siparisAra()
+  }, [autoTrackPending, takipNo, siparisAra])
 
   // ── Enter tuşu ──
   const handleKeyDown = (e) => {
