@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSettings } from './context/SettingsContext'
 import { apiFetch } from './config/api'
 
@@ -12,6 +12,12 @@ const I18N = {
     loading: 'Veriler yükleniyor...',
     backendSleep: "Backend'e ulaşılamıyor. Render servisi uyku modunda olabilir, 30sn bekleyip yenile.",
     retry: 'Tekrar Dene',
+    partialData: 'Veri kısmen yüklendi.',
+    connected: 'bağlı',
+    degraded: 'kısmi',
+    dbStatus: 'DB',
+    lastUpdated: 'Son güncelleme',
+    refreshing: 'Yenileniyor...',
     title: 'Raporlar ve İstatistikler',
     refresh: 'Yenile',
     summaryTotal: 'Toplam Teslimat',
@@ -48,6 +54,12 @@ const I18N = {
     loading: 'Loading data...',
     backendSleep: 'Unable to reach backend. Render service may be sleeping, wait 30s and retry.',
     retry: 'Retry',
+    partialData: 'Partial data loaded.',
+    connected: 'connected',
+    degraded: 'partial',
+    dbStatus: 'DB',
+    lastUpdated: 'Last updated',
+    refreshing: 'Refreshing...',
     title: 'Reports & Statistics',
     refresh: 'Refresh',
     summaryTotal: 'Total Deliveries',
@@ -263,7 +275,7 @@ function buildReportData(stats, couriers, orders, language) {
       yoldakiSiparis: stats.active_orders || 0,
       genelOrtalamaSure: 5,
       aktifKurye: stats.online_couriers || 0,
-      dbDurumu: 'bağlı',
+      dbDurumu: 'connected',
     },
     haftalik: groupOrdersByDay(orders),
     gunluk: {
@@ -275,6 +287,27 @@ function buildReportData(stats, couriers, orders, language) {
   }
 }
 
+function reportErrorMessage(err, language = 'tr') {
+  const raw = String(err?.message || '').trim()
+  const lower = raw.toLowerCase()
+  if (lower.includes('401') || lower.includes('unauthorized') || lower.includes('not authenticated')) {
+    return language === 'en'
+      ? 'Admin session expired. Please sign in from the homepage again.'
+      : 'Yönetici oturumu sona erdi. Lütfen anasayfadaki giriş panelinden tekrar giriş yapın.'
+  }
+  if (lower.includes('500') || lower.includes('internal server')) {
+    return language === 'en'
+      ? 'Backend returned an internal error for one report source.'
+      : 'Backend rapor kaynaklarından biri için iç hata döndürdü.'
+  }
+  if (lower.includes('failed to fetch') || lower.includes('network')) {
+    return language === 'en'
+      ? 'Backend is unreachable right now. Check the API service and try again.'
+      : 'Backend şu anda erişilemiyor. API servisini kontrol edip tekrar deneyin.'
+  }
+  return raw || (language === 'en' ? 'Report data could not be loaded.' : 'Rapor verisi yüklenemedi.')
+}
+
 // ═══════════════════════════════════════════════════════════
 //  ANA PANEL
 // ═══════════════════════════════════════════════════════════
@@ -283,38 +316,65 @@ export default function IstatistikPaneli() {
   const c = I18N[language === 'en' ? 'en' : 'tr']
   const locale = language === 'en' ? 'en-US' : 'tr-TR'
   const [yukleniyor,  setYukleniyor] = useState(true)
+  const [yenileniyor, setYenileniyor] = useState(false)
   const [hata,        setHata]       = useState(null)
+  const [uyari,       setUyari]      = useState(null)
   const [genel,       setGenel]      = useState(null)
   const [haftalik,    setHaftalik]   = useState([])
   const [gunluk,      setGunluk]     = useState(null)
   const [profiller,   setProfiller]  = useState([])
   const [teslimatlar, setTeslimatlar]= useState([])
+  const [sonGuncelleme, setSonGuncelleme] = useState(null)
   const [secilenId,   setSecilenId]  = useState(null)
   const [detay,       setDetay]      = useState(null)
   const [detayYuk,    setDetayYuk]   = useState(false)
+  const hasReportDataRef = useRef(false)
 
-  // Tek bir fetch ile tüm verileri çek
+  // Report data is intentionally partial-safe: one failing backend source should
+  // not blank the whole admin report when the statistics endpoint is still alive.
   const verileriCek = useCallback(async () => {
-    setYukleniyor(true)
+    const hasExistingData = hasReportDataRef.current
+    if (hasExistingData) setYenileniyor(true)
+    else setYukleniyor(true)
     setHata(null)
     try {
-      const [stats, couriers, orders] = await Promise.all([
+      const [statsResult, couriersResult, ordersResult] = await Promise.allSettled([
         apiFetch('/admin/statistics'),
         apiFetch('/admin/couriers'),
         apiFetch('/admin/orders'),
       ])
-      const mapped = buildReportData(stats, Array.isArray(couriers) ? couriers : [], Array.isArray(orders) ? orders : [], language)
+
+      const failures = [statsResult, couriersResult, ordersResult]
+        .filter(result => result.status === 'rejected')
+        .map(result => reportErrorMessage(result.reason, language))
+      const loadedAnything = [statsResult, couriersResult, ordersResult].some(result => result.status === 'fulfilled')
+
+      if (!loadedAnything) {
+        throw new Error(failures[0] || c.backendSleep)
+      }
+
+      const stats = statsResult.status === 'fulfilled' ? statsResult.value : {}
+      const couriers = couriersResult.status === 'fulfilled' && Array.isArray(couriersResult.value) ? couriersResult.value : []
+      const orders = ordersResult.status === 'fulfilled' && Array.isArray(ordersResult.value) ? ordersResult.value : []
+      const mapped = buildReportData(stats, couriers, orders, language)
+
       setGenel(mapped.genel)
       setHaftalik(mapped.haftalik)
       setGunluk(mapped.gunluk)
       setProfiller(mapped.profiller)
       setTeslimatlar(mapped.teslimatlar)
+      setSonGuncelleme(new Date())
+      hasReportDataRef.current = true
+      setUyari(failures.length ? `${c.partialData} ${failures[0]}` : null)
     } catch (err) {
-      setHata(err.message || c.backendSleep)
+      const message = reportErrorMessage(err, language) || c.backendSleep
+      if (hasExistingData) setUyari(message)
+      else setHata(message)
     } finally {
       setYukleniyor(false)
+      setYenileniyor(false)
     }
-  }, [c.backendSleep, language])
+  }, [c.backendSleep, c.partialData, language])
 
   useEffect(() => {
     verileriCek()
@@ -363,16 +423,37 @@ export default function IstatistikPaneli() {
           {genel?.dbDurumu && (
             <span style={{
               fontSize: 11, padding: '2px 8px', borderRadius: 12,
-              background: genel.dbDurumu === 'bağlı' ? '#d4edda' : '#f8d7da',
-              color:      genel.dbDurumu === 'bağlı' ? '#155724' : '#721c24',
+              background: uyari ? '#fff3cd' : '#d4edda',
+              color:      uyari ? '#856404' : '#155724',
               fontWeight: 600
             }}>
-              DB: {genel.dbDurumu}
+              {c.dbStatus}: {uyari ? c.degraded : c.connected}
             </span>
           )}
-          <button className="btn btn-kucuk btn-mavi" onClick={verileriCek}>↻ {c.refresh}</button>
+          {sonGuncelleme && (
+            <span style={{ fontSize: 11, color: 'var(--metin-2)', fontWeight: 600 }}>
+              {c.lastUpdated}: {sonGuncelleme.toLocaleTimeString(locale)}
+            </span>
+          )}
+          <button className="btn btn-kucuk btn-mavi" disabled={yenileniyor} onClick={verileriCek}>
+            ↻ {yenileniyor ? c.refreshing : c.refresh}
+          </button>
         </div>
       </div>
+
+      {uyari && (
+        <div style={{
+          background: 'rgba(245, 158, 11, 0.12)',
+          border: '1px solid rgba(245, 158, 11, 0.35)',
+          color: 'var(--metin)',
+          borderRadius: 10,
+          padding: '10px 12px',
+          fontSize: 12,
+          lineHeight: 1.45,
+        }}>
+          {uyari}
+        </div>
+      )}
 
       {/* ── ÖZET KARTLAR ── */}
       {genel && (
