@@ -275,13 +275,50 @@ function minutesForOrder(order) {
   return Math.max(5, Math.round(dist * 900))
 }
 
-function mapRealtimeToCouriers(mapData, couriers = []) {
+function vehicleLabel(vehicleType = '', lang = 'tr') {
+  const type = String(vehicleType || '').toLowerCase()
+  if (type.includes('motor')) return lang === 'en' ? 'Motorcycle Courier' : 'Motorlu Kurye'
+  if (type.includes('bike') || type.includes('bicycle')) return lang === 'en' ? 'Bike Courier' : 'Bisikletli Kurye'
+  if (type.includes('van')) return lang === 'en' ? 'Van Courier' : 'Panelvan Kurye'
+  if (type.includes('truck')) return lang === 'en' ? 'Truck Courier' : 'Kamyonet Kurye'
+  return lang === 'en' ? 'Courier' : 'Kurye'
+}
+
+function formatLastUpdated(date, lang = 'tr') {
+  if (!date) return lang === 'en' ? 'Not loaded yet' : 'Henüz yüklenmedi'
+  return date.toLocaleTimeString(lang === 'en' ? 'en-US' : 'tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+function dashboardErrorMessage(err, lang = 'tr') {
+  const raw = String(err?.message || '').trim()
+  const lower = raw.toLowerCase()
+  if (lower.includes('401') || lower.includes('unauthorized') || lower.includes('not authenticated')) {
+    return lang === 'en'
+      ? 'Admin session expired. Please sign in from the homepage again.'
+      : 'Yönetici oturumu sona erdi. Lütfen anasayfadaki giriş panelinden tekrar giriş yapın.'
+  }
+  if (lower.includes('500') || lower.includes('internal server')) {
+    return lang === 'en'
+      ? 'Backend returned an internal error. Existing fleet data is kept on screen.'
+      : 'Backend iç hata döndürdü. Mevcut filo verisi ekranda korunuyor.'
+  }
+  if (lower.includes('failed to fetch') || lower.includes('network')) {
+    return lang === 'en'
+      ? 'Backend is unreachable right now. Check the API service and try again.'
+      : 'Backend şu anda erişilemiyor. API servisini kontrol edip tekrar deneyin.'
+  }
+  return raw || (lang === 'en' ? 'Backend data could not be loaded.' : 'Backend verisi yüklenemedi.')
+}
+
+function mapRealtimeToCouriers(mapData, couriers = [], lang = 'tr') {
   const activeOrders = Array.isArray(mapData?.active_orders) ? mapData.active_orders : []
   const statsByCourier = new Map((couriers || []).map(c => [c.id, c]))
 
   return (mapData?.courier_locations || []).map((loc, index) => {
     const order = activeOrders.find(o => o.courier_id === loc.courier_id)
     const stats = statsByCourier.get(loc.courier_id) || {}
+    const vehicleType = loc.vehicle_type || stats.vehicle_type
+    const courierLabel = vehicleLabel(vehicleType, lang)
     const delivery = order?.delivery
     const pickup = order?.pickup
     const route = pickup && delivery
@@ -290,13 +327,13 @@ function mapRealtimeToCouriers(mapData, couriers = []) {
 
     return {
       id: loc.courier_id,
-      isim: `Kurye ${loc.courier_id}`,
+      isim: stats.full_name || stats.name || loc.courier_name || `${courierLabel} #${loc.courier_id}`,
       enlem: loc.latitude,
       boylam: loc.longitude,
       hedefEnlem: delivery?.latitude || loc.latitude,
       hedefBoylam: delivery?.longitude || loc.longitude,
       durum: normalizeDashboardStatus(order?.status),
-      hiz: loc.vehicle_type === 'motorcycle' ? 45 : 38,
+      hiz: vehicleType === 'motorcycle' ? 45 : 38,
       online: stats.is_online ?? true,
       eta: minutesForOrder(order),
       rota: route,
@@ -306,6 +343,7 @@ function mapRealtimeToCouriers(mapData, couriers = []) {
       rating: loc.rating,
       activeOrders: stats.active_orders,
       totalDeliveries: stats.total_deliveries,
+      vehicleType,
     }
   })
 }
@@ -364,6 +402,10 @@ export default function Uygulama() {
   const [siparisFisi,  setFis]      = useState([])
   const [dbGenel,      setDbGenel]  = useState(null)
   const [bildirimler,  setBildirim] = useState([])
+  const [dashboardLoading, setDashboardLoading] = useState(true)
+  const [dashboardRefreshing, setDashboardRefreshing] = useState(false)
+  const [dashboardError, setDashboardError] = useState('')
+  const [lastUpdated, setLastUpdated] = useState(null)
 
   // Theme + Language — from global SettingsContext
   const { isDark: dark, toggleTheme, language: lang, t: tx } = useSettings()
@@ -402,44 +444,88 @@ export default function Uygulama() {
     setTimeout(() => setBildirim(prev => prev.filter(b => b.id !== id)), 5000)
   }, [])
 
-  // ── Backend stats ──
-  useEffect(() => {
-    const cek = async () => {
-      try {
-        const [stats, couriers, mapData, orders] = await Promise.all([
+  const loadDashboardData = useCallback(async ({ quiet = false, mapOnly = false } = {}) => {
+    if (!quiet) setDashboardRefreshing(true)
+    try {
+      if (mapOnly) {
+        const [mapData, couriers] = await Promise.all([
+          apiFetch('/admin/realtime-map'),
+          apiFetch('/admin/couriers'),
+        ])
+        setKuryeler(mapRealtimeToCouriers(mapData, couriers, lang))
+        setDashboardError('')
+      } else {
+        const [statsResult, couriersResult, mapResult, ordersResult] = await Promise.allSettled([
           apiFetch('/admin/statistics'),
           apiFetch('/admin/couriers'),
           apiFetch('/admin/realtime-map'),
           apiFetch('/admin/orders'),
         ])
-        setDbGenel(stats)
-        setKuryeler(mapRealtimeToCouriers(mapData, couriers))
-        setFis(Array.isArray(orders) ? orders.slice(0, 30) : [])
-      } catch (err) {
-        bildirimEkle(lang === 'en' ? `Backend data could not be loaded: ${err.message}` : `Backend verisi yüklenemedi: ${err.message}`, 'uyari')
+
+        const failures = [statsResult, couriersResult, mapResult, ordersResult]
+          .filter(result => result.status === 'rejected')
+          .map(result => dashboardErrorMessage(result.reason, lang))
+        let loadedAnything = false
+
+        if (statsResult.status === 'fulfilled') {
+          setDbGenel(statsResult.value)
+          loadedAnything = true
+        }
+
+        if (ordersResult.status === 'fulfilled') {
+          setFis(Array.isArray(ordersResult.value) ? ordersResult.value.slice(0, 30) : [])
+          loadedAnything = true
+        }
+
+        if (mapResult.status === 'fulfilled' && couriersResult.status === 'fulfilled') {
+          setKuryeler(mapRealtimeToCouriers(mapResult.value, couriersResult.value, lang))
+          loadedAnything = true
+        }
+
+        if (!loadedAnything) {
+          throw new Error(failures[0] || (lang === 'en' ? 'Backend data could not be loaded.' : 'Backend verisi yüklenemedi.'))
+        }
+
+        if (failures.length > 0) {
+          const partialMessage = lang === 'en'
+            ? `Partial backend data loaded. ${failures[0]}`
+            : `Backend verisi kısmen yüklendi. ${failures[0]}`
+          setDashboardError(partialMessage)
+          if (!quiet) bildirimEkle(partialMessage, 'uyari')
+        } else {
+          setDashboardError('')
+        }
       }
+      setLastUpdated(new Date())
+    } catch (err) {
+      const message = dashboardErrorMessage(err, lang)
+      setDashboardError(message)
+      if (!quiet) bildirimEkle(message, 'uyari')
+    } finally {
+      setDashboardLoading(false)
+      if (!quiet) setDashboardRefreshing(false)
     }
-    cek(); const i = setInterval(cek, 30000); return () => clearInterval(i)
   }, [bildirimEkle, lang])
+
+  // ── Backend stats ──
+  useEffect(() => {
+    setDashboardLoading(true)
+    loadDashboardData({ quiet: true })
+    const i = setInterval(() => loadDashboardData({ quiet: true }), 30000)
+    return () => clearInterval(i)
+  }, [loadDashboardData])
 
   // ── Realtime map polling replaces the legacy Socket.IO-only data source ──
   useEffect(() => {
-    const cek = async () => {
-      try {
-        const [mapData, couriers] = await Promise.all([
-          apiFetch('/admin/realtime-map'),
-          apiFetch('/admin/couriers'),
-        ])
-        setKuryeler(mapRealtimeToCouriers(mapData, couriers))
-      } catch {
-        // The statistics effect already surfaces backend availability to the user.
-      }
-    }
-    cek(); const i = setInterval(cek, 10000); return () => clearInterval(i)
-  }, [])
+    const i = setInterval(() => loadDashboardData({ quiet: true, mapOnly: true }), 10000)
+    return () => clearInterval(i)
+  }, [loadDashboardData])
 
   // ── Actions ──
-  const tumRotaYenile = () => { bildirimEkle(lang === 'en' ? 'Refreshing live backend routes...' : 'Canlı backend rotaları yenileniyor...', 'bilgi') }
+  const tumRotaYenile = () => {
+    bildirimEkle(lang === 'en' ? 'Refreshing live backend routes...' : 'Canlı backend rotaları yenileniyor...', 'bilgi')
+    loadDashboardData({ quiet: false })
+  }
   const tekRotaYenile = (k, e) => { e.stopPropagation(); bildirimEkle(lang === 'en' ? `Route data refreshed for ${k.isim}.` : `${k.isim} rota verisi yenilendi.`, 'bilgi') }
   const onlineDegistir = (k, e) => { e.stopPropagation(); bildirimEkle(lang === 'en' ? `${k.isim} status is managed by backend data.` : `${k.isim} durumu backend verisiyle yönetiliyor.`, 'uyari') }
   const kuryeyiSec = (k) => { setSecilenId(k.id); setZoomHedef({ ...k, _ts: Date.now() }) }
@@ -449,6 +535,12 @@ export default function Uygulama() {
   const yolda  = kuryeListesi.filter(k => !isDelivered(k.durum) && k.online).length
   const aktif  = kuryeListesi.filter(k => k.online).length
   const teslim = dbGenel?.total_orders ?? kuryeListesi.filter(k => isDelivered(k.durum)).length
+  const dashboardStatusColor = dashboardError ? t.danger : dashboardRefreshing || dashboardLoading ? t.warn : t.success
+  const dashboardStatusText = dashboardError
+    ? dashboardError
+    : dashboardRefreshing
+      ? (lang === 'en' ? 'Refreshing live data...' : 'Canlı veri yenileniyor...')
+      : `${lang === 'en' ? 'Last updated' : 'Son güncelleme'} ${formatLastUpdated(lastUpdated, lang)}`
 
   // Sidebar width constant
   const SIDEBAR_W = 330
@@ -559,6 +651,78 @@ export default function Uygulama() {
               </Fragment>
             ))}
           </MapContainer>
+          {(dashboardLoading || (dashboardError && kuryeListesi.length === 0) || (!dashboardLoading && !dashboardError && kuryeListesi.length === 0)) && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              zIndex: 650,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              padding: isMobile ? 20 : 32,
+            }}>
+              <div style={{
+                ...t.glass,
+                width: 'min(420px, 100%)',
+                padding: '22px 24px',
+                textAlign: 'center',
+                pointerEvents: 'auto',
+              }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  margin: '0 auto 14px',
+                  borderRadius: '50%',
+                  border: `3px solid ${dashboardStatusColor}33`,
+                  borderTopColor: dashboardStatusColor,
+                  animation: dashboardLoading ? 'spin 0.9s linear infinite' : 'none',
+                }} />
+                <div style={{ fontSize: 16, fontWeight: 800, color: t.text, marginBottom: 6 }}>
+                  {dashboardLoading
+                    ? (lang === 'en' ? 'Loading live fleet' : 'Canlı filo yükleniyor')
+                    : dashboardError
+                      ? (lang === 'en' ? 'Backend data unavailable' : 'Backend verisi alınamıyor')
+                      : (lang === 'en' ? 'No active couriers online' : 'Aktif kurye yok')}
+                </div>
+                <div style={{ fontSize: 12, color: t.textMuted, lineHeight: 1.55 }}>
+                  {dashboardError || (lang === 'en'
+                    ? 'Backend is connected, but no courier locations are available yet.'
+                    : 'Backend bağlı, ancak henüz kurye konumu yok.')}
+                </div>
+                {dashboardError && (
+                  <button
+                    type="button"
+                    onClick={() => loadDashboardData({ quiet: false })}
+                    style={{ ...actionBtn, margin: '16px auto 0', background: `${t.accent}18`, border: `1px solid ${t.accent}35`, color: t.accent }}
+                  >
+                    {lang === 'en' ? 'Try Again' : 'Tekrar Dene'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {!dashboardLoading && kuryeListesi.length > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: isMobile ? 68 : 14,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 640,
+              ...t.glass,
+              padding: '7px 11px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              fontSize: 11,
+              fontWeight: 700,
+              color: dashboardError ? t.danger : t.textMuted,
+              whiteSpace: 'nowrap',
+            }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: dashboardStatusColor, boxShadow: `0 0 8px ${dashboardStatusColor}` }} />
+              {dashboardStatusText}
+            </div>
+          )}
         </div>
       )}
 
@@ -667,6 +831,22 @@ export default function Uygulama() {
         </div>
 
         <div style={{
+          padding: '8px 14px',
+          borderBottom: `1px solid ${t.panelBorder}`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          flexShrink: 0,
+          color: dashboardError ? t.danger : t.textMuted,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.02em',
+        }}>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: dashboardStatusColor, boxShadow: `0 0 8px ${dashboardStatusColor}` }} />
+          <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{dashboardStatusText}</span>
+        </div>
+
+        <div style={{
           padding: '10px 14px',
           borderBottom: `1px solid ${t.panelBorder}`,
           display: 'flex',
@@ -674,8 +854,8 @@ export default function Uygulama() {
           gap: isMobile ? 10 : 6,
           flexShrink: 0,
         }}>
-          <button onClick={tumRotaYenile} style={{ ...actionBtn, flex: 1, width: isMobile ? '100%' : 'auto', background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent, fontSize: 11 }}>
-            {tx('refreshRoutes')}
+          <button disabled={dashboardRefreshing} onClick={tumRotaYenile} style={{ ...actionBtn, flex: 1, width: isMobile ? '100%' : 'auto', background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent, fontSize: 11, opacity: dashboardRefreshing ? 0.65 : 1 }}>
+            {dashboardRefreshing ? (lang === 'en' ? 'Refreshing...' : 'Yenileniyor...') : tx('refreshRoutes')}
           </button>
           <button onClick={() => setAnomalyAcik(p => !p)} style={{
             ...actionBtn, background: anomalyAcik ? `${t.danger}15` : t.cardBg,
@@ -714,48 +894,84 @@ export default function Uygulama() {
         {/* ── TAB CONTENT ── */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 10px' }}>
 
-          {aktifSekme === 'kuryeler' && kuryeListesi.map(kurye => {
-            const partner = PARTNER_MAP[kurye.id % 8]
-            const selected = secilenId === kurye.id
-            return (
-              <div key={kurye.id} onClick={() => kuryeyiSec(kurye)} style={{
-                background: selected ? `${t.accent}10` : t.cardBg,
-                border: `1px solid ${selected ? `${t.accent}30` : t.cardBorder}`,
-                borderRadius: 10, padding: '10px 12px', cursor: 'pointer', marginBottom: 5,
-                transition: 'all 0.2s',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: kurye.online ? t.success : KURYE_RENK_OFF, boxShadow: kurye.online ? `0 0 6px ${t.success}` : 'none' }} />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{kurye.isim}</span>
-                  </div>
-                  <button onClick={e => onlineDegistir(kurye, e)} style={{
-                    background: kurye.online ? `${t.success}15` : t.cardBg,
-                    border: `1px solid ${kurye.online ? `${t.success}30` : t.cardBorder}`,
-                    borderRadius: 6, padding: '2px 8px', fontSize: 9, fontWeight: 700,
-                    color: kurye.online ? t.success : t.textDim, cursor: 'pointer', fontFamily: FF,
+          {aktifSekme === 'kuryeler' && (
+            dashboardLoading ? (
+              <div style={{ padding: '14px 4px' }}>
+                {[0, 1, 2].map(item => (
+                  <div key={item} style={{
+                    background: t.cardBg,
+                    border: `1px solid ${t.cardBorder}`,
+                    borderRadius: 10,
+                    padding: '12px',
+                    marginBottom: 7,
                   }}>
-                    {kurye.online ? tx('active').toUpperCase() : (lang === 'en' ? 'OFFLINE' : 'PASİF')}
-                  </button>
+                    <div style={{ height: 12, width: '55%', borderRadius: 999, background: `${t.textMuted}22`, marginBottom: 9 }} />
+                    <div style={{ height: 9, width: '78%', borderRadius: 999, background: `${t.textMuted}16`, marginBottom: 7 }} />
+                    <div style={{ height: 9, width: '44%', borderRadius: 999, background: `${t.textMuted}16` }} />
+                  </div>
+                ))}
+              </div>
+            ) : kuryeListesi.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '34px 18px', color: t.textMuted, fontSize: 12, lineHeight: 1.55 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: t.text, marginBottom: 7 }}>
+                  {dashboardError
+                    ? (lang === 'en' ? 'Fleet data unavailable' : 'Filo verisi alınamıyor')
+                    : (lang === 'en' ? 'No active couriers' : 'Aktif kurye yok')}
                 </div>
-                <div style={{ fontSize: 10, color: t.textDim, marginBottom: 3 }}>{partner.firma} — {partner.kargoTuru}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
-                  <span style={{ color: t.textMuted }}>{durumEtiketi(kurye.durum, lang)}</span>
-                  <span style={{ color: t.textDim }}>•</span>
-                  <span style={{ color: t.accent, fontWeight: 600 }}>{kurye.hiz} km/s</span>
-                  {kurye.eta > 0 && <>
-                    <span style={{ color: t.textDim }}>•</span>
-                    <span style={{ color: t.warn, fontWeight: 600 }}>~{kurye.eta}{lang === 'en' ? 'm' : 'dk'}</span>
-                  </>}
-                </div>
-                {kurye.online && !isDelivered(kurye.durum) && (
-                  <button onClick={e => tekRotaYenile(kurye, e)} style={{ marginTop: 6, background: `${t.accent}10`, border: `1px solid ${t.accent}20`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: t.accent, cursor: 'pointer', fontFamily: FF, width: '100%' }}>
-                    {tx('optimizeRoute')}
+                <div>{dashboardError || (lang === 'en' ? 'Waiting for courier locations from the backend.' : 'Backend üzerinden kurye konumları bekleniyor.')}</div>
+                {dashboardError && (
+                  <button
+                    type="button"
+                    onClick={() => loadDashboardData({ quiet: false })}
+                    style={{ ...actionBtn, margin: '14px auto 0', background: `${t.accent}15`, border: `1px solid ${t.accent}30`, color: t.accent }}
+                  >
+                    {lang === 'en' ? 'Retry Loading' : 'Tekrar Yükle'}
                   </button>
                 )}
               </div>
-            )
-          })}
+            ) : kuryeListesi.map(kurye => {
+              const partner = PARTNER_MAP[kurye.id % 8]
+              const selected = secilenId === kurye.id
+              return (
+                <div key={kurye.id} onClick={() => kuryeyiSec(kurye)} style={{
+                  background: selected ? `${t.accent}10` : t.cardBg,
+                  border: `1px solid ${selected ? `${t.accent}30` : t.cardBorder}`,
+                  borderRadius: 10, padding: '10px 12px', cursor: 'pointer', marginBottom: 5,
+                  transition: 'all 0.2s',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: kurye.online ? t.success : KURYE_RENK_OFF, boxShadow: kurye.online ? `0 0 6px ${t.success}` : 'none', flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, fontWeight: 700, color: t.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{kurye.isim}</span>
+                    </div>
+                    <button onClick={e => onlineDegistir(kurye, e)} style={{
+                      background: kurye.online ? `${t.success}15` : t.cardBg,
+                      border: `1px solid ${kurye.online ? `${t.success}30` : t.cardBorder}`,
+                      borderRadius: 6, padding: '2px 8px', fontSize: 9, fontWeight: 700,
+                      color: kurye.online ? t.success : t.textDim, cursor: 'pointer', fontFamily: FF,
+                    }}>
+                      {kurye.online ? tx('active').toUpperCase() : (lang === 'en' ? 'OFFLINE' : 'PASİF')}
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 10, color: t.textDim, marginBottom: 3 }}>{partner.firma} — {kurye.kargoTuru || partner.kargoTuru}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11 }}>
+                    <span style={{ color: t.textMuted }}>{durumEtiketi(kurye.durum, lang)}</span>
+                    <span style={{ color: t.textDim }}>•</span>
+                    <span style={{ color: t.accent, fontWeight: 600 }}>{kurye.hiz} km/s</span>
+                    {kurye.eta > 0 && <>
+                      <span style={{ color: t.textDim }}>•</span>
+                      <span style={{ color: t.warn, fontWeight: 600 }}>~{kurye.eta}{lang === 'en' ? 'm' : 'dk'}</span>
+                    </>}
+                  </div>
+                  {kurye.online && !isDelivered(kurye.durum) && (
+                    <button onClick={e => tekRotaYenile(kurye, e)} style={{ marginTop: 6, background: `${t.accent}10`, border: `1px solid ${t.accent}20`, borderRadius: 6, padding: '4px 10px', fontSize: 10, fontWeight: 600, color: t.accent, cursor: 'pointer', fontFamily: FF, width: '100%' }}>
+                      {tx('optimizeRoute')}
+                    </button>
+                  )}
+                </div>
+              )
+            })
+          )}
 
           {aktifSekme === 'log' && (
             <>
@@ -791,6 +1007,9 @@ export default function Uygulama() {
         @keyframes fadeSlideIn {
           from { transform: translateX(30px); opacity: 0; }
           to   { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
         .leaflet-container {
           background: #e8ecf8 !important;
