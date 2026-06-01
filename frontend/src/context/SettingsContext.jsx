@@ -1,19 +1,6 @@
 // src/context/SettingsContext.jsx
 // Single source of truth for Theme and Language across the entire application.
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-const API = 'https://lojistikweb-backend.onrender.com/api'
-
-function getAuthToken() {
-  const directToken = localStorage.getItem('loop_token')
-  if (directToken) return directToken
-  try {
-    const user = JSON.parse(localStorage.getItem('loop_user') || '{}')
-    return user?.token || ''
-  } catch {
-    return ''
-  }
-}
-
 // ─── Full Translation Dictionary ─────────────────────────────────────────────
 const TRANSLATIONS = {
   tr: {
@@ -295,28 +282,6 @@ export function SettingsProvider({ children }) {
     if (langFromUrl === 'en' || langFromUrl === 'tr') return langFromUrl
     return localStorage.getItem('loop_lang') || localStorage.getItem('loop_dil') || 'tr'
   })
-  const [dbPrefsReady, setDbPrefsReady] = useState(false)
-
-  const hydrateLanguageFromDb = useCallback(async () => {
-    const token = getAuthToken()
-    if (!token) {
-      setDbPrefsReady(true)
-      return
-    }
-    try {
-      const r = await fetch(`${API}/auth/preferences`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (!r.ok) return
-      const data = await r.json()
-      const dil = data?.preferences?.language === 'en' ? 'en' : 'tr'
-      setLanguageState(dil)
-    } catch {
-      // silent fallback to local value
-    } finally {
-      setDbPrefsReady(true)
-    }
-  }, [])
 
   // Apply theme class to <html> element — works alongside any CSS approach
   useEffect(() => {
@@ -340,27 +305,6 @@ export function SettingsProvider({ children }) {
     document.documentElement.setAttribute('lang', language)
   }, [language])
 
-  // Pull language preference from DB when session exists
-  useEffect(() => {
-    hydrateLanguageFromDb()
-  }, [hydrateLanguageFromDb])
-
-  // Push language preference to DB whenever user changes it
-  useEffect(() => {
-    if (!dbPrefsReady) return
-    const token = getAuthToken()
-    if (!token) return
-
-    fetch(`${API}/auth/preferences`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ language })
-    }).catch(() => {})
-  }, [language, dbPrefsReady])
-
   // Sync language across tabs/windows
   useEffect(() => {
     const onStorage = (e) => {
@@ -368,24 +312,10 @@ export function SettingsProvider({ children }) {
         const next = (e.newValue === 'en' ? 'en' : 'tr')
         setLanguageState(next)
       }
-      if (e.key === 'loop_user' || e.key === 'loop_token') {
-        setDbPrefsReady(false)
-        hydrateLanguageFromDb()
-      }
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [hydrateLanguageFromDb])
-
-  // Sync language after login/logout in the same tab
-  useEffect(() => {
-    const onAuthChange = () => {
-      setDbPrefsReady(false)
-      hydrateLanguageFromDb()
-    }
-    window.addEventListener('loop-auth-changed', onAuthChange)
-    return () => window.removeEventListener('loop-auth-changed', onAuthChange)
-  }, [hydrateLanguageFromDb])
+  }, [])
 
   const setTheme    = useCallback((val) => setThemeState(val), [])
   const setLanguage = useCallback((val) => {
@@ -410,3 +340,4 @@ export function useSettings() {
   if (!ctx) throw new Error('useSettings must be used inside SettingsProvider')
   return ctx
 }
+

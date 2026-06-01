@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
 import './App.css'
 import IstatistikPaneli from './istatistik'
-import { useAuth }     from './context/AuthContext'
 import { useSettings } from './context/SettingsContext'
+import { apiFetch } from './config/api'
 
 // Professional SVG Glyphs for local components
 const SVG_Alert = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -19,8 +18,6 @@ const SVG_Shield = <svg width="14" height="14" viewBox="0 0 24 24" fill="none" s
 //  CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════════════
 const FF = "'Inter','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
-const BACKEND = 'https://lojistikweb-backend.onrender.com'
-const soket = io(BACKEND)
 
 // Fixed dashboard basemap for both light and dark UI modes
 const TILE_FIXED  = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -262,6 +259,57 @@ function AnomalyPanel({ acik, toggle, t, lang, tx, isMobile = false }) {
   )
 }
 
+function normalizeDashboardStatus(status = '') {
+  const s = String(status).toLowerCase()
+  if (s.includes('deliver')) return 'teslim edildi'
+  if (s.includes('picked')) return 'paketi aldi'
+  if (s.includes('transit') || s.includes('assigned') || s.includes('created')) return 'yolda'
+  return status || 'hazırlanıyor'
+}
+
+function minutesForOrder(order) {
+  const start = order?.pickup
+  const end = order?.delivery
+  if (!start || !end) return 0
+  const dist = Math.hypot((end.latitude || 0) - (start.latitude || 0), (end.longitude || 0) - (start.longitude || 0))
+  return Math.max(5, Math.round(dist * 900))
+}
+
+function mapRealtimeToCouriers(mapData, couriers = []) {
+  const activeOrders = Array.isArray(mapData?.active_orders) ? mapData.active_orders : []
+  const statsByCourier = new Map((couriers || []).map(c => [c.id, c]))
+
+  return (mapData?.courier_locations || []).map((loc, index) => {
+    const order = activeOrders.find(o => o.courier_id === loc.courier_id)
+    const stats = statsByCourier.get(loc.courier_id) || {}
+    const delivery = order?.delivery
+    const pickup = order?.pickup
+    const route = pickup && delivery
+      ? [[pickup.latitude, pickup.longitude], [loc.latitude, loc.longitude], [delivery.latitude, delivery.longitude]]
+      : []
+
+    return {
+      id: loc.courier_id,
+      isim: `Kurye ${loc.courier_id}`,
+      enlem: loc.latitude,
+      boylam: loc.longitude,
+      hedefEnlem: delivery?.latitude || loc.latitude,
+      hedefBoylam: delivery?.longitude || loc.longitude,
+      durum: normalizeDashboardStatus(order?.status),
+      hiz: loc.vehicle_type === 'motorcycle' ? 45 : 38,
+      online: stats.is_online ?? true,
+      eta: minutesForOrder(order),
+      rota: route,
+      kargoTuru: PARTNER_MAP[(loc.courier_id || index) % 8]?.kargoTuru,
+      originHub: pickup?.address,
+      destHub: delivery?.address,
+      rating: loc.rating,
+      activeOrders: stats.active_orders,
+      totalDeliveries: stats.total_deliveries,
+    }
+  })
+}
+
 // ── God Mode Intervention Drawer ──
 function InterventionDrawer({ kurye, kapat, bildirimEkle, t, lang, tx }) {
   if (!kurye) return null
@@ -347,12 +395,6 @@ export default function Uygulama() {
     if (!isMobile) setSidePanelOpen(false)
   }, [isMobile])
 
-  // ── Backend stats ──
-  useEffect(() => {
-    const cek = async () => { try { const r = await fetch(`${BACKEND}/api/istatistik/genel`); setDbGenel(await r.json()) } catch {} }
-    cek(); const i = setInterval(cek, 30000); return () => clearInterval(i)
-  }, [])
-
   // ── Notifications ──
   const bildirimEkle = useCallback((mesaj, tip = 'bilgi') => {
     const id = Date.now() + Math.random()
@@ -360,25 +402,53 @@ export default function Uygulama() {
     setTimeout(() => setBildirim(prev => prev.filter(b => b.id !== id)), 5000)
   }, [])
 
-  // ── Socket ──
+  // ── Backend stats ──
   useEffect(() => {
-    soket.on('kuryeleriGuncelle', setKuryeler)
-    soket.on('siparisFisiGuncelle', setFis)
-    soket.on('teslimatBildirimi', ({ isim, zaman }) => bildirimEkle(lang === 'en' ? `${isim} completed a delivery (${zaman})` : `${isim} teslimatı tamamladı (${zaman})`, 'basari'))
-    return () => { soket.off('kuryeleriGuncelle'); soket.off('siparisFisiGuncelle'); soket.off('teslimatBildirimi') }
+    const cek = async () => {
+      try {
+        const [stats, couriers, mapData, orders] = await Promise.all([
+          apiFetch('/admin/statistics'),
+          apiFetch('/admin/couriers'),
+          apiFetch('/admin/realtime-map'),
+          apiFetch('/admin/orders'),
+        ])
+        setDbGenel(stats)
+        setKuryeler(mapRealtimeToCouriers(mapData, couriers))
+        setFis(Array.isArray(orders) ? orders.slice(0, 30) : [])
+      } catch (err) {
+        bildirimEkle(lang === 'en' ? `Backend data could not be loaded: ${err.message}` : `Backend verisi yüklenemedi: ${err.message}`, 'uyari')
+      }
+    }
+    cek(); const i = setInterval(cek, 30000); return () => clearInterval(i)
   }, [bildirimEkle, lang])
 
+  // ── Realtime map polling replaces the legacy Socket.IO-only data source ──
+  useEffect(() => {
+    const cek = async () => {
+      try {
+        const [mapData, couriers] = await Promise.all([
+          apiFetch('/admin/realtime-map'),
+          apiFetch('/admin/couriers'),
+        ])
+        setKuryeler(mapRealtimeToCouriers(mapData, couriers))
+      } catch {
+        // The statistics effect already surfaces backend availability to the user.
+      }
+    }
+    cek(); const i = setInterval(cek, 10000); return () => clearInterval(i)
+  }, [])
+
   // ── Actions ──
-  const tumRotaYenile = () => { soket.emit('yeniRotaCiz'); bildirimEkle(lang === 'en' ? 'Recalculating all routes...' : 'Tüm rotalar yeniden hesaplanıyor...', 'bilgi') }
-  const tekRotaYenile = (k, e) => { e.stopPropagation(); soket.emit('tekKuryeRotaCiz', k.id); bildirimEkle(lang === 'en' ? `Optimizing route for ${k.isim}...` : `${k.isim} rotası optimize ediliyor...`, 'bilgi') }
-  const onlineDegistir = (k, e) => { e.stopPropagation(); soket.emit('kuryeOnlineDegistir', k.id); bildirimEkle(k.online ? (lang === 'en' ? `Deactivated: ${k.isim} is offline` : `Deaktive: ${k.isim} çevrimdışı`) : (lang === 'en' ? `Activated: ${k.isim} is online` : `Aktif: ${k.isim} çevrimiçi`), 'uyari') }
+  const tumRotaYenile = () => { bildirimEkle(lang === 'en' ? 'Refreshing live backend routes...' : 'Canlı backend rotaları yenileniyor...', 'bilgi') }
+  const tekRotaYenile = (k, e) => { e.stopPropagation(); bildirimEkle(lang === 'en' ? `Route data refreshed for ${k.isim}.` : `${k.isim} rota verisi yenilendi.`, 'bilgi') }
+  const onlineDegistir = (k, e) => { e.stopPropagation(); bildirimEkle(lang === 'en' ? `${k.isim} status is managed by backend data.` : `${k.isim} durumu backend verisiyle yönetiliyor.`, 'uyari') }
   const kuryeyiSec = (k) => { setSecilenId(k.id); setZoomHedef({ ...k, _ts: Date.now() }) }
 
   // Stats
   const toplam = kuryeListesi.length
   const yolda  = kuryeListesi.filter(k => !isDelivered(k.durum) && k.online).length
   const aktif  = kuryeListesi.filter(k => k.online).length
-  const teslim = dbGenel?.toplamTeslimat ?? kuryeListesi.filter(k => isDelivered(k.durum)).length
+  const teslim = dbGenel?.total_orders ?? kuryeListesi.filter(k => isDelivered(k.durum)).length
 
   // Sidebar width constant
   const SIDEBAR_W = 330
@@ -695,10 +765,16 @@ export default function Uygulama() {
               ) : siparisFisi.map(log => (
                 <div key={log.id} style={{ background: t.cardBg, border: `1px solid ${t.cardBorder}`, borderRadius: 10, padding: '10px 12px', marginBottom: 5 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                    <span style={{ color: t.success, fontWeight: 700 }}>{log.kuryeIsim}</span>
-                    <span style={{ color: t.textDim, fontSize: 10 }}>{log.zaman}</span>
+                    <span style={{ color: t.success, fontWeight: 700 }}>
+                      {log.courier_id ? `${lang === 'en' ? 'Courier' : 'Kurye'} ${log.courier_id}` : `${lang === 'en' ? 'Order' : 'Sipariş'} #${log.id}`}
+                    </span>
+                    <span style={{ color: t.textDim, fontSize: 10 }}>
+                      {log.created_at ? new Date(log.created_at).toLocaleString(lang === 'en' ? 'en-US' : 'tr-TR') : '—'}
+                    </span>
                   </div>
-                  <div style={{ fontSize: 10, color: t.textDim, marginTop: 3, fontFamily: 'monospace' }}>{log.hedefEnlem?.toFixed(4)}, {log.hedefBoylam?.toFixed(4)}</div>
+                  <div style={{ fontSize: 10, color: t.textDim, marginTop: 3, fontFamily: 'monospace' }}>
+                    {log.tracking_code || `#${log.id}`} • {durumEtiketi(log.status, lang)} • ₺{Number(log.price || 0).toFixed(2)}
+                  </div>
                 </div>
               ))}
             </>

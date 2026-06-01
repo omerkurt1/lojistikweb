@@ -1,13 +1,11 @@
 // src/pages/Takip.jsx
 // Route: /takip  →  Müşteri sipariş takip (tek kurye, kişiselleştirilmiş)
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import io from 'socket.io-client'
 import 'leaflet/dist/leaflet.css'
 import { useSettings } from '../context/SettingsContext'
-
-const BACKEND = 'https://lojistikweb-backend.onrender.com'
+import { apiFetch } from '../config/api'
 
 const COPY = {
   tr: {
@@ -120,10 +118,49 @@ function useCanliSaat(language) {
 function durumBilgi(d, language) {
   const en = language === 'en'
   switch ((d || '').toLowerCase()) {
+    case 'delivered':
     case 'teslim edildi': return { emoji: '✅', bg: '#d1fae5', txt: '#065f46', label: en ? 'Delivered' : 'Teslim Edildi', aciklama: en ? 'is delivered' : 'teslim etti' }
+    case 'picked_up':
     case 'paketi aldi':   return { emoji: '📦', bg: '#dbeafe', txt: '#1e40af', label: en ? 'Picked Up' : 'Paketi Aldı', aciklama: en ? 'picked up your package' : 'paketi aldı' }
+    case 'assigned':
+    case 'in_transit':
+    case 'created':
     case 'yolda':         return { emoji: '🚛', bg: '#fef3c7', txt: '#92400e', label: en ? 'On The Way' : 'Yolda', aciklama: en ? 'is on the way' : 'yolda' }
     default:              return { emoji: '⏳', bg: '#f3f4f6', txt: '#6b7280', label: d || (en ? 'Preparing' : 'Hazırlanıyor'), aciklama: en ? 'is preparing your order' : 'hazırlanıyor' }
+  }
+}
+
+function normalizeTrackedOrder(order) {
+  const pickup = order?.pickup || {
+    latitude: order?.pickup_latitude,
+    longitude: order?.pickup_longitude,
+    address: order?.pickup_address,
+  }
+  const delivery = order?.delivery || {
+    latitude: order?.delivery_latitude,
+    longitude: order?.delivery_longitude,
+    address: order?.delivery_address,
+  }
+  const current = order?.courier_location || pickup || delivery
+  const hasLocation = Number.isFinite(Number(current?.latitude)) && Number.isFinite(Number(current?.longitude))
+
+  return {
+    id: order?.courier_id || order?.id,
+    orderId: order?.order_id || order?.id,
+    isim: order?.courier_name || `LOOP-${order?.id || ''}`,
+    durum: order?.status || 'created',
+    enlem: hasLocation ? Number(current.latitude) : null,
+    boylam: hasLocation ? Number(current.longitude) : null,
+    hedefEnlem: Number(delivery?.latitude),
+    hedefBoylam: Number(delivery?.longitude),
+    hedefAdres: delivery?.address || order?.delivery_address,
+    pickupAdres: pickup?.address || order?.pickup_address,
+    eta: order?.eta_minutes || order?.eta || 0,
+    hiz: order?.speed || 0,
+    rota: pickup?.latitude && delivery?.latitude
+      ? [[Number(pickup.latitude), Number(pickup.longitude)], [Number(delivery.latitude), Number(delivery.longitude)]]
+      : [],
+    tracking_code: order?.tracking_code,
   }
 }
 
@@ -146,7 +183,6 @@ export default function MusteriTakip() {
   const [haritaHedef, setHaritaHedef] = useState(null)
   const [panelOpen, setPanelOpen] = useState(false)
 
-  const soketRef = useRef(null)
   const saat = useCanliSaat(language)
 
   useEffect(() => {
@@ -169,30 +205,6 @@ export default function MusteriTakip() {
     }
   }, [])
 
-  // ── Socket bağlantısı ──
-  useEffect(() => {
-    const s = io(BACKEND)
-    soketRef.current = s
-
-    s.on('connect', () => setBaglanti(true))
-    s.on('disconnect', () => setBaglanti(false))
-
-    // Tek kurye güncellemesi dinle
-    s.on('tekKuryeGuncelle', (data) => {
-      if (data) {
-        setKurye(prev => {
-          // Sadece takip edilen kurye ise güncelle
-          if (prev && prev.id === data.id) return { ...data }
-          return prev
-        })
-      }
-    })
-
-    return () => {
-      s.disconnect()
-    }
-  }, [])
-
   // ── Kurye değiştiğinde haritayı odakla ──
   useEffect(() => {
     if (kurye && kurye.enlem && kurye.boylam) {
@@ -202,15 +214,9 @@ export default function MusteriTakip() {
 
   // ── Takip numarasını sorgula ──
   const siparisAra = useCallback(async () => {
-    const temiz = takipNo.trim().toUpperCase().replace('LOOP-', '').trim()
+    const temiz = takipNo.trim().toUpperCase()
     if (!temiz) {
       setHata(c.required)
-      return
-    }
-
-    const kuryeId = parseInt(temiz, 10)
-    if (isNaN(kuryeId) || kuryeId <= 0) {
-      setHata(c.invalidNo)
       return
     }
 
@@ -218,51 +224,26 @@ export default function MusteriTakip() {
     setHata('')
 
     try {
-      let veri = null
+      const code = temiz.startsWith('LOOP-') ? temiz : `LOOP-${temiz}`
+      const veri = normalizeTrackedOrder(await apiFetch(`/orders/track/${encodeURIComponent(code)}`))
+      setBaglanti(true)
 
-      // Önce yeni endpoint'i dene
-      try {
-        const res = await fetch(`${BACKEND}/api/takip/${kuryeId}`)
-        if (res.ok) {
-          veri = await res.json()
-        } else if (res.status === 404) {
-          const err = await res.json().catch(() => ({}))
-          setHata(err.hata || `LOOP-${kuryeId} ${c.notFound}`)
-          return
-        } else {
-          throw new Error('non-ok')
-        }
-      } catch {
-        // Fallback: mevcut kurye endpoint'i (her zaman çalışıyor)
-        const res2 = await fetch(`${BACKEND}/api/kurye/${kuryeId}/konum`)
-        if (!res2.ok) {
-          setHata(`LOOP-${kuryeId} ${c.notFoundCheck}`)
-          return
-        }
-        veri = await res2.json()
-      }
-
-      if (!veri || !veri.enlem) {
+      if (!veri || !veri.enlem || !veri.boylam) {
         setHata(c.noLocation)
         return
       }
 
       setKurye(veri)
       setHaritaHedef([veri.enlem, veri.boylam])
-
-      // Socket odaya katıl — gerçek zamanlı güncellemeler için
-      if (soketRef.current) {
-        soketRef.current.emit('kuryeyiTakipEt', veri.id)
-      }
-
       setFaz('takip')
       setPanelOpen(false)
     } catch (err) {
-      setHata(c.serverError)
+      setBaglanti(false)
+      setHata(err.message || c.serverError)
     } finally {
       setYukleniyor(false)
     }
-  }, [takipNo])
+  }, [takipNo, c])
 
   // ── Enter tuşu ──
   const handleKeyDown = (e) => {

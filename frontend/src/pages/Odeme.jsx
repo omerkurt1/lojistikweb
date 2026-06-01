@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { apiFetch } from '../config/api'
 
-const API = 'https://lojistikweb-backend.onrender.com/api'
 const ACCENT_PRIMARY = '#2F6F73'
 const ACCENT_SECONDARY = '#4B8A8F'
 const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
@@ -97,19 +97,17 @@ export default function Odeme() {
 
     setYuk(true)
     try {
-      const res = await fetch(`${API}/odeme/islem`, {
+      const orderId = Number(new URLSearchParams(window.location.search).get('order_id') || 1)
+      await apiFetch('/payments/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          kartNo  : form.kartNo,
-          skt     : form.skt,
-          cvv     : form.cvv,
-          tutar   : 4999,
-          siparisDetay: { musteri: kullanici?.isim || 'Misafir', hizmet: 'LOOP Express' }
+          order_id: orderId,
+          amount: 49.99,
+          currency: 'TRY',
+          payment_method_id: `card_${kartSayisal.slice(-4)}`,
         })
       })
-      const veri = await res.json()
-      if (!res.ok) throw new Error(veri.hata || 'Ödeme reddedildi.')
 
       // Başarı!
       setBasarili(true)

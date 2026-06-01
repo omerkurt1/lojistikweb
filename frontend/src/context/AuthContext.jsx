@@ -1,9 +1,21 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-
-const API = 'https://lojistikweb-backend.onrender.com/api'
+import { API_URL, apiFetch, clearAuthTokens, getAccessToken, setAuthTokens } from '../config/api'
 
 const AuthContext = createContext(null)
+
+function normalizeUser(user) {
+  if (!user) return null
+  const fullName = user.full_name || user.isim || user.email || ''
+  return {
+    ...user,
+    isim: fullName,
+    email: user.email,
+    rol: user.role || user.rol,
+    sirket: user.company_name,
+    aktif: user.is_active,
+  }
+}
 
 export function AuthProvider({ children }) {
   const [kullanici, setKullanici] = useState(null)
@@ -22,24 +34,27 @@ export function AuthProvider({ children }) {
       window.history.replaceState({}, '', cleanUrl)
     }
 
-    const token = localStorage.getItem('loop_token')
+    const token = getAccessToken()
     if (!token) { setYukleniyor(false); return }
-    fetch(`${API}/auth/ben`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(r => r.json())
-      .then(d => { if (d.kullanici) setKullanici(d.kullanici) })
-      .catch(() => localStorage.removeItem('loop_token'))
+    apiFetch('/auth/me')
+      .then(d => setKullanici(normalizeUser(d)))
+      .catch(() => clearAuthTokens())
       .finally(() => setYukleniyor(false))
   }, [])
 
   const kayit = useCallback(async ({ isim, email, sifre }) => {
     let res
     try {
-      res = await fetch(`${API}/auth/kayit`, {
+      res = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isim, email, sifre })
+        body: JSON.stringify({
+          email,
+          password: sifre,
+          full_name: isim,
+          phone_number: '0000000000',
+          role: 'customer',
+        })
       })
     } catch {
       throw new Error('Sunucuya ulaşılamıyor. Lütfen daha sonra tekrar deneyin.')
@@ -48,42 +63,35 @@ export function AuthProvider({ children }) {
     try { veri = await res.json() } catch {
       throw new Error('Sunucu geçersiz yanıt döndürdü. Lütfen daha sonra tekrar deneyin.')
     }
-    if (!res.ok) throw new Error(veri.hata || 'Kayıt başarısız.')
-    localStorage.setItem('loop_token', veri.token)
-    setKullanici(veri.kullanici)
+    if (!res.ok) throw new Error(veri.detail || veri.hata || 'Kayıt başarısız.')
+    const loginData = await loginWithPassword(email, sifre)
+    setAuthTokens({ accessToken: loginData.access_token, refreshToken: loginData.refresh_token })
+    const user = normalizeUser(await apiFetch('/auth/me'))
+    setKullanici(user)
     window.dispatchEvent(new Event('loop-auth-changed'))
-    return veri
+    return { token: loginData.access_token, kullanici: user }
   }, [])
 
   const giris = useCallback(async ({ email, sifre }) => {
-    let res
     try {
-      res = await fetch(`${API}/auth/giris`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, sifre })
-      })
-    } catch {
+      const veri = await loginWithPassword(email, sifre)
+      setAuthTokens({ accessToken: veri.access_token, refreshToken: veri.refresh_token })
+      const kullanici = normalizeUser(await apiFetch('/auth/me'))
+      setKullanici(kullanici)
+      window.dispatchEvent(new Event('loop-auth-changed'))
+      return { token: veri.access_token, refreshToken: veri.refresh_token, kullanici }
+    } catch (err) {
+      if (err.message && !err.message.includes('Failed to fetch')) throw err
       throw new Error('Sunucuya ulaşılamıyor. İnternet bağlantınızı veya sunucu durumunu kontrol edin.')
     }
-    let veri
-    try { veri = await res.json() } catch {
-      throw new Error('Sunucu henüz hazır değil, lütfen 30 saniye bekleyip tekrar deneyin.')
-    }
-    if (!res.ok) throw new Error(veri.hata || 'Giriş başarısız.')
-    localStorage.setItem('loop_token', veri.token)
-    setKullanici(veri.kullanici)
-    window.dispatchEvent(new Event('loop-auth-changed'))
-    return veri
   }, [])
 
   const cikis = useCallback(() => {
-    localStorage.removeItem('loop_token')
+    clearAuthTokens()
     setKullanici(null)
-    window.dispatchEvent(new Event('loop-auth-changed'))
   }, [])
 
-  const token = localStorage.getItem('loop_token')
+  const token = getAccessToken()
 
   return (
     <AuthContext.Provider value={{ kullanici, token, yukleniyor, kayit, giris, cikis }}>
@@ -96,4 +104,19 @@ export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth, AuthProvider içinde kullanılmalıdır.')
   return ctx
+}
+
+async function loginWithPassword(email, password) {
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ username: email, password }),
+  })
+
+  let data
+  try { data = await res.json() } catch {
+    throw new Error('Sunucu henüz hazır değil, lütfen 30 saniye bekleyip tekrar deneyin.')
+  }
+  if (!res.ok) throw new Error(data.detail || data.hata || 'Giriş başarısız.')
+  return data
 }
