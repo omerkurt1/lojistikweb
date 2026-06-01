@@ -3,7 +3,7 @@
 // Glassmorphic dark-navy design ported from the HTML/Tailwind template.
 // Dark Mode toggle + Language selector wired directly to SettingsContext.
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth }     from '../context/AuthContext'
 import { useSettings } from '../context/SettingsContext'
 
@@ -13,6 +13,7 @@ const CYAN = '#2F6F73'
 const ACCENT_SECONDARY = '#4B8A8F'
 const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
 const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
+const VITRIN_LOGIN_URL = 'https://lojistikweb-vitrin.vercel.app/#giris'
 const NAVY = '#060c1a'
 
 // ─── SVG Icons ────────────────────────────────────────────────────────────────
@@ -103,12 +104,11 @@ function tk(isDark) {
 export default function ProfilePage() {
   const { kullanici, cikis }              = useAuth()
   const { isDark, theme, setTheme, language, setLanguage, t } = useSettings()
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('general')
   const [toast, setToast] = useState('')
 
   const c       = tk(isDark)
-  const isAdmin = kullanici?.email === 'patron@loop.com' || kullanici?.rol === 'admin'
+  const isAdmin = (kullanici?.email || '').toLowerCase() === 'admin@loop.com' || (kullanici?.rol || '').toLowerCase() === 'admin'
 
   // ── Form state — initialized from auth ──
   const [form, setForm] = useState({
@@ -129,13 +129,13 @@ export default function ProfilePage() {
           <div style={{ color: c.accent, marginBottom: 16, display: 'flex', justifyContent: 'center' }}>{ICO.shield}</div>
           <div style={{ fontSize: 18, fontWeight: 800, color: c.text, marginBottom: 8 }}>{t('signInRequired')}</div>
           <div style={{ fontSize: 13, color: c.textMuted, marginBottom: 24 }}>{t('signInMsg')}</div>
-          <Link to="/giris" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, ${ACCENT_SECONDARY})`, color: ACCENT_TEXT_ON_SOLID, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px ${ACCENT_SHADOW}` }}>{t('signIn')}</Link>
+          <a href={VITRIN_LOGIN_URL} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 10, background: `linear-gradient(135deg, ${CYAN}, ${ACCENT_SECONDARY})`, color: ACCENT_TEXT_ON_SOLID, fontSize: 13, fontWeight: 800, border: 'none', textDecoration: 'none', boxShadow: `0 6px 20px ${ACCENT_SHADOW}` }}>{t('signIn')}</a>
         </div>
       </div>
     )
   }
 
-  const handleCikis = () => { cikis(); navigate('/giris') }
+  const handleCikis = () => { cikis(); window.location.href = VITRIN_LOGIN_URL }
 
   // ── Sidebar Tabs ──
   const sidebarTabs = [

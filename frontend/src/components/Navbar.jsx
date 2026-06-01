@@ -16,6 +16,7 @@ const ACCENT_SOFT = 'rgba(47, 111, 115, 0.14)'
 const ACCENT_BORDER = 'rgba(47, 111, 115, 0.42)'
 const ACCENT_SHADOW = 'rgba(47, 111, 115, 0.28)'
 const ACCENT_TEXT_ON_SOLID = '#F6FBFC'
+const VITRIN_LOGIN_URL = 'https://lojistikweb-vitrin.vercel.app/#giris'
 
 function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?'
@@ -157,8 +158,8 @@ export default function Navbar() {
         ) : (
           /* ══ LOGGED OUT: Login ══ */
           <>
-            <Link
-              to="/giris"
+            <a
+              href={VITRIN_LOGIN_URL}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 7,
                 padding: '8px 16px', borderRadius: 8,
@@ -170,7 +171,7 @@ export default function Navbar() {
             >
               <span style={{ width: 6, height: 6, borderRadius: '50%', background: ACCENT_PRIMARY, boxShadow: `0 0 6px ${ACCENT_SHADOW}`, flexShrink: 0 }} />
               {t('login')}
-            </Link>
+            </a>
           </>
         )}
 
@@ -306,8 +307,8 @@ export default function Navbar() {
                     {t('profile')}
                   </Link>
                 ) : (
-                  <Link
-                    to="/giris"
+                  <a
+                    href={VITRIN_LOGIN_URL}
                     onClick={() => setMenuOpen(false)}
                     style={{
                       padding: '12px 10px',
@@ -320,7 +321,7 @@ export default function Navbar() {
                     }}
                   >
                     {t('login')}
-                  </Link>
+                  </a>
                 )}
 
                 <button

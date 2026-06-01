@@ -88,7 +88,7 @@ export default function Login() {
         const sonuc = await giris({ email: form.email, sifre: form.sifre })
         const kullanici = sonuc?.kullanici
         const isAdmin =
-          (kullanici?.email || '').toLowerCase() === 'patron@loop.com' ||
+          (kullanici?.email || '').toLowerCase() === 'admin@loop.com' ||
           (kullanici?.rol || '').toLowerCase() === 'admin'
 
         setBasari(c.loginOk)

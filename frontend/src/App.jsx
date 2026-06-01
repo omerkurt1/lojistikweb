@@ -8,12 +8,12 @@ import Navbar        from './components/Navbar'
 
 // Sayfalar
 import Dashboard      from './Dashboard'
-import Login          from './pages/Login'
 import Takip          from './pages/Takip'
 import PartnerNetwork from './pages/PartnerNetwork'
 import ProfilePage    from './pages/ProfilePage'
 
 const VITRIN_HOMEPAGE = 'https://lojistikweb-vitrin.vercel.app/'
+const VITRIN_LOGIN = 'https://lojistikweb-vitrin.vercel.app/#giris'
 
 // ─── DIRECTIVE 4: ScrollToTop ────────────────────────────────────────────────
 // Forces window.scrollTo(0,0) on every route change so users always see the top.
@@ -36,7 +36,7 @@ function ScrollToTop() {
 // ─── DIRECTIVE 2: ProtectedRoute ─────────────────────────────────────────────
 // Restricts access to admin-only routes.
 // Checks: 1) user is authenticated  2) user is admin (email or rol field).
-// Otherwise redirects to /giris.
+// Otherwise redirects to the Vitrin homepage login modal.
 function ProtectedRoute({ children }) {
   const { kullanici, yukleniyor } = useAuth()
   const { language } = useSettings()
@@ -51,11 +51,11 @@ function ProtectedRoute({ children }) {
   }
 
   // Not logged in at all → redirect
-  if (!kullanici) return <Navigate to="/giris" replace />
+  if (!kullanici) return <ExternalRedirect to={VITRIN_LOGIN} message="Redirecting to LOOP sign in..." />
 
   // Logged in but NOT admin → redirect
   const isAdmin =
-    (kullanici.email || '').toLowerCase() === 'patron@loop.com' ||
+    (kullanici.email || '').toLowerCase() === 'admin@loop.com' ||
     (kullanici.rol || '').toLowerCase() === 'admin'
   if (!isAdmin) return <Navigate to="/" replace />
 
@@ -75,13 +75,17 @@ function PublicLayout({ children }) {
 }
 
 function ExternalHomepageRedirect() {
+  return <ExternalRedirect to={VITRIN_HOMEPAGE} message="Redirecting to LOOP homepage..." />
+}
+
+function ExternalRedirect({ to, message }) {
   useEffect(() => {
-    window.location.replace(VITRIN_HOMEPAGE)
-  }, [])
+    window.location.replace(to)
+  }, [to])
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#060c1a', color: '#e8f0ff', fontFamily: 'Inter, sans-serif', fontSize: 14 }}>
-      Redirecting to LOOP homepage...
+      {message}
     </div>
   )
 }
@@ -102,7 +106,7 @@ export default function App() {
             <Route path="/takip" element={<Takip />} />
 
             {/* Public pages — share the top Navbar with auth-aware Profile button */}
-            <Route path="/giris"      element={<PublicLayout><Login /></PublicLayout>} />
+            <Route path="/giris"      element={<ExternalRedirect to={VITRIN_LOGIN} message="Redirecting to LOOP sign in..." />} />
             <Route path="/partnerler" element={<PublicLayout><PartnerNetwork /></PublicLayout>} />
             <Route path="/profil"     element={<PublicLayout><ProfilePage /></PublicLayout>} />
 
