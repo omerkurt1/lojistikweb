@@ -148,6 +148,77 @@ const AREA_CENTERS = [
   { match: /izmir|konak|bornova/i, lat: 38.4237, lng: 27.1428 },
 ]
 
+const ISTANBUL_FALLBACK_ROUTES = [
+  [
+    [41.0798, 28.9735],
+    [41.0734, 28.9874],
+    [41.0662, 28.9980],
+    [41.0588, 29.0050],
+    [41.0524, 29.0115],
+  ],
+  [
+    [40.9930, 29.0290],
+    [40.9985, 29.0405],
+    [41.0065, 29.0508],
+    [41.0135, 29.0623],
+    [41.0220, 29.0735],
+  ],
+  [
+    [41.0315, 28.8900],
+    [41.0250, 28.9150],
+    [41.0185, 28.9450],
+    [41.0170, 28.9680],
+    [41.0120, 28.9865],
+  ],
+  [
+    [41.0620, 28.8050],
+    [41.0550, 28.8450],
+    [41.0470, 28.8850],
+    [41.0430, 28.9220],
+    [41.0400, 28.9580],
+  ],
+]
+
+function fallbackRouteForCode(code = '') {
+  const numeric = Number(String(code).replace(/^LOOP-/i, '')) || 3
+  const template = ISTANBUL_FALLBACK_ROUTES[Math.abs(numeric) % ISTANBUL_FALLBACK_ROUTES.length]
+  const currentIndex = Math.min(2, Math.abs(numeric) % Math.max(1, template.length - 2))
+  return template.slice(currentIndex)
+}
+
+function normalizeRoutePoint(point) {
+  if (!Array.isArray(point) || point.length < 2) return null
+  const lat = Number(point[0])
+  const lng = Number(point[1])
+  return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null
+}
+
+async function fetchRoadRoute(points = []) {
+  const waypoints = points.map(normalizeRoutePoint).filter(Boolean)
+  if (waypoints.length < 2) return []
+
+  const coordinates = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(';')
+  const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`)
+  if (!res.ok) return []
+
+  const data = await res.json()
+  const route = data?.routes?.[0]?.geometry?.coordinates
+  if (!Array.isArray(route)) return []
+  return route
+    .map(([lng, lat]) => [Number(lat), Number(lng)])
+    .filter(point => Number.isFinite(point[0]) && Number.isFinite(point[1]))
+}
+
+async function enrichRoadRoute(courier) {
+  const waypoints = courier?.roadWaypoints || courier?.rota || []
+  try {
+    const roadRoute = await fetchRoadRoute(waypoints)
+    return roadRoute.length > 1 ? { ...courier, rota: roadRoute } : courier
+  } catch {
+    return courier
+  }
+}
+
 function hashString(value = '') {
   return String(value).split('').reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0)
 }
@@ -209,10 +280,9 @@ function normalizeTrackedOrder(order) {
 
 function fallbackTrackedOrder(code) {
   const numeric = Number(String(code).replace(/^LOOP-/i, '')) || 3
-  const baseLat = 41.0082 + (numeric % 5) * 0.006
-  const baseLng = 28.9784 + (numeric % 4) * 0.007
-  const deliveryLat = baseLat + 0.018
-  const deliveryLng = baseLng + 0.014
+  const route = fallbackRouteForCode(code)
+  const current = route[0]
+  const delivery = route[route.length - 1]
 
   return {
     id: numeric,
@@ -220,16 +290,17 @@ function fallbackTrackedOrder(code) {
     orderId: numeric,
     isim: 'LOOP Türkiye Kurye',
     durum: 'in_transit',
-    enlem: baseLat,
-    boylam: baseLng,
-    hedefEnlem: deliveryLat,
-    hedefBoylam: deliveryLng,
+    enlem: current[0],
+    boylam: current[1],
+    hedefEnlem: delivery[0],
+    hedefBoylam: delivery[1],
     hedefAdres: 'İstanbul Teslimat Bölgesi',
     pickupAdres: 'İstanbul Operasyon Merkezi',
     deliveryArea: 'İstanbul, Türkiye',
     eta: 24 + (numeric % 9),
     hiz: 38 + (numeric % 8),
-    rota: [[baseLat, baseLng], [deliveryLat, deliveryLng]],
+    rota: route,
+    roadWaypoints: route,
     tracking_code: `LOOP-${numeric}`,
     isApproximate: true,
     isFallback: true,
@@ -298,7 +369,7 @@ export default function MusteriTakip() {
 
     try {
       const code = temiz.startsWith('LOOP-') ? temiz : `LOOP-${temiz}`
-      const veri = normalizeTrackedOrder(await apiFetch(`/orders/track/${encodeURIComponent(code)}`))
+      const veri = await enrichRoadRoute(normalizeTrackedOrder(await apiFetch(`/orders/track/${encodeURIComponent(code)}`)))
       setBaglanti(true)
 
       if (!veri || !Number.isFinite(Number(veri.enlem)) || !Number.isFinite(Number(veri.boylam))) {
@@ -314,7 +385,7 @@ export default function MusteriTakip() {
       setBaglanti(false)
       const numericDemoCode = /^LOOP-\d+$/i.test(temiz.startsWith('LOOP-') ? temiz : `LOOP-${temiz}`)
       if (numericDemoCode) {
-        const fallback = fallbackTrackedOrder(temiz)
+        const fallback = await enrichRoadRoute(fallbackTrackedOrder(temiz))
         setKurye(fallback)
         setHaritaHedef([fallback.enlem, fallback.boylam])
         setHata(c.fallbackNotice)
