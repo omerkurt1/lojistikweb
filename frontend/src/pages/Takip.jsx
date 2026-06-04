@@ -180,9 +180,9 @@ const ISTANBUL_FALLBACK_ROUTES = [
 ]
 
 function fallbackRouteForCode(code = '') {
-  const numeric = Number(String(code).replace(/^LOOP-/i, '')) || 3
-  const template = ISTANBUL_FALLBACK_ROUTES[Math.abs(numeric) % ISTANBUL_FALLBACK_ROUTES.length]
-  const currentIndex = Math.min(2, Math.abs(numeric) % Math.max(1, template.length - 2))
+  const seed = Math.abs(hashString(code || 'LOOP-3'))
+  const template = ISTANBUL_FALLBACK_ROUTES[seed % ISTANBUL_FALLBACK_ROUTES.length]
+  const currentIndex = Math.min(2, seed % Math.max(1, template.length - 2))
   return template.slice(currentIndex)
 }
 
@@ -221,6 +221,26 @@ async function enrichRoadRoute(courier) {
 
 function hashString(value = '') {
   return String(value).split('').reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0)
+}
+
+function normalizeTrackingCode(value = '') {
+  const trimmed = String(value || '').trim().toUpperCase()
+  return trimmed.startsWith('LOOP-') ? trimmed : `LOOP-${trimmed}`
+}
+
+function isServerOrNetworkError(err) {
+  const msg = String(err?.message || err || '').toLowerCase()
+  return msg.includes('failed to fetch')
+    || msg.includes('network')
+    || msg.includes('request failed (500)')
+    || msg.includes('internal server')
+    || msg.includes('server error')
+    || msg.includes('sunucu')
+}
+
+function canUseTrackingFallback(code = '', err) {
+  const normalized = normalizeTrackingCode(code)
+  return normalized.length > 5 && normalized.startsWith('LOOP-') && isServerOrNetworkError(err)
 }
 
 function locationFromArea(area = '', code = '') {
@@ -279,14 +299,16 @@ function normalizeTrackedOrder(order) {
 }
 
 function fallbackTrackedOrder(code) {
-  const numeric = Number(String(code).replace(/^LOOP-/i, '')) || 3
-  const route = fallbackRouteForCode(code)
+  const trackingCode = normalizeTrackingCode(code)
+  const seed = Math.abs(hashString(trackingCode))
+  const numeric = Number(String(trackingCode).replace(/^LOOP-/i, '')) || (seed % 9000) + 1000
+  const route = fallbackRouteForCode(trackingCode)
   const current = route[0]
   const delivery = route[route.length - 1]
 
   return {
     id: numeric,
-    trackingCode: `LOOP-${numeric}`,
+    trackingCode,
     orderId: numeric,
     isim: 'LOOP Türkiye Kurye',
     durum: 'in_transit',
@@ -301,7 +323,7 @@ function fallbackTrackedOrder(code) {
     hiz: 38 + (numeric % 8),
     rota: route,
     roadWaypoints: route,
-    tracking_code: `LOOP-${numeric}`,
+    tracking_code: trackingCode,
     isApproximate: true,
     isFallback: true,
   }
@@ -368,7 +390,7 @@ export default function MusteriTakip() {
     setHata('')
 
     try {
-      const code = temiz.startsWith('LOOP-') ? temiz : `LOOP-${temiz}`
+      const code = normalizeTrackingCode(temiz)
       const veri = await enrichRoadRoute(normalizeTrackedOrder(await apiFetch(`/orders/track/${encodeURIComponent(code)}`)))
       setBaglanti(true)
 
@@ -383,8 +405,7 @@ export default function MusteriTakip() {
       setPanelOpen(false)
     } catch (err) {
       setBaglanti(false)
-      const numericDemoCode = /^LOOP-\d+$/i.test(temiz.startsWith('LOOP-') ? temiz : `LOOP-${temiz}`)
-      if (numericDemoCode) {
+      if (canUseTrackingFallback(temiz, err)) {
         const fallback = await enrichRoadRoute(fallbackTrackedOrder(temiz))
         setKurye(fallback)
         setHaritaHedef([fallback.enlem, fallback.boylam])
@@ -393,7 +414,7 @@ export default function MusteriTakip() {
         setPanelOpen(false)
         return
       }
-      setHata(err.message === 'Failed to fetch' ? c.serverError : (err.message || c.serverError))
+      setHata(isServerOrNetworkError(err) ? c.serverError : (err.message || c.serverError))
     } finally {
       setYukleniyor(false)
     }

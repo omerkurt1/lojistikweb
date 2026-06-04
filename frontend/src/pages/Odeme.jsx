@@ -42,6 +42,7 @@ const COPY = {
     cvvError: 'CVV 3-4 haneli olmalıdır.',
     addressError: 'Alış ve teslim adresleri zorunludur.',
     distanceError: 'Mesafe 0 km üzerinde olmalıdır.',
+    serverError: 'Sunucuya bağlanılamadı. Lütfen birkaç saniye sonra tekrar deneyin.',
     testNote: 'Test kartı',
   },
   en: {
@@ -74,6 +75,7 @@ const COPY = {
     cvvError: 'CVV must be 3-4 digits.',
     addressError: 'Pickup and delivery addresses are required.',
     distanceError: 'Distance must be greater than 0 km.',
+    serverError: 'Cannot connect to the server. Please try again in a few seconds.',
     testNote: 'Test card',
   },
 }
@@ -95,6 +97,15 @@ function money(value, locale = 'tr-TR') {
 
 function estimatePrice(distanceKm) {
   return Math.max(49.99, Math.round(Number(distanceKm || 0) * 12 * 100) / 100)
+}
+
+function checkoutErrorMessage(err, copy) {
+  const msg = String(err?.message || err || '').trim()
+  const lower = msg.toLowerCase()
+  if (lower.includes('failed to fetch') || lower.includes('network') || lower.includes('request failed (500)') || lower.includes('internal server')) {
+    return copy.serverError
+  }
+  return msg || copy.serverError
 }
 
 // ── Mini konfeti ──────────────────────────────────────────
@@ -255,7 +266,7 @@ export default function Odeme() {
       setKonfeti(true)
       setTimeout(() => navigate(`/takip?code=${encodeURIComponent(trackingCode)}&auto=1`), 4000)
     } catch (err) {
-      setHata(err.message)
+      setHata(checkoutErrorMessage(err, c))
     } finally {
       setYuk(false)
     }
