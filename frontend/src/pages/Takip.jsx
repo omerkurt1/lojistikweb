@@ -21,6 +21,7 @@ const COPY = {
     notFoundCheck: 'numaralı sipariş bulunamadı. Takip numaranızı kontrol edin.',
     noLocation: 'Kurye konum bilgisi alınamadı. Lütfen tekrar deneyin.',
     serverError: 'Sunucuya bağlanılamadı. Lütfen tekrar deneyin.',
+    fallbackNotice: 'Canlı takip verisi şu anda alınamadı; Türkiye içi tahmini takip görünümü gösteriliyor.',
     yourCourier: 'Kuryeniz',
     eta: 'Tahmini Varış',
     minute: 'dakika',
@@ -51,6 +52,7 @@ const COPY = {
     notFoundCheck: 'order could not be found. Please check your tracking number.',
     noLocation: 'Courier location is unavailable. Please try again.',
     serverError: 'Cannot connect to the server. Please try again.',
+    fallbackNotice: 'Live tracking data is currently unavailable; showing a Turkey-based estimated tracking view.',
     yourCourier: 'Your courier',
     eta: 'Estimated Arrival',
     minute: 'minutes',
@@ -144,8 +146,6 @@ const AREA_CENTERS = [
   { match: /istanbul|kadikoy|besiktas|sisli|uskudar|atasehir/i, lat: 41.0082, lng: 28.9784 },
   { match: /ankara|cankaya|kizilay/i, lat: 39.9334, lng: 32.8597 },
   { match: /izmir|konak|bornova/i, lat: 38.4237, lng: 27.1428 },
-  { match: /munich|münchen|schwabing|giesing/i, lat: 48.1374, lng: 11.5755 },
-  { match: /berlin/i, lat: 52.52, lng: 13.405 },
 ]
 
 function hashString(value = '') {
@@ -209,28 +209,30 @@ function normalizeTrackedOrder(order) {
 
 function fallbackTrackedOrder(code) {
   const numeric = Number(String(code).replace(/^LOOP-/i, '')) || 3
-  const baseLat = 48.1391 + (numeric % 5) * 0.006
-  const baseLng = 11.5802 + (numeric % 4) * 0.007
-  const deliveryLat = baseLat + 0.028
-  const deliveryLng = baseLng + 0.019
+  const baseLat = 41.0082 + (numeric % 5) * 0.006
+  const baseLng = 28.9784 + (numeric % 4) * 0.007
+  const deliveryLat = baseLat + 0.018
+  const deliveryLng = baseLng + 0.014
 
   return {
     id: numeric,
     trackingCode: `LOOP-${numeric}`,
     orderId: numeric,
-    isim: 'Ayşe Kaya',
+    isim: 'LOOP Türkiye Kurye',
     durum: 'in_transit',
     enlem: baseLat,
     boylam: baseLng,
     hedefEnlem: deliveryLat,
     hedefBoylam: deliveryLng,
-    hedefAdres: 'Munich Delivery Zone',
-    pickupAdres: 'Munich Operations Hub',
+    hedefAdres: 'İstanbul Teslimat Bölgesi',
+    pickupAdres: 'İstanbul Operasyon Merkezi',
+    deliveryArea: 'İstanbul, Türkiye',
     eta: 24 + (numeric % 9),
     hiz: 38 + (numeric % 8),
     rota: [[baseLat, baseLng], [deliveryLat, deliveryLng]],
     tracking_code: `LOOP-${numeric}`,
     isApproximate: true,
+    isFallback: true,
   }
 }
 
@@ -315,6 +317,7 @@ export default function MusteriTakip() {
         const fallback = fallbackTrackedOrder(temiz)
         setKurye(fallback)
         setHaritaHedef([fallback.enlem, fallback.boylam])
+        setHata(c.fallbackNotice)
         setFaz('takip')
         setPanelOpen(false)
         return
@@ -613,7 +616,7 @@ export default function MusteriTakip() {
             {kurye.isApproximate && (
               <div style={s.tahminiNot}>
                 <strong>{c.estimatedZone}</strong>
-                <span>{c.publicEstimate}</span>
+                <span>{kurye.isFallback ? c.fallbackNotice : c.publicEstimate}</span>
               </div>
             )}
           </div>
