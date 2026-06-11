@@ -13,6 +13,8 @@ function normalizeUser(user) {
     email: user.email,
     rol: user.role || user.rol,
     sirket: user.company_name,
+    phone: user.phone_number || user.phone || '',
+    phone_number: user.phone_number || user.phone || '',
     aktif: user.is_active,
   }
 }

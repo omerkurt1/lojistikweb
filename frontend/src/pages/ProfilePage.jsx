@@ -115,7 +115,7 @@ export default function ProfilePage() {
     firstName: kullanici?.isim?.split(' ')[0] || '',
     lastName:  kullanici?.isim?.split(' ').slice(1).join(' ') || '',
     email:     kullanici?.email || '',
-    phone:     '+1 (555) 019-2834',
+    phone:     kullanici?.phone_number || kullanici?.phone || '',
   })
   const upd = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -267,7 +267,7 @@ export default function ProfilePage() {
                   <h2 style={{ fontSize: 28, fontWeight: 600, color: c.text, fontFamily: FFH, margin: 0, lineHeight: 1.2 }}>{kullanici.isim}</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: c.textMuted, fontSize: 14, fontFamily: FFH }}>
-                      {ICO.biz} <span>Global E-commerce Ltd.</span>
+                      {ICO.biz} <span>{kullanici?.sirket || kullanici?.company_name || (language === 'tr' ? 'Şirket bilgisi eklenmedi' : 'No company added')}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: c.textMuted, fontSize: 14, fontFamily: FFH }}>
                       {ICO.badge} <span>{isAdmin ? (language === 'tr' ? 'Sistem Yöneticisi' : 'System Administrator') : (language === 'tr' ? 'Operatör' : 'Operations Manager')}</span>
